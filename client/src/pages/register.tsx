@@ -139,12 +139,24 @@ export default function RegisterPage() {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const commitment = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
+      // Step 1: Send blockchain transaction for commitment
+      const commitTx = await sendTransaction({
+        to: "0x1234567890123456789012345678901234567890", // TNS Registry contract
+        value: "0", // No payment for commitment
+        data: `0x${Array.from(new TextEncoder().encode(`commit:${commitment}`))
+          .map(b => b.toString(16).padStart(2, '0')).join('')}`,
+      });
+
+      console.log("Commitment transaction sent:", commitTx);
+
+      // Step 2: Record commitment in backend
       const response = await apiRequest("POST", "/api/domains/commit", {
         commitment,
         name: domainName,
         owner: address,
         duration: registrationYears,
         secret,
+        txHash: commitTx,
       });
 
       const result = await response.json();
@@ -179,20 +191,24 @@ export default function RegisterPage() {
 
       const domainName = selectedDomain.replace('.trust', '');
       
-      console.log("Revealing domain with data:", {
-        commitment: commitmentData.commitment,
-        name: domainName,
-        owner: address,
-        duration: registrationYears,
-        secret: commitmentData.secret,
+      // Step 1: Send blockchain transaction for domain registration
+      const registrationTx = await sendTransaction({
+        to: "0x1234567890123456789012345678901234567890", // TNS Registry contract
+        value: totalCost,
+        data: `0x${Array.from(new TextEncoder().encode(`reveal:${commitmentData.commitment}`))
+          .map(b => b.toString(16).padStart(2, '0')).join('')}`,
       });
+
+      console.log("Registration transaction sent:", registrationTx);
       
+      // Step 2: Complete registration on backend
       const response = await apiRequest("POST", "/api/domains/reveal", {
         commitment: commitmentData.commitment,
         name: domainName,
         owner: address,
         duration: registrationYears,
         secret: commitmentData.secret,
+        txHash: registrationTx,
       });
 
       if (!response.ok) {

@@ -49,9 +49,14 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Routing: Wouter
 
 ## Development Status
-- [→] Initial project setup
-- [→] Data model design
-- [→] Core architecture implementation
+- [✓] Initial project setup completed
+- [✓] Data model design implemented
+- [✓] Core architecture implementation completed  
+- [✓] Domain search and registration frontend
+- [✓] Wallet integration with MetaMask
+- [✓] Commit-reveal registration process
+- [✓] Domain management dashboard
+- [→] Blockchain transaction integration
 
 ## User Preferences
 - Focus on clean, intuitive UI similar to ENS
