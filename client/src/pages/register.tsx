@@ -27,7 +27,8 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
-import { TNS_REGISTRY_ADDRESS } from "@/lib/contracts";
+import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { web3Service } from "@/lib/web3";
 
 interface DomainSearchResult {
   name: string;
@@ -149,7 +150,7 @@ export default function RegisterPage() {
           ...result,
           txHash: txHash,
           contractAddress: TNS_REGISTRY_ADDRESS,
-          demoMode: false
+          realTransaction: true
         };
       } catch (error: any) {
         console.error("Registration error:", error);
