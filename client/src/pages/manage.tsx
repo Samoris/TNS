@@ -29,6 +29,8 @@ import { WalletConnection } from "@/components/wallet-connection";
 import { DomainCard } from "@/components/domain-card";
 import { useWallet } from "@/hooks/use-wallet";
 import { Link } from "wouter";
+import { web3Service } from "@/lib/web3";
+import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
 import type { DomainWithRecords } from "@shared/schema";
 
 type ViewMode = "grid" | "list";
@@ -43,15 +45,21 @@ export default function ManagePage() {
 
   const { isConnected, address, isCorrectNetwork } = useWallet();
 
-  // Fetch user's domains
+  // Fetch user's domains from blockchain contract
   const { 
     data: domains, 
     isLoading: isLoadingDomains, 
     error: domainsError 
   } = useQuery<DomainWithRecords[]>({
-    queryKey: ["/api/domains/owner", address],
+    queryKey: ["blockchain-domains", address],
+    queryFn: async () => {
+      if (!address) return [];
+      console.log("Fetching domains from blockchain for:", address);
+      return await web3Service.getOwnerDomains(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, address);
+    },
     enabled: isConnected && isCorrectNetwork && !!address,
     refetchOnWindowFocus: false,
+    refetchInterval: 30000, // Refresh every 30 seconds to get latest blockchain data
   });
 
   // Filter and sort domains

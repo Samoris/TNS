@@ -429,6 +429,57 @@ export class Web3Service {
       throw error;
     }
   }
+
+  public async getOwnerDomains(contractAddress: string, abi: any[], ownerAddress: string): Promise<any[]> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      console.log("Fetching domains for owner:", ownerAddress);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(contractAddress, abi, provider);
+      
+      // Call getOwnerDomains function
+      const domains = await contract.getOwnerDomains(ownerAddress);
+      console.log("Domains from contract:", domains);
+      
+      // Get detailed info for each domain
+      const domainDetails = await Promise.all(
+        domains.map(async (domainName: string) => {
+          try {
+            const info = await contract.getDomainInfo(domainName);
+            const [owner, tokenId, expirationTime, exists] = info;
+            
+            return {
+              name: domainName + '.trust',
+              owner,
+              tokenId: tokenId.toString(),
+              expirationDate: new Date(Number(expirationTime) * 1000).toISOString(),
+              exists,
+              pricePerYear: this.calculateDomainPrice(domainName),
+              records: {}
+            };
+          } catch (error) {
+            console.error(`Error getting info for domain ${domainName}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      return domainDetails.filter(domain => domain !== null);
+    } catch (error: any) {
+      console.error("Error fetching owner domains:", error);
+      throw error;
+    }
+  }
+
+  private calculateDomainPrice(domainName: string): string {
+    const length = domainName.length;
+    if (length === 3) return "2.0";
+    if (length === 4) return "0.1";
+    return "0.02";
+  }
 }
 
 export const web3Service = Web3Service.getInstance();
