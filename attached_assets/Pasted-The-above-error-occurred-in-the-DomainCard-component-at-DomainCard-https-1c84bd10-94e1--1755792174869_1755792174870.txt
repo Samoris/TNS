@@ -1,0 +1,52 @@
+The above error occurred in the <DomainCard> component:
+
+    at DomainCard (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/components/domain-card.tsx:46:30)
+    at div
+    at div
+    at div
+    at ManagePage (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/pages/manage.tsx:50:35)
+    at Route (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:323:16)
+    at Switch (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:379:17)
+    at main
+    at div
+    at Router
+    at Provider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=4252961b:38:15)
+    at TooltipProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=4252961b:58:5)
+    at QueryClientProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4252961b:2805:3)
+    at App (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/App.tsx?v=dfDuVFhf5wtwT_duXYGIW:87:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+at DomainCard (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/components/domain-card.tsx:46:30)
+at div
+at div
+at div
+at ManagePage (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/pages/manage.tsx:50:35)
+at Route (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:323:16)
+at Switch (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:379:17)
+at main
+at div
+at Router
+at Provider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=4252961b:38:15)
+at TooltipProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=4252961b:58:5)
+at QueryClientProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4252961b:2805:3)
+at App (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/App.tsx?v=dfDuVFhf5wtwT_duXYGIW:87:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+at t.value (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Cannot read properties of undefined (reading 'length')
+at DomainCard (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/components/domain-card.tsx:822:203)
+at renderWithHooks (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:11548:26)
+at mountIndeterminateComponent (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:14926:21)
+at beginWork (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:15914:22)
+at beginWork$1 (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:19753:22)
+at performUnitOfWork (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:19198:20)
+at workLoopSync (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:19137:13)
+at renderRootSync (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:19116:15)
+at recoverFromConcurrentError (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:18736:28)
+at performSyncWorkOnRoot (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=4252961b:18879:28)
