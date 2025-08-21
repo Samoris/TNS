@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+
 export interface NetworkConfig {
   chainId: number;
   networkName: string;
@@ -319,6 +321,51 @@ export class Web3Service {
     return Array.from(str)
       .map(char => char.charCodeAt(0).toString(16).padStart(2, '0'))
       .join('');
+  }
+
+  public async registerDomain(contractAddress: string, abi: any[], domainName: string, duration: number, cost: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      // Create ethers provider using MetaMask
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Create contract instance
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      
+      // Convert cost to wei
+      const valueWei = ethers.parseEther(cost);
+      
+      console.log("Calling contract register function with:");
+      console.log("- Domain:", domainName);
+      console.log("- Duration:", duration);
+      console.log("- Value:", ethers.formatEther(valueWei), "TRUST");
+      
+      // Call the register function
+      const tx = await contract.register(domainName, duration, {
+        value: valueWei,
+        gasLimit: 300000 // Set reasonable gas limit
+      });
+      
+      console.log("Transaction sent:", tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt.hash);
+      
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Contract registration error:", error);
+      throw new Error(error.message || "Failed to register domain on blockchain");
+    }
   }
 }
 

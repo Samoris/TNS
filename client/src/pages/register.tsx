@@ -116,20 +116,15 @@ export default function RegisterPage() {
         console.log("Starting blockchain registration for:", domainName);
         console.log("Using optimized contract:", TNS_REGISTRY_ADDRESS);
         
-        // Encode the register function call
-        const registerData = web3Service.encodeContractCall(
-          TNS_REGISTRY_ABI,
-          'register',
-          [domainName, registrationYears]
-        );
+        // Real blockchain registration using ethers.js
+        console.log("Calling smart contract register function");
         
-        console.log("Sending transaction with data:", registerData);
-        
-        // Send the transaction with optimized gas settings
-        const txHash = await web3Service.sendTransaction(
+        const txHash = await web3Service.registerDomain(
           TNS_REGISTRY_ADDRESS,
-          totalCost.toString(),
-          registerData
+          TNS_REGISTRY_ABI,
+          domainName,
+          registrationYears,
+          totalCost.toString()
         );
         
         console.log("Transaction successful:", txHash);
