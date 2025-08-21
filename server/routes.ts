@@ -123,8 +123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { commitment, name, owner, duration, secret } = req.body;
       
+      console.log("Reveal request data:", { commitment, name, owner, duration, secret });
+      
       // Get commitment
       const commit = await storage.getDomainCommit(commitment);
+      console.log("Found commitment:", commit);
+      
       if (!commit) {
         return res.status(400).json({ message: "Commitment not found" });
       }

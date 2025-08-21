@@ -178,6 +178,15 @@ export default function RegisterPage() {
       }
 
       const domainName = selectedDomain.replace('.trust', '');
+      
+      console.log("Revealing domain with data:", {
+        commitment: commitmentData.commitment,
+        name: domainName,
+        owner: address,
+        duration: registrationYears,
+        secret: commitmentData.secret,
+      });
+      
       const response = await apiRequest("POST", "/api/domains/reveal", {
         commitment: commitmentData.commitment,
         name: domainName,
@@ -185,6 +194,11 @@ export default function RegisterPage() {
         duration: registrationYears,
         secret: commitmentData.secret,
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to reveal domain");
+      }
 
       return response.json();
     },
