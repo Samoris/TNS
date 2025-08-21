@@ -290,12 +290,12 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                     )}
 
                     <div className="space-y-2">
-                      {domain.records.length === 0 ? (
+                      {(!Array.isArray(domain.records) || domain.records.length === 0) ? (
                         <p className="text-gray-500 text-sm">No records configured</p>
                       ) : (
-                        domain.records.map((record) => (
+                        Array.isArray(domain.records) && domain.records.map((record, index) => (
                           <div
-                            key={record.id}
+                            key={record.id || index}
                             className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
                           >
                             <div>

@@ -351,9 +351,9 @@ export default function ManagePage() {
                 : "space-y-4"
             }
           >
-            {filteredAndSortedDomains.map((domain: DomainWithRecords) => (
+            {filteredAndSortedDomains.map((domain: DomainWithRecords, index: number) => (
               <DomainCard
-                key={domain.id}
+                key={domain.tokenId || index}
                 domain={domain}
                 walletAddress={address!}
               />
