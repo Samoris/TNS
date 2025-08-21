@@ -233,8 +233,8 @@ export class Web3Service {
     }
 
     // Convert value to hex with proper wei conversion
-    const valueInWei = parseFloat(value) * Math.pow(10, 18);
-    const valueHex = `0x${Math.floor(valueInWei).toString(16)}`;
+    const valueInWei = Math.floor(parseFloat(value) * Math.pow(10, 18));
+    const valueHex = `0x${valueInWei.toString(16)}`;
 
     const txParams = {
       from: state.address,
@@ -242,6 +242,12 @@ export class Web3Service {
       value: valueHex,
       ...(data && { data }),
     };
+
+    console.log("Transaction value breakdown:");
+    console.log("- Original value:", value, "TRUST");
+    console.log("- Value in wei:", valueInWei);
+    console.log("- Value hex:", valueHex);
+    console.log("- Value in ETH:", valueInWei / Math.pow(10, 18));
 
     console.log("Sending transaction:", txParams);
 

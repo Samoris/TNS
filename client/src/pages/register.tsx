@@ -290,6 +290,13 @@ export default function RegisterPage() {
                     </AlertDescription>
                   </Alert>
                   
+                  <Alert className="border-yellow-200 dark:border-yellow-800">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                      <strong>Gas fees:</strong> Smart contract registration requires higher gas than simple transfers due to NFT minting and on-chain storage. The actual gas cost will be calculated by MetaMask.
+                    </AlertDescription>
+                  </Alert>
+                  
                   <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <h4 className="font-semibold mb-2">Registration Details</h4>
                     <div className="space-y-2 text-sm">
