@@ -293,13 +293,6 @@ export default function RegisterPage() {
                     </AlertDescription>
                   </Alert>
                   
-                  <Alert className="border-blue-200 dark:border-blue-800">
-                    <Info className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-800 dark:text-blue-200">
-                      <strong>Demo Mode:</strong> Due to high gas costs on the testnet, registration will be completed without blockchain transaction. All domain management features remain fully functional.
-                    </AlertDescription>
-                  </Alert>
-                  
                   <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <h4 className="font-semibold mb-2">Registration Details</h4>
                     <div className="space-y-2 text-sm">
