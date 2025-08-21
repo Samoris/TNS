@@ -1,24 +1,25 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import {
-  Clock,
   CheckCircle,
-  AlertTriangle,
+  XCircle,
+  Clock,
+  AlertCircle,
   Wallet,
   Shield,
-  Globe,
-  ArrowRight,
-  Copy,
+  Info,
   ExternalLink,
+  Globe,
+  AlertTriangle,
+  Plus,
 } from "lucide-react";
 import { DomainSearch } from "@/components/domain-search";
 import { WalletConnection } from "@/components/wallet-connection";
@@ -26,7 +27,6 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
-// Removed Node.js crypto import - will use Web Crypto API
 
 interface DomainSearchResult {
   name: string;
@@ -46,18 +46,8 @@ interface RegistrationStep {
 }
 
 export default function RegisterPage() {
-  const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const initialDomain = urlParams.get('domain') || '';
-
-  const [selectedDomain, setSelectedDomain] = useState(initialDomain);
-  const [registrationYears, setRegistrationYears] = useState(1);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [commitmentData, setCommitmentData] = useState<{
-    commitment: string;
-    secret: string;
-    revealAfter: Date;
-  } | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<string>("");
+  const [registrationYears, setRegistrationYears] = useState<number>(1);
   const [registeredDomain, setRegisteredDomain] = useState<any>(null);
 
   const { toast } = useToast();
@@ -99,20 +89,10 @@ export default function RegisterPage() {
         : "active",
     },
     {
-      id: "commit",
-      title: "Commit Registration",
-      description: "Submit commitment transaction",
-      status: !isConnected || !isCorrectNetwork 
-        ? "pending" 
-        : commitmentData 
-        ? "completed" 
-        : "active",
-    },
-    {
-      id: "reveal",
-      title: "Reveal & Register",
+      id: "register",
+      title: "Register Domain",
       description: "Complete domain registration",
-      status: !commitmentData 
+      status: !isConnected || !isCorrectNetwork 
         ? "pending" 
         : registeredDomain 
         ? "completed" 
@@ -120,100 +100,34 @@ export default function RegisterPage() {
     },
   ];
 
-  // Commit mutation
-  const commitMutation = useMutation({
+  // Direct registration mutation
+  const registrationMutation = useMutation({
     mutationFn: async () => {
       if (!selectedDomain || !address) throw new Error("Missing required data");
       
-      const secret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      const domainName = selectedDomain.replace('.trust', '');
-      
-      // Create commitment hash using Web Crypto API
-      const dataToHash = `${domainName}${address}${registrationYears}${secret}`;
-      const encoder = new TextEncoder();
-      const data = encoder.encode(dataToHash);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const commitment = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-      // Step 1: Send blockchain transaction for commitment
-      const commitTx = await sendTransaction(
-        "0x1234567890123456789012345678901234567890", // TNS Registry contract
-        "0", // No payment for commitment
-        `0x${Array.from(new TextEncoder().encode(`commit:${commitment}`))
-          .map(b => b.toString(16).padStart(2, '0')).join('')}`
-      );
-
-      console.log("Commitment transaction sent:", commitTx);
-
-      // Step 2: Record commitment in backend
-      const response = await apiRequest("POST", "/api/domains/commit", {
-        commitment,
-        name: domainName,
-        owner: address,
-        duration: registrationYears,
-        secret,
-        txHash: commitTx,
-      });
-
-      const result = await response.json();
-      return { ...result, secret, commitment };
-    },
-    onSuccess: (data) => {
-      setCommitmentData({
-        commitment: data.commitment,
-        secret: data.secret,
-        revealAfter: new Date(data.revealAfter),
-      });
-      toast({
-        title: "Commitment submitted",
-        description: "Your domain registration has been committed. Wait 1 minute before revealing.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Commitment failed",
-        description: error.message || "Failed to commit domain registration",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Reveal mutation
-  const revealMutation = useMutation({
-    mutationFn: async () => {
-      if (!commitmentData || !selectedDomain || !address) {
-        throw new Error("Missing commitment data");
-      }
-
       const domainName = selectedDomain.replace('.trust', '');
       
       // Step 1: Send blockchain transaction for domain registration
       const registrationTx = await sendTransaction(
         "0x1234567890123456789012345678901234567890", // TNS Registry contract
         totalCost,
-        `0x${Array.from(new TextEncoder().encode(`reveal:${commitmentData.commitment}`))
+        `0x${Array.from(new TextEncoder().encode(`register:${domainName}`))
           .map(b => b.toString(16).padStart(2, '0')).join('')}`
       );
 
       console.log("Registration transaction sent:", registrationTx);
       
-      // Step 2: Complete registration on backend
-      const response = await apiRequest("POST", "/api/domains/reveal", {
-        commitment: commitmentData.commitment,
+      // Step 2: Register domain on backend
+      const response = await apiRequest("POST", "/api/domains/register", {
         name: domainName,
         owner: address,
         duration: registrationYears,
-        secret: commitmentData.secret,
         txHash: registrationTx,
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to reveal domain");
+        throw new Error(error.message || "Failed to register domain");
       }
 
       return response.json();
@@ -228,7 +142,7 @@ export default function RegisterPage() {
     onError: (error: any) => {
       toast({
         title: "Registration failed",
-        description: error.message || "Failed to complete domain registration",
+        description: error.message || "Failed to register domain",
         variant: "destructive",
       });
     },
@@ -238,7 +152,7 @@ export default function RegisterPage() {
     setSelectedDomain(domain);
   };
 
-  const handleCommit = () => {
+  const handleRegistration = () => {
     if (!isConnected) {
       connectWallet();
       return;
@@ -247,27 +161,8 @@ export default function RegisterPage() {
       switchNetwork();
       return;
     }
-    commitMutation.mutate();
+    registrationMutation.mutate();
   };
-
-  const handleReveal = () => {
-    if (!commitmentData) return;
-    
-    const now = new Date();
-    if (now < commitmentData.revealAfter) {
-      toast({
-        title: "Please wait",
-        description: "You must wait at least 1 minute before revealing",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    revealMutation.mutate();
-  };
-
-  const canReveal = commitmentData && new Date() >= commitmentData.revealAfter;
-  const timeRemaining = commitmentData ? Math.max(0, commitmentData.revealAfter.getTime() - Date.now()) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-trust-dark">
@@ -306,136 +201,99 @@ export default function RegisterPage() {
                       index + 1
                     )}
                   </div>
-                  <div className="ml-3 text-left">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {step.title}
-                    </div>
-                    <div className="text-xs text-gray-500">{step.description}</div>
-                  </div>
                   {index < steps.length - 1 && (
-                    <ArrowRight className="h-4 w-4 text-gray-400 mx-4" />
+                    <div
+                      className={`w-24 h-1 mx-2 ${
+                        step.status === "completed"
+                          ? "bg-trust-emerald"
+                          : "bg-gray-200 dark:bg-gray-700"
+                      }`}
+                    />
                   )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {steps.map((step) => (
+                <div key={step.id} className="text-center">
+                  <h3 className="font-semibold">{step.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {step.description}
+                  </p>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Registration Flow */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             {/* Step 1: Domain Selection */}
-            {(!selectedDomain || !domainData?.available) && (
-              <Card className="trust-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Globe className="mr-2 h-5 w-5 text-trust-blue" />
-                    Choose Your Domain
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <DomainSearch onDomainSelect={handleDomainSelect} />
-                  {domainError && (
-                    <Alert variant="destructive" className="mt-4">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>Failed to check domain availability</AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            <Card className="trust-card">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Globe className="mr-2 h-5 w-5 text-trust-blue" />
+                  Choose Your Domain
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DomainSearch 
+                  onDomainSelect={handleDomainSelect}
+                  autoFocus={true}
+                />
+              </CardContent>
+            </Card>
 
             {/* Step 2: Wallet Connection */}
-            {selectedDomain && domainData?.available && (!isConnected || !isCorrectNetwork) && (
+            {selectedDomain && domainData?.available && !isConnected && (
               <WalletConnection onConnected={() => {}} />
             )}
 
-            {/* Step 3: Commit Phase */}
-            {selectedDomain && domainData?.available && isConnected && isCorrectNetwork && !commitmentData && (
+            {/* Step 3: Registration */}
+            {isConnected && isCorrectNetwork && !registeredDomain && selectedDomain && domainData?.available && (
               <Card className="trust-card">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Shield className="mr-2 h-5 w-5 text-trust-blue" />
-                    Commit Registration
+                    Register Domain
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="years">Registration Period</Label>
-                    <select
-                      id="years"
-                      value={registrationYears}
-                      onChange={(e) => setRegistrationYears(parseInt(e.target.value))}
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                      data-testid="registration-years"
-                    >
-                      {[1, 2, 3, 4, 5].map(year => (
-                        <option key={year} value={year}>
-                          {year} year{year > 1 ? 's' : ''} - {formatPrice((parseFloat(pricing?.pricePerYear || "0") * year).toString())}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
                   <Alert>
-                    <Shield className="h-4 w-4" />
+                    <Info className="h-4 w-4" />
                     <AlertDescription>
-                      The commit-reveal process prevents front-running. First, you commit to register 
-                      the domain, then after 1 minute you can reveal and complete the registration.
+                      Complete your domain registration with a single transaction. You'll receive an NFT representing ownership of your .trust domain.
                     </AlertDescription>
                   </Alert>
+                  
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h4 className="font-semibold mb-2">Registration Details</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Domain:</span>
+                        <span className="font-mono">{selectedDomain}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Duration:</span>
+                        <span>{registrationYears} year{registrationYears > 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total cost:</span>
+                        <span className="font-semibold text-trust-blue">{formatPrice(totalCost)}</span>
+                      </div>
+                    </div>
+                  </div>
 
                   <Button
-                    onClick={handleCommit}
-                    disabled={commitMutation.isPending}
+                    onClick={handleRegistration}
+                    disabled={registrationMutation.isPending}
                     className="w-full trust-button"
-                    data-testid="commit-button"
+                    data-testid="register-button"
                   >
                     <Wallet className="mr-2 h-4 w-4" />
-                    {commitMutation.isPending ? "Committing..." : "Commit Registration"}
+                    {registrationMutation.isPending ? "Registering..." : "Register Domain"}
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 4: Reveal Phase */}
-            {commitmentData && !registeredDomain && (
-              <Card className="trust-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Clock className="mr-2 h-5 w-5 text-trust-violet" />
-                    Reveal Registration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {!canReveal ? (
-                    <div className="text-center py-6">
-                      <Clock className="h-12 w-12 text-trust-violet mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">Waiting Period</h3>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Please wait {Math.ceil(timeRemaining / 1000)} seconds before revealing
-                      </p>
-                      <Progress value={Math.max(0, 100 - (timeRemaining / 60000) * 100)} className="w-full" />
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <Alert>
-                        <CheckCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Your commitment period has ended. You can now reveal and complete the registration.
-                        </AlertDescription>
-                      </Alert>
-
-                      <Button
-                        onClick={handleReveal}
-                        disabled={revealMutation.isPending}
-                        className="w-full trust-button"
-                        data-testid="reveal-button"
-                      >
-                        {revealMutation.isPending ? "Registering..." : "Complete Registration"}
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -498,6 +356,39 @@ export default function RegisterPage() {
                       <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
                         Available
                       </Badge>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <Label>Registration Period</Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRegistrationYears(Math.max(1, registrationYears - 1))}
+                          disabled={registrationYears <= 1}
+                        >
+                          -
+                        </Button>
+                        <Input
+                          type="number"
+                          value={registrationYears}
+                          onChange={(e) => setRegistrationYears(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-20 text-center"
+                          min={1}
+                          max={10}
+                        />
+                        <span className="text-sm">year{registrationYears > 1 ? 's' : ''}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setRegistrationYears(Math.min(10, registrationYears + 1))}
+                          disabled={registrationYears >= 10}
+                        >
+                          +
+                        </Button>
+                      </div>
                     </div>
 
                     <Separator />

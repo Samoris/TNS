@@ -118,6 +118,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Direct domain registration (simplified)
+  app.post("/api/domains/register", async (req, res) => {
+    try {
+      const { name, owner, duration, txHash } = req.body;
+      
+      console.log("Registration request:", { name, owner, duration, txHash });
+      
+      // Validate input
+      if (!name || !owner || !duration || !txHash) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Check domain is available
+      const isAvailable = await storage.isDomainAvailable(name);
+      if (!isAvailable) {
+        return res.status(400).json({ message: "Domain not available" });
+      }
+      
+      // Calculate pricing and expiration
+      const pricing = storage.calculateDomainPrice(name);
+      const expirationDate = new Date();
+      expirationDate.setFullYear(expirationDate.getFullYear() + duration);
+      
+      // Create domain
+      const domain = await storage.createDomain({
+        name: name.endsWith('.trust') ? name : `${name}.trust`,
+        owner,
+        registrant: owner,
+        resolver: null,
+        expirationDate,
+        tokenId: `tns_${Date.now()}`,
+        pricePerYear: pricing.pricePerYear,
+      });
+      
+      res.json({ 
+        message: "Domain registered successfully", 
+        domain,
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to register domain" });
+    }
+  });
+
   // Reveal phase of domain registration
   app.post("/api/domains/reveal", async (req, res) => {
     try {
