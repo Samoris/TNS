@@ -338,28 +338,25 @@ export class Web3Service {
       console.log("- Domain:", domainName);
       console.log("- Duration:", duration);
       console.log("- Value:", cost, "TRUST");
+      console.log("- Contract:", contractAddress);
       
-      // For testing purposes, create a realistic transaction simulation
-      // This would be replaced with actual contract deployment in production
-      
-      // Send a real transaction to demonstrate the flow (simple transfer)
-      const valueWei = ethers.parseEther(cost);
-      
-      // Create ethers provider using MetaMask
+      // Create ethers provider and contract instance
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
       
-      // Send transaction to your own address to simulate payment
-      // In production, this would be to the actual contract
-      const userAddress = await signer.getAddress();
-      const tx = await signer.sendTransaction({
-        to: userAddress, // Send to self for demo
+      // Parse cost to wei
+      const valueWei = ethers.parseEther(cost);
+      
+      // Call the register function on the actual contract
+      console.log("Calling contract.register with:", domainName, duration, "value:", valueWei.toString());
+      const tx = await contract.register(domainName, duration, {
         value: valueWei,
-        gasLimit: 21000 // Standard transfer gas limit
+        gasLimit: 200000 // Higher gas limit for contract interaction
       });
       
       console.log("Transaction sent:", tx.hash);
-      console.log("Simulating domain registration on blockchain...");
+      console.log("Registering domain on blockchain...");
       
       // Wait for transaction confirmation
       const receipt = await tx.wait();
@@ -369,10 +366,67 @@ export class Web3Service {
       console.log("Transaction confirmed:", receipt.hash);
       console.log("Domain registration completed successfully!");
       
+      // Check if there were any events emitted
+      if (receipt.logs && receipt.logs.length > 0) {
+        console.log("Contract events emitted:", receipt.logs.length);
+      }
+      
       return receipt.hash;
     } catch (error: any) {
       console.error("Contract registration error:", error);
+      
+      // Enhanced error reporting
+      if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+        throw new Error("Contract call failed - check domain availability and payment amount");
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error("Insufficient TRUST tokens for gas fees");
+      } else if (error.message?.includes('revert')) {
+        throw new Error("Contract rejected transaction - " + error.reason || error.message);
+      }
+      
       throw new Error(error.message || "Failed to register domain on blockchain");
+    }
+  }
+
+  public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      // Create ethers provider and contract instance
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(contractAddress, abi, provider);
+      
+      // Call isAvailable function
+      const isAvailable = await contract.isAvailable(domainName);
+      console.log("Domain", domainName, "availability:", isAvailable);
+      
+      return isAvailable;
+    } catch (error: any) {
+      console.error("Error checking domain availability:", error);
+      // If we can't check, assume it's available
+      return true;
+    }
+  }
+
+  public async getContractOwner(contractAddress: string, abi: any[]): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(contractAddress, abi, provider);
+      
+      // Call owner function
+      const owner = await contract.owner();
+      console.log("Contract owner:", owner);
+      
+      return owner;
+    } catch (error: any) {
+      console.error("Error getting contract owner:", error);
+      throw error;
     }
   }
 }
