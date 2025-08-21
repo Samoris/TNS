@@ -80,25 +80,38 @@ export class Web3Service {
   }
 
   public async isMetaMaskInstalled(): Promise<boolean> {
-    return typeof window !== "undefined" && !!window.ethereum;
+    const isInstalled = typeof window !== "undefined" && !!window.ethereum;
+    console.log("MetaMask installation check:", isInstalled);
+    console.log("window.ethereum:", window.ethereum);
+    return isInstalled;
   }
 
   public async connectWallet(): Promise<WalletState> {
+    console.log("Starting wallet connection...");
+    
     if (!window.ethereum) {
+      console.error("MetaMask not detected");
       throw new Error("MetaMask not installed");
     }
 
     try {
+      console.log("Requesting accounts...");
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
+      console.log("Accounts received:", accounts);
 
       if (accounts.length === 0) {
         throw new Error("No accounts available");
       }
 
+      console.log("Switching to Intuition network...");
       await this.switchToIntuitionNetwork();
-      return await this.getWalletState();
+      console.log("Network switch completed");
+      
+      const state = await this.getWalletState();
+      console.log("Final wallet state:", state);
+      return state;
     } catch (error) {
       console.error("Failed to connect wallet:", error);
       throw error;
