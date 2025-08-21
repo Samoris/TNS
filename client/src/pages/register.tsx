@@ -27,6 +27,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
+import { TNS_REGISTRY_ADDRESS, encodeFunctionCall } from "@/lib/contracts";
 
 interface DomainSearchResult {
   name: string;
@@ -107,39 +108,61 @@ export default function RegisterPage() {
       
       const domainName = selectedDomain.replace('.trust', '');
       
-      // Step 1: Send blockchain transaction for domain registration
-      const registrationTx = await sendTransaction(
-        "0x1234567890123456789012345678901234567890", // TNS Registry contract
-        totalCost,
-        `0x${Array.from(new TextEncoder().encode(`register:${domainName}`))
-          .map(b => b.toString(16).padStart(2, '0')).join('')}`
-      );
-
-      console.log("Registration transaction sent:", registrationTx);
+      console.log("Registering domain:", domainName, "for", registrationYears, "years");
+      console.log("Total cost:", totalCost, "TRUST");
       
-      // Step 2: Register domain on backend
-      const response = await apiRequest("POST", "/api/domains/register", {
-        name: domainName,
-        owner: address,
-        duration: registrationYears,
-        txHash: registrationTx,
-      });
+      try {
+        // Step 1: Encode smart contract function call
+        const functionData = encodeFunctionCall('register', [domainName, registrationYears]);
+        
+        // Step 2: Send blockchain transaction to TNS Registry contract
+        const registrationTx = await sendTransaction(
+          TNS_REGISTRY_ADDRESS,
+          totalCost,
+          functionData
+        );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to register domain");
+        console.log("Registration transaction sent:", registrationTx);
+        console.log("Contract address:", TNS_REGISTRY_ADDRESS);
+        
+        // Step 3: Wait a moment for transaction to be mined
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Step 4: Register domain on backend for local tracking
+        const response = await apiRequest("POST", "/api/domains/register", {
+          name: domainName,
+          owner: address,
+          duration: registrationYears,
+          txHash: registrationTx,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to register domain in backend");
+        }
+
+        const result = await response.json();
+        
+        // Return both transaction hash and domain data
+        return {
+          ...result,
+          txHash: registrationTx,
+          contractAddress: TNS_REGISTRY_ADDRESS
+        };
+      } catch (error: any) {
+        console.error("Registration error:", error);
+        throw error;
       }
-
-      return response.json();
     },
     onSuccess: (data) => {
       setRegisteredDomain(data.domain);
       toast({
         title: "Domain registered successfully!",
-        description: `${selectedDomain} is now yours. Check your wallet for the NFT.`,
+        description: `${selectedDomain} is now yours. The NFT will appear in your wallet shortly.`,
       });
     },
     onError: (error: any) => {
+      console.error("Registration mutation error:", error);
       toast({
         title: "Registration failed",
         description: error.message || "Failed to register domain",
@@ -322,9 +345,13 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="flex gap-4 justify-center">
-                    <Button variant="outline" onClick={() => window.open(getExplorerUrl(""), "_blank")}>
+                    <Button variant="outline" onClick={() => window.open(getExplorerUrl(registeredDomain.txHash || ""), "_blank")}>
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      View on Explorer
+                      View Transaction
+                    </Button>
+                    <Button variant="outline" onClick={() => window.open(`https://testnet.explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, "_blank")}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View Contract
                     </Button>
                     <Button 
                       className="trust-button" 

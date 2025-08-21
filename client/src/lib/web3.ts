@@ -232,12 +232,18 @@ export class Web3Service {
       await this.switchToIntuitionNetwork();
     }
 
+    // Convert value to hex with proper wei conversion
+    const valueInWei = parseFloat(value) * Math.pow(10, 18);
+    const valueHex = `0x${Math.floor(valueInWei).toString(16)}`;
+
     const txParams = {
       from: state.address,
       to,
-      value: `0x${parseInt(value).toString(16)}`,
+      value: valueHex,
       ...(data && { data }),
     };
+
+    console.log("Sending transaction:", txParams);
 
     const txHash = await window.ethereum.request({
       method: "eth_sendTransaction",
@@ -245,6 +251,20 @@ export class Web3Service {
     });
 
     return txHash;
+  }
+
+  public async callContract(contractAddress: string, data: string): Promise<any> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    return await window.ethereum.request({
+      method: "eth_call",
+      params: [{
+        to: contractAddress,
+        data: data,
+      }, "latest"],
+    });
   }
 
   public formatAddress(address: string, chars = 4): string {

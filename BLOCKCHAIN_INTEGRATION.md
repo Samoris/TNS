@@ -1,20 +1,21 @@
 # TNS Blockchain Integration Status
 
-## Current Implementation (Simulated)
+## Current Implementation (REAL CONTRACT INTEGRATION!)
 
-The TNS system currently uses **simulated blockchain integration** for demonstration purposes:
+The TNS system now uses **real blockchain integration** with deployed smart contracts:
 
-- **Transaction Handling**: Uses placeholder contract address `0x1234567890123456789012345678901234567890`
-- **NFT Minting**: No actual NFT is minted - the system only tracks ownership in memory storage
-- **Network**: Connected to Intuition testnet but contracts are not deployed
-- **Data Storage**: Domain ownership stored in local memory, not on-chain
+- **Contract Address**: `0xa62957F219577FDEE87614D1E57E954ae4A09390` (deployed on Intuition testnet)
+- **NFT Minting**: Real ERC-721 NFTs are minted when domains are registered  
+- **Network**: Connected to Intuition testnet with actual deployed contracts
+- **Data Storage**: Domain ownership tracked both on-chain and in local storage for performance
 
-## Why No NFT Was Minted
+## Real NFT Minting Now Active
 
-When you registered `samhoeris.trust`, the transaction was sent but:
-1. The contract address is a placeholder (not a real deployed contract)
-2. No smart contract exists to mint the ERC-721 NFT
-3. The backend only updates local storage, not blockchain state
+When you register a domain now:
+1. The transaction calls the real TNS Registry contract
+2. An ERC-721 NFT is minted to your wallet
+3. Domain ownership is recorded on-chain
+4. You'll see the NFT in your wallet after transaction confirmation
 
 ## To Enable Real NFT Minting
 
