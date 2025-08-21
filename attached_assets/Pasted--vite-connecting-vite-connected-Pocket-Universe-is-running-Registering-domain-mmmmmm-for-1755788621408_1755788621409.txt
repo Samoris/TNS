@@ -1,0 +1,33 @@
+[vite] connecting...
+[vite] connected.
+Pocket Universe is running!
+Registering domain: mmmmmm for 1 years
+Total cost: 0.02 TRUST
+Starting blockchain registration for: mmmmmm
+Using optimized contract: 0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3
+Calling smart contract register function
+Calling contract register function with:
+- Domain: mmmmmm
+- Duration: 1
+- Value: 0.02 TRUST
+Contract registration error: 
+TypeError {code: "INVALID_ARGUMENT", argument: "address", value: "0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3", shortMessage: "bad address checksum"}
+argument: "address"
+code: "INVALID_ARGUMENT"
+shortMessage: "bad address checksum"
+value: "0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3"
+message: "bad address checksum (argument="address", value="0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3", code=INVALID_ARGUMENT, version=6.15.0)"
+stack: "TypeError: bad address checksum (argument="address", value="0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3", code=INVALID_ARGUMENT, version=6.15.0)↵ at makeError (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:330:15)↵ at assert (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:350:11)↵ at assertArgument (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:354:3)↵ at getAddress (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:6860:5)↵ at resolveAddress (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:6927:14)↵ at https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:18832:23↵ at JsonRpcSigner.sendUncheckedTransaction (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:18833:9)↵ at JsonRpcSigner.sendTransaction (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:18843:30)↵ at async send (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:14818:16)↵ at async Proxy.register (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/ethers.js?v=4252961b:14848:12)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+at t.value (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Registration error: 
+Error {}
+
+Registration mutation error: 
+Error {}
