@@ -460,7 +460,8 @@ export class Web3Service {
               expirationDate: new Date(Number(expirationTime) * 1000).toISOString(),
               exists,
               pricePerYear: this.calculateDomainPrice(domainName),
-              records: []
+              records: [],
+              subdomains: []
             };
             console.log(`Domain details for ${domainName}:`, domain);
             return domain;

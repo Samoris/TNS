@@ -403,10 +403,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                     )}
 
                     <div className="space-y-2">
-                      {domain.subdomains.length === 0 ? (
+                      {(!Array.isArray(domain.subdomains) || domain.subdomains.length === 0) ? (
                         <p className="text-gray-500 text-sm">No subdomains created</p>
                       ) : (
-                        domain.subdomains.map((subdomain) => (
+                        Array.isArray(domain.subdomains) && domain.subdomains.map((subdomain) => (
                           <div
                             key={subdomain.id}
                             className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
@@ -434,7 +434,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <div>Annual Price: {formatPrice(domain.pricePerYear)}</div>
-            <div>{domain.records.length} records, {domain.subdomains.length} subdomains</div>
+            <div>{(domain.records || []).length} records, {(domain.subdomains || []).length} subdomains</div>
           </div>
           
           {isExpiringSoon && (
