@@ -57,7 +57,7 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - [✓] Simplified direct registration process (removed commit-reveal)
 - [✓] Domain management dashboard
 - [✓] Subdomain creation and management
-- [✓] **Gas-optimized smart contract deployment** (New Contract: 0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3)
+- [✓] **Gas-optimized smart contract deployment** (User Deployed: 0xb4D38068F8982c15CaD9f98adE6C2954567e2153)
 - [✓] **Real blockchain transactions enabled** (Replaced demo mode)
 - [✓] **Deployable contract code provided** (Ready for user deployment)
 
@@ -70,7 +70,7 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 ## Recent Changes
 - 2025-01-21: Project initialized with TNS specifications
 - 2025-01-21: Defined pricing structure and network configuration
-- 2025-01-21: **Deployed new optimized smart contract** (0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3)
+- 2025-01-21: **User deployed production contract** (0xb4D38068F8982c15CaD9f98adE6C2954567e2153)
 - 2025-01-21: **Enabled real blockchain transactions** - replaced demo mode with actual on-chain registration
 - 2025-01-21: **Fixed wallet connection issues** - removed debugging logs and streamlined connection flow
 - 2025-01-21: **Created deployable contract** - provided complete smart contract code ready for user deployment

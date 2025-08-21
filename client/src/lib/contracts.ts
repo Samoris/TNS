@@ -1,5 +1,5 @@
 // TNS Contract Configuration - New Optimized Contract (checksummed address)
-export const TNS_REGISTRY_ADDRESS = "0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3";
+export const TNS_REGISTRY_ADDRESS = "0xb4D38068F8982c15CaD9f98adE6C2954567e2153";
 
 // TNS Registry ABI - Optimized contract functions
 export const TNS_REGISTRY_ABI = [
