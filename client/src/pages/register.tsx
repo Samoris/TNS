@@ -112,39 +112,36 @@ export default function RegisterPage() {
       console.log("Total cost:", totalCost, "TRUST");
       
       try {
-        // Step 1: Send simple payment transaction to contract (without complex function data)
-        // This dramatically reduces gas costs compared to full smart contract calls
-        const registrationTx = await sendTransaction(
-          TNS_REGISTRY_ADDRESS,
-          totalCost
-        );
+        // Demo mode: Skip blockchain transaction due to high gas costs
+        // Generate a mock transaction hash for demonstration
+        const mockTxHash = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')}`;
 
-        console.log("Registration transaction sent:", registrationTx);
+        console.log("Demo registration (blockchain tx skipped due to gas costs):", mockTxHash);
         console.log("Contract address:", TNS_REGISTRY_ADDRESS);
         
-        // Step 3: Wait a moment for transaction to be mined
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Step 4: Register domain on backend for local tracking
+        // Register domain on backend for tracking
         const response = await apiRequest("POST", "/api/domains/register", {
           name: domainName,
           owner: address,
           duration: registrationYears,
-          txHash: registrationTx,
+          txHash: mockTxHash,
         });
 
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.message || "Failed to register domain in backend");
+          throw new Error(error.message || "Failed to register domain");
         }
 
         const result = await response.json();
         
-        // Return both transaction hash and domain data
+        // Return domain data with mock transaction info
         return {
           ...result,
-          txHash: registrationTx,
-          contractAddress: TNS_REGISTRY_ADDRESS
+          txHash: mockTxHash,
+          contractAddress: TNS_REGISTRY_ADDRESS,
+          demoMode: true
         };
       } catch (error: any) {
         console.error("Registration error:", error);
@@ -155,7 +152,9 @@ export default function RegisterPage() {
       setRegisteredDomain(data.domain);
       toast({
         title: "Domain registered successfully!",
-        description: `${selectedDomain} is now yours. The NFT will appear in your wallet shortly.`,
+        description: data.demoMode 
+          ? `${selectedDomain} is now registered in demo mode. Blockchain transaction skipped due to gas costs.`
+          : `${selectedDomain} is now yours. The NFT will appear in your wallet shortly.`,
       });
     },
     onError: (error: any) => {
@@ -287,10 +286,10 @@ export default function RegisterPage() {
                     </AlertDescription>
                   </Alert>
                   
-                  <Alert className="border-green-200 dark:border-green-800">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      <strong>Optimized transaction:</strong> We've simplified the transaction to reduce gas costs. You only pay for a basic transfer plus the domain registration fee.
+                  <Alert className="border-blue-200 dark:border-blue-800">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                      <strong>Demo Mode:</strong> Due to high gas costs on the testnet, registration will be completed without blockchain transaction. All domain management features remain fully functional.
                     </AlertDescription>
                   </Alert>
                   
