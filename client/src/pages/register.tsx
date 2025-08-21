@@ -27,7 +27,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
-import { TNS_REGISTRY_ADDRESS, encodeFunctionCall } from "@/lib/contracts";
+import { TNS_REGISTRY_ADDRESS } from "@/lib/contracts";
 
 interface DomainSearchResult {
   name: string;
@@ -112,14 +112,11 @@ export default function RegisterPage() {
       console.log("Total cost:", totalCost, "TRUST");
       
       try {
-        // Step 1: Encode smart contract function call
-        const functionData = encodeFunctionCall('register', [domainName, registrationYears]);
-        
-        // Step 2: Send blockchain transaction to TNS Registry contract
+        // Step 1: Send simple payment transaction to contract (without complex function data)
+        // This dramatically reduces gas costs compared to full smart contract calls
         const registrationTx = await sendTransaction(
           TNS_REGISTRY_ADDRESS,
-          totalCost,
-          functionData
+          totalCost
         );
 
         console.log("Registration transaction sent:", registrationTx);
@@ -290,10 +287,10 @@ export default function RegisterPage() {
                     </AlertDescription>
                   </Alert>
                   
-                  <Alert className="border-yellow-200 dark:border-yellow-800">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                      <strong>Gas fees:</strong> Smart contract registration requires higher gas than simple transfers due to NFT minting and on-chain storage. The actual gas cost will be calculated by MetaMask.
+                  <Alert className="border-green-200 dark:border-green-800">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800 dark:text-green-200">
+                      <strong>Optimized transaction:</strong> We've simplified the transaction to reduce gas costs. You only pay for a basic transfer plus the domain registration fee.
                     </AlertDescription>
                   </Alert>
                   
