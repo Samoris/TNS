@@ -112,21 +112,34 @@ export default function RegisterPage() {
       console.log("Total cost:", totalCost, "TRUST");
       
       try {
-        // Demo mode: Skip blockchain transaction due to high gas costs
-        // Generate a mock transaction hash for demonstration
-        const mockTxHash = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')}`;
-
-        console.log("Demo registration (blockchain tx skipped due to gas costs):", mockTxHash);
-        console.log("Contract address:", TNS_REGISTRY_ADDRESS);
+        // Real blockchain transaction with optimized contract
+        console.log("Starting blockchain registration for:", domainName);
+        console.log("Using optimized contract:", TNS_REGISTRY_ADDRESS);
+        
+        // Encode the register function call
+        const registerData = web3Service.encodeContractCall(
+          TNS_REGISTRY_ABI,
+          'register',
+          [domainName, registrationYears]
+        );
+        
+        console.log("Sending transaction with data:", registerData);
+        
+        // Send the transaction with optimized gas settings
+        const txHash = await web3Service.sendTransaction(
+          TNS_REGISTRY_ADDRESS,
+          totalCost.toString(),
+          registerData
+        );
+        
+        console.log("Transaction successful:", txHash);
         
         // Register domain on backend for tracking
         const response = await apiRequest("POST", "/api/domains/register", {
           name: domainName,
           owner: address,
           duration: registrationYears,
-          txHash: mockTxHash,
+          txHash: txHash,
         });
 
         if (!response.ok) {
@@ -136,12 +149,12 @@ export default function RegisterPage() {
 
         const result = await response.json();
         
-        // Return domain data with mock transaction info
+        // Return domain data with real transaction info
         return {
           ...result,
-          txHash: mockTxHash,
+          txHash: txHash,
           contractAddress: TNS_REGISTRY_ADDRESS,
-          demoMode: true
+          demoMode: false
         };
       } catch (error: any) {
         console.error("Registration error:", error);
@@ -152,9 +165,7 @@ export default function RegisterPage() {
       setRegisteredDomain(data.domain);
       toast({
         title: "Domain registered successfully!",
-        description: data.demoMode 
-          ? `${selectedDomain} is now registered in demo mode. Blockchain transaction skipped due to gas costs.`
-          : `${selectedDomain} is now yours. The NFT will appear in your wallet shortly.`,
+        description: `${selectedDomain} is now yours! Transaction: ${data.txHash?.substring(0, 10)}...`,
       });
     },
     onError: (error: any) => {

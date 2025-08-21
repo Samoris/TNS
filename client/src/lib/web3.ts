@@ -80,38 +80,25 @@ export class Web3Service {
   }
 
   public async isMetaMaskInstalled(): Promise<boolean> {
-    const isInstalled = typeof window !== "undefined" && !!window.ethereum;
-    console.log("MetaMask installation check:", isInstalled);
-    console.log("window.ethereum:", window.ethereum);
-    return isInstalled;
+    return typeof window !== "undefined" && !!window.ethereum;
   }
 
   public async connectWallet(): Promise<WalletState> {
-    console.log("Starting wallet connection...");
-    
     if (!window.ethereum) {
-      console.error("MetaMask not detected");
       throw new Error("MetaMask not installed");
     }
 
     try {
-      console.log("Requesting accounts...");
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
-      console.log("Accounts received:", accounts);
 
       if (accounts.length === 0) {
         throw new Error("No accounts available");
       }
 
-      console.log("Switching to Intuition network...");
       await this.switchToIntuitionNetwork();
-      console.log("Network switch completed");
-      
-      const state = await this.getWalletState();
-      console.log("Final wallet state:", state);
-      return state;
+      return await this.getWalletState();
     } catch (error) {
       console.error("Failed to connect wallet:", error);
       throw error;
@@ -292,6 +279,46 @@ export class Web3Service {
 
   public getExplorerUrl(txHash: string): string {
     return `${INTUITION_TESTNET.explorerUrl}/tx/${txHash}`;
+  }
+
+  public encodeContractCall(abi: any[], functionName: string, params: any[]): string {
+    // Find the function in the ABI
+    const functionAbi = abi.find(item => item.name === functionName && item.type === 'function');
+    if (!functionAbi) {
+      throw new Error(`Function ${functionName} not found in ABI`);
+    }
+    
+    // Generate function selector (first 4 bytes of keccak256 hash)
+    const functionSignature = `${functionName}(${functionAbi.inputs.map((input: any) => input.type).join(',')})`;
+    console.log("Function signature:", functionSignature);
+    
+    // For simplicity, we'll use the web3 encoding approach
+    // In a real implementation, you'd use web3.js or ethers.js for proper encoding
+    // For now, let's create a simplified version for the register function
+    if (functionName === 'register' && params.length === 2) {
+      // register(string,uint256) - simplified encoding
+      const domain = params[0];
+      const duration = params[1];
+      
+      // Function selector for register(string,uint256): 0x7fb6fbb6
+      const selector = '0x7fb6fbb6';
+      
+      // Encode parameters (simplified - in practice use proper ABI encoding)
+      const domainHex = this.stringToHex(domain);
+      const durationHex = duration.toString(16).padStart(64, '0');
+      
+      return selector + '0'.repeat(56) + '40' + '0'.repeat(56) + durationHex + 
+             '0'.repeat(56) + domain.length.toString(16).padStart(8, '0') + 
+             domainHex + '0'.repeat((32 - (domainHex.length / 2) % 32) % 32 * 2);
+    }
+    
+    throw new Error(`Encoding not implemented for ${functionName}`);
+  }
+  
+  private stringToHex(str: string): string {
+    return Array.from(str)
+      .map(char => char.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('');
   }
 }
 

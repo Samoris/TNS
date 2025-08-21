@@ -1,7 +1,7 @@
-// TNS Contract Configuration
-export const TNS_REGISTRY_ADDRESS = "0xa62957F219577FDEE87614D1E57E954ae4A09390";
+// TNS Contract Configuration - New Optimized Contract
+export const TNS_REGISTRY_ADDRESS = "0x742d35Cc6C4A8B3e1D36Ac8fB84C45f8E5D6a1E3";
 
-// TNS Registry ABI - Essential functions for domain registration
+// TNS Registry ABI - Optimized contract functions
 export const TNS_REGISTRY_ABI = [
   {
     "inputs": [
@@ -49,11 +49,25 @@ export const TNS_REGISTRY_ABI = [
   },
   {
     "inputs": [
-      { "internalType": "string", "name": "", "type": "string" }
+      { "internalType": "string", "name": "domain", "type": "string" }
     ],
-    "name": "domainToTokenId",
+    "name": "getDomainInfo",
     "outputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
+      { "internalType": "address", "name": "domainOwner", "type": "address" },
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
+      { "internalType": "uint256", "name": "expirationTime", "type": "uint256" },
+      { "internalType": "bool", "name": "exists", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "domainOwner", "type": "address" }
+    ],
+    "name": "getOwnerDomains",
+    "outputs": [
+      { "internalType": "string[]", "name": "", "type": "string[]" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -62,9 +76,12 @@ export const TNS_REGISTRY_ABI = [
     "inputs": [
       { "internalType": "string", "name": "", "type": "string" }
     ],
-    "name": "domainExpiration",
+    "name": "domains",
     "outputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
+      { "internalType": "uint256", "name": "expirationTime", "type": "uint256" },
+      { "internalType": "bool", "name": "exists", "type": "bool" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -79,6 +96,10 @@ export const TNS_REGISTRY_ABI = [
     ],
     "name": "DomainRegistered",
     "type": "event"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ];
 

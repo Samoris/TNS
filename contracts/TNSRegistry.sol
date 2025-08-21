@@ -1,58 +1,59 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-
 /**
- * @title TNS Registry
- * @dev ERC721 contract for .trust domain names
+ * @title TNS Registry - Optimized
+ * @dev Gas-efficient domain registration contract for .trust domains
+ * @notice Simplified ERC721-like implementation with minimal gas usage
  */
-contract TNSRegistry is ERC721, Ownable {
-    using Counters for Counters.Counter;
+contract TNSRegistryOptimized {
     
-    Counters.Counter private _tokenIdCounter;
+    // Events
+    event DomainRegistered(string indexed domain, address indexed owner, uint256 indexed tokenId, uint256 expirationTime);
+    event DomainRenewed(string indexed domain, uint256 indexed tokenId, uint256 expirationTime);
     
-    // Domain name to token ID mapping
-    mapping(string => uint256) public domainToTokenId;
-    // Token ID to domain name mapping
+    // Contract owner
+    address public owner;
+    
+    // Domain data
+    struct Domain {
+        address owner;
+        uint256 tokenId;
+        uint256 expirationTime;
+        bool exists;
+    }
+    
+    // Mappings
+    mapping(string => Domain) public domains;
+    mapping(address => string[]) public ownerDomains;
     mapping(uint256 => string) public tokenIdToDomain;
-    // Domain name to expiration timestamp
-    mapping(string => uint256) public domainExpiration;
-    // Domain name to resolver address
-    mapping(string => address) public domainResolver;
     
-    // Pricing tiers (in wei)
+    // Counter for token IDs
+    uint256 private _nextTokenId = 1;
+    
+    // Pricing constants (in wei)
     uint256 public constant PRICE_3_CHARS = 2 ether;    // 2 TRUST/year
     uint256 public constant PRICE_4_CHARS = 0.1 ether;  // 0.1 TRUST/year  
     uint256 public constant PRICE_5_PLUS = 0.02 ether;  // 0.02 TRUST/year
     
-    event DomainRegistered(
-        string indexed domain,
-        address indexed owner,
-        uint256 indexed tokenId,
-        uint256 expirationTime
-    );
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
     
-    event DomainRenewed(
-        string indexed domain,
-        uint256 indexed tokenId,
-        uint256 expirationTime
-    );
-    
-    constructor() ERC721("Trust Name Service", "TNS") {}
-    
+    constructor() {
+        owner = msg.sender;
+    }
     /**
      * @dev Calculate registration cost for a domain
      */
     function calculateCost(string memory domain, uint256 duration) public pure returns (uint256) {
-        bytes memory domainBytes = bytes(domain);
+        uint256 length = bytes(domain).length;
         uint256 pricePerYear;
         
-        if (domainBytes.length == 3) {
+        if (length == 3) {
             pricePerYear = PRICE_3_CHARS;
-        } else if (domainBytes.length == 4) {
+        } else if (length == 4) {
             pricePerYear = PRICE_4_CHARS;
         } else {
             pricePerYear = PRICE_5_PLUS;
@@ -62,33 +63,32 @@ contract TNSRegistry is ERC721, Ownable {
     }
     
     /**
-     * @dev Register a new domain
+     * @dev Register a new domain (gas optimized)
      */
-    function register(string memory domain, uint256 duration) external payable {
+    function register(string calldata domain, uint256 duration) external payable {
         require(bytes(domain).length >= 3, "Domain too short");
         require(duration > 0 && duration <= 10, "Invalid duration");
-        require(domainToTokenId[domain] == 0 || isExpired(domain), "Domain not available");
+        require(!domains[domain].exists || isExpired(domain), "Domain not available");
         
         uint256 cost = calculateCost(domain, duration);
         require(msg.value >= cost, "Insufficient payment");
         
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
-        
-        // If domain exists but expired, burn the old token
-        if (domainToTokenId[domain] != 0) {
-            _burn(domainToTokenId[domain]);
-        }
-        
-        // Mint new NFT
-        _safeMint(msg.sender, tokenId);
+        uint256 tokenId = _nextTokenId++;
+        uint256 expirationTime = block.timestamp + (duration * 365 days);
         
         // Store domain data
-        domainToTokenId[domain] = tokenId;
-        tokenIdToDomain[tokenId] = domain;
-        domainExpiration[domain] = block.timestamp + (duration * 365 days);
+        domains[domain] = Domain({
+            owner: msg.sender,
+            tokenId: tokenId,
+            expirationTime: expirationTime,
+            exists: true
+        });
         
-        emit DomainRegistered(domain, msg.sender, tokenId, domainExpiration[domain]);
+        // Add to owner's domain list
+        ownerDomains[msg.sender].push(domain);
+        tokenIdToDomain[tokenId] = domain;
+        
+        emit DomainRegistered(domain, msg.sender, tokenId, expirationTime);
         
         // Refund excess payment
         if (msg.value > cost) {
@@ -99,18 +99,18 @@ contract TNSRegistry is ERC721, Ownable {
     /**
      * @dev Renew an existing domain
      */
-    function renew(string memory domain, uint256 duration) external payable {
-        require(domainToTokenId[domain] != 0, "Domain not registered");
+    function renew(string calldata domain, uint256 duration) external payable {
+        require(domains[domain].exists, "Domain not registered");
         require(!isExpired(domain), "Domain expired, must re-register");
         require(duration > 0 && duration <= 10, "Invalid duration");
         
         uint256 cost = calculateCost(domain, duration);
         require(msg.value >= cost, "Insufficient payment");
         
-        uint256 tokenId = domainToTokenId[domain];
-        domainExpiration[domain] += (duration * 365 days);
+        uint256 tokenId = domains[domain].tokenId;
+        domains[domain].expirationTime += (duration * 365 days);
         
-        emit DomainRenewed(domain, tokenId, domainExpiration[domain]);
+        emit DomainRenewed(domain, tokenId, domains[domain].expirationTime);
         
         // Refund excess payment
         if (msg.value > cost) {
@@ -121,84 +121,54 @@ contract TNSRegistry is ERC721, Ownable {
     /**
      * @dev Check if a domain is expired
      */
-    function isExpired(string memory domain) public view returns (bool) {
-        return block.timestamp > domainExpiration[domain];
+    function isExpired(string calldata domain) public view returns (bool) {
+        return block.timestamp > domains[domain].expirationTime;
     }
     
     /**
      * @dev Check if a domain is available for registration
      */
-    function isAvailable(string memory domain) public view returns (bool) {
-        return domainToTokenId[domain] == 0 || isExpired(domain);
+    function isAvailable(string calldata domain) public view returns (bool) {
+        return !domains[domain].exists || isExpired(domain);
     }
     
     /**
      * @dev Get domain owner
      */
-    function getDomainOwner(string memory domain) public view returns (address) {
-        uint256 tokenId = domainToTokenId[domain];
-        if (tokenId == 0 || isExpired(domain)) {
+    function getDomainOwner(string calldata domain) public view returns (address) {
+        if (!domains[domain].exists || isExpired(domain)) {
             return address(0);
         }
-        return ownerOf(tokenId);
+        return domains[domain].owner;
     }
     
     /**
-     * @dev Set resolver for a domain
+     * @dev Get domains owned by an address
      */
-    function setResolver(string memory domain, address resolver) external {
-        uint256 tokenId = domainToTokenId[domain];
-        require(tokenId != 0 && !isExpired(domain), "Domain not available");
-        require(ownerOf(tokenId) == msg.sender, "Not domain owner");
-        
-        domainResolver[domain] = resolver;
+    function getOwnerDomains(address domainOwner) public view returns (string[] memory) {
+        return ownerDomains[domainOwner];
+    }
+    
+    /**
+     * @dev Get domain info
+     */
+    function getDomainInfo(string calldata domain) public view returns (address domainOwner, uint256 tokenId, uint256 expirationTime, bool exists) {
+        Domain memory dom = domains[domain];
+        return (dom.owner, dom.tokenId, dom.expirationTime, dom.exists);
     }
     
     /**
      * @dev Withdraw contract funds (only owner)
      */
     function withdraw() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        payable(owner).transfer(address(this).balance);
     }
     
     /**
-     * @dev Override tokenURI to return domain-based metadata
+     * @dev Fallback function to handle direct payments (for simplified registration)
      */
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "Token does not exist");
-        
-        string memory domain = tokenIdToDomain[tokenId];
-        return string(abi.encodePacked(
-            "data:application/json,{",
-            '"name":"', domain, '.trust",',
-            '"description":"Trust Name Service domain NFT",',
-            '"image":"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzAwMzM2NiIvPjx0ZXh0IHg9IjE1MCIgeT0iMTUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCI+", domain, '.trust</text></svg>",',
-            '"attributes":[',
-            '{"trait_type":"Domain","value":"', domain, '"},',
-            '{"trait_type":"Extension","value":".trust"},',
-            '{"trait_type":"Length","value":', _toString(bytes(domain).length), '},',
-            '{"trait_type":"Expiration","value":', _toString(domainExpiration[domain]), '}',
-            ']}'
-        ));
-    }
-    
-    function _toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) return "0";
-        
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        
-        return string(buffer);
+    receive() external payable {
+        // Simple fallback - just accept payments
+        // Domain registration logic handled separately via backend
     }
 }
