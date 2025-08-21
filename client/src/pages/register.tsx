@@ -140,12 +140,12 @@ export default function RegisterPage() {
       const commitment = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       // Step 1: Send blockchain transaction for commitment
-      const commitTx = await sendTransaction({
-        to: "0x1234567890123456789012345678901234567890", // TNS Registry contract
-        value: "0", // No payment for commitment
-        data: `0x${Array.from(new TextEncoder().encode(`commit:${commitment}`))
-          .map(b => b.toString(16).padStart(2, '0')).join('')}`,
-      });
+      const commitTx = await sendTransaction(
+        "0x1234567890123456789012345678901234567890", // TNS Registry contract
+        "0", // No payment for commitment
+        `0x${Array.from(new TextEncoder().encode(`commit:${commitment}`))
+          .map(b => b.toString(16).padStart(2, '0')).join('')}`
+      );
 
       console.log("Commitment transaction sent:", commitTx);
 
@@ -192,12 +192,12 @@ export default function RegisterPage() {
       const domainName = selectedDomain.replace('.trust', '');
       
       // Step 1: Send blockchain transaction for domain registration
-      const registrationTx = await sendTransaction({
-        to: "0x1234567890123456789012345678901234567890", // TNS Registry contract
-        value: totalCost,
-        data: `0x${Array.from(new TextEncoder().encode(`reveal:${commitmentData.commitment}`))
-          .map(b => b.toString(16).padStart(2, '0')).join('')}`,
-      });
+      const registrationTx = await sendTransaction(
+        "0x1234567890123456789012345678901234567890", // TNS Registry contract
+        totalCost,
+        `0x${Array.from(new TextEncoder().encode(`reveal:${commitmentData.commitment}`))
+          .map(b => b.toString(16).padStart(2, '0')).join('')}`
+      );
 
       console.log("Registration transaction sent:", registrationTx);
       
