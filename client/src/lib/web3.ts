@@ -448,10 +448,12 @@ export class Web3Service {
       const domainDetails = await Promise.all(
         domains.map(async (domainName: string) => {
           try {
+            console.log(`Getting info for domain: ${domainName}`);
             const info = await contract.getDomainInfo(domainName);
             const [owner, tokenId, expirationTime, exists] = info;
             
-            return {
+            const domain = {
+              id: tokenId.toString(),
               name: domainName + '.trust',
               owner,
               tokenId: tokenId.toString(),
@@ -460,6 +462,8 @@ export class Web3Service {
               pricePerYear: this.calculateDomainPrice(domainName),
               records: []
             };
+            console.log(`Domain details for ${domainName}:`, domain);
+            return domain;
           } catch (error) {
             console.error(`Error getting info for domain ${domainName}:`, error);
             return null;

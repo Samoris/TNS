@@ -36,6 +36,12 @@ interface DomainCardProps {
 }
 
 export function DomainCard({ domain, walletAddress }: DomainCardProps) {
+  // Add safety check for domain object
+  if (!domain) {
+    console.error("DomainCard received undefined domain");
+    return null;
+  }
+
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [isAddingRecord, setIsAddingRecord] = useState(false);
   const [isAddingSubdomain, setIsAddingSubdomain] = useState(false);
@@ -46,8 +52,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const isExpiringSoon = new Date(domain.expirationDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const isExpired = new Date(domain.expirationDate) < new Date();
+  // Add safety checks for domain properties
+  const expirationDate = domain.expirationDate || new Date().toISOString();
+  const isExpiringSoon = new Date(expirationDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const isExpired = new Date(expirationDate) < new Date();
 
   const addRecordMutation = useMutation({
     mutationFn: async (record: typeof newRecord) => {
@@ -143,11 +151,11 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
               <Globe className="text-trust-blue h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-lg" data-testid={`domain-name-${domain.name}`}>
-                {domain.name}
+              <CardTitle className="text-lg" data-testid={`domain-name-${domain.name || 'unknown'}`}>
+                {domain.name || 'Unknown Domain'}
               </CardTitle>
-              <p className="text-sm text-gray-500" data-testid={`expiry-date-${domain.name}`}>
-                Expires: {new Date(domain.expirationDate).toLocaleDateString()}
+              <p className="text-sm text-gray-500" data-testid={`expiry-date-${domain.name || 'unknown'}`}>
+                Expires: {domain.expirationDate ? new Date(domain.expirationDate).toLocaleDateString() : 'N/A'}
               </p>
             </div>
           </div>
@@ -155,14 +163,14 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
             {getStatusBadge()}
             <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" data-testid={`manage-${domain.name}`}>
+                <Button variant="outline" size="sm" data-testid={`manage-${domain.name || 'unknown'}`}>
                   <Settings className="h-4 w-4 mr-1" />
                   Manage
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Manage {domain.name}</DialogTitle>
+                  <DialogTitle>Manage {domain.name || 'Domain'}</DialogTitle>
                   <DialogDescription>
                     Configure your domain settings, records, and subdomains
                   </DialogDescription>
@@ -177,12 +185,12 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         <Label>Owner</Label>
                         <div className="flex items-center mt-1">
                           <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded flex-1">
-                            {domain.owner}
+                            {domain.owner || 'Unknown Owner'}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => copyToClipboard(domain.owner, "Owner address")}
+                            onClick={() => copyToClipboard(domain.owner || "", "Owner address")}
                             className="ml-2"
                           >
                             {copiedField === "Owner address" ? (
@@ -197,7 +205,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         <Label>Token ID</Label>
                         <div className="flex items-center mt-1">
                           <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded flex-1">
-                            {domain.tokenId}
+                            {domain.tokenId || 'N/A'}
                           </code>
                           <Button
                             variant="ghost"

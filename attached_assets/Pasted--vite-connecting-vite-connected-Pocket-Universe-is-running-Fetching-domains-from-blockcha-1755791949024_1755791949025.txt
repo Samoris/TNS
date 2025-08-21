@@ -1,0 +1,55 @@
+[vite] connecting...
+[vite] connected.
+Pocket Universe is running!
+Fetching domains from blockchain for: 0xe9bfe128b7f0f7486c206aa87a2c2e796fc77bcd
+Fetching domains for owner: 0xe9bfe128b7f0f7486c206aa87a2c2e796fc77bcd
+Domains from contract: 
+(3) ["samoris", "trust", "hoeris"]
+Cannot read properties of undefined (reading 'length')
+Cannot read properties of undefined (reading 'length')
+Cannot read properties of undefined (reading 'length')
+Cannot read properties of undefined (reading 'length')
+Cannot read properties of undefined (reading 'length')
+Cannot read properties of undefined (reading 'length')
+The above error occurred in the <DomainCard> component:
+
+    at DomainCard (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/components/domain-card.tsx:46:30)
+    at div
+    at div
+    at div
+    at ManagePage (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/pages/manage.tsx:50:35)
+    at Route (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:323:16)
+    at Switch (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:379:17)
+    at main
+    at div
+    at Router
+    at Provider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=4252961b:38:15)
+    at TooltipProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=4252961b:58:5)
+    at QueryClientProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4252961b:2805:3)
+    at App (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/App.tsx?v=xzx1eq02QtfjZbSroT_t3:87:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+at DomainCard (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/components/domain-card.tsx:46:30)
+at div
+at div
+at div
+at ManagePage (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/pages/manage.tsx:50:35)
+at Route (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:323:16)
+at Switch (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4252961b:379:17)
+at main
+at div
+at Router
+at Provider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=4252961b:38:15)
+at TooltipProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=4252961b:58:5)
+at QueryClientProvider (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4252961b:2805:3)
+at App (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/src/App.tsx?v=xzx1eq02QtfjZbSroT_t3:87:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+at t.value (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://1c84bd10-94e1-44dd-b835-9297a1d3a5d0-00-2vfwep8l4tie0.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Cannot read properties of undefined (reading 'length')
