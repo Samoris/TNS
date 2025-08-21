@@ -54,9 +54,10 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - [✓] Core architecture implementation completed  
 - [✓] Domain search and registration frontend
 - [✓] Wallet integration with MetaMask
-- [✓] Commit-reveal registration process
+- [✓] Simplified direct registration process (removed commit-reveal)
 - [✓] Domain management dashboard
-- [→] Blockchain transaction integration
+- [✓] Subdomain creation and management
+- [→] Smart contract deployment for actual NFT minting
 
 ## User Preferences
 - Focus on clean, intuitive UI similar to ENS
