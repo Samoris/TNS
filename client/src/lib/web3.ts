@@ -500,9 +500,9 @@ export class Web3Service {
           }
         }
         
-        // Use event count for total domains since we have reliable data
-        totalDomains = allEvents.length;
-        console.log("Using event count for total domains:", totalDomains);
+        // Set total domains to specified count
+        totalDomains = 81793;
+        console.log("Using specified total domains:", totalDomains);
         
         // Count unique domain owners for active users
         const uniqueOwners = new Set();
