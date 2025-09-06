@@ -98,7 +98,7 @@ export function ContractStats() {
       <Card className="trust-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
-          <Hash className="h-4 w-4 text-trust-orange" />
+          <Hash className="h-4 w-4 text-trust-blue" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">

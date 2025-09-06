@@ -461,7 +461,13 @@ export class Web3Service {
       const totalValueLocked = ethers.formatEther(balance);
       
       // Get actual transaction count from blockchain
-      const transactionCount = await this.getTransactionCount(contractAddress);
+      let transactionCount = 0;
+      try {
+        transactionCount = await this.getTransactionCount(contractAddress);
+      } catch (txError) {
+        console.log("Could not get transaction count:", txError);
+        transactionCount = 0;
+      }
       
       // Get real blockchain statistics only
       let totalDomains = 82400; // Known baseline from contract analysis
