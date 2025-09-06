@@ -531,14 +531,10 @@ export class Web3Service {
       
       console.log("Contract stats:", { totalDomains, totalValueLocked, activeUsers });
       
-      // Calculate next token ID based on total domains
-      const nextTokenId = (totalDomains + 1).toString();
-
       return {
         totalDomains,
         totalValueLocked,
         activeUsers,
-        nextTokenId,
       };
     } catch (error: any) {
       console.error("Error getting contract stats:", error);
@@ -547,7 +543,6 @@ export class Web3Service {
         totalDomains: 82400, // Fallback based on contract analysis
         totalValueLocked: "2225.58", // Real contract balance
         activeUsers: 50000, // Fallback based on contract analysis
-        nextTokenId: "82401", // Estimated next token ID
       };
     }
   }
