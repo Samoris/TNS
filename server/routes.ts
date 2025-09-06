@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expirationDate = new Date();
       expirationDate.setFullYear(expirationDate.getFullYear() + duration);
       
-      // Create domain with normalized name
+      // Create domain with normalized name and real transaction hash
       const domain = await storage.createDomain({
         name: `${normalizedName}.trust`,
         owner,
@@ -169,6 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expirationDate,
         tokenId: `tns_${Date.now()}`,
         pricePerYear: pricing.pricePerYear,
+        txHash: txHash, // Store the real blockchain transaction hash
       });
       
       res.json({ 
@@ -184,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reveal phase of domain registration
   app.post("/api/domains/reveal", async (req, res) => {
     try {
-      const { commitment, name, owner, duration, secret } = req.body;
+      const { commitment, name, owner, duration, secret, txHash } = req.body;
       
       console.log("Reveal request data:", { commitment, name, owner, duration, secret });
       
@@ -238,6 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expirationDate,
         tokenId: `tns_${Date.now()}`,
         pricePerYear: pricing.pricePerYear,
+        txHash: txHash || null, // Store transaction hash if provided
       });
       
       // Mark commitment as revealed

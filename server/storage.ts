@@ -118,6 +118,7 @@ export class MemStorage implements IStorage {
       isActive: true,
       resolver: insertDomain.resolver ?? null,
       tokenId: insertDomain.tokenId ?? null,
+      txHash: insertDomain.txHash ?? null,
     };
     this.domains.set(id, domain);
     return domain;

@@ -20,6 +20,7 @@ export const domains = pgTable("domains", {
   isActive: boolean("is_active").notNull().default(true),
   tokenId: text("token_id"), // NFT token ID
   pricePerYear: decimal("price_per_year", { precision: 18, scale: 8 }).notNull(),
+  txHash: text("tx_hash"), // blockchain transaction hash
 });
 
 export const domainRecords = pgTable("domain_records", {
