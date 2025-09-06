@@ -379,12 +379,19 @@ export class Web3Service {
       console.error("Contract registration error:", error);
       
       // Enhanced error reporting
-      if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+      if (error.code === 'CALL_EXCEPTION' && error.receipt && error.receipt.gasUsed < 50000) {
+        // Low gas usage typically indicates domain already registered or invalid parameters
+        throw new Error("Domain registration failed - domain may already be registered by someone else on the blockchain");
+      } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
         throw new Error("Contract call failed - check domain availability and payment amount");
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
         throw new Error("Insufficient TRUST tokens for gas fees");
       } else if (error.message?.includes('revert')) {
-        throw new Error("Contract rejected transaction - " + error.reason || error.message);
+        const revertReason = error.reason || error.message;
+        if (revertReason.includes('Domain not available')) {
+          throw new Error("Domain is already registered by someone else on the blockchain");
+        }
+        throw new Error("Contract rejected transaction - " + revertReason);
       }
       
       throw new Error(error.message || "Failed to register domain on blockchain");

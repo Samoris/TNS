@@ -20,7 +20,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name } = req.params;
       const parsedName = domainSearchSchema.parse({ name });
       
-      const isAvailable = await storage.isDomainAvailable(parsedName.name);
+      // Check both backend storage AND blockchain availability
+      const backendAvailable = await storage.isDomainAvailable(parsedName.name);
+      
+      // Note: For now we'll use backend availability, but in a production system
+      // you would also check the blockchain using web3 calls
+      // const blockchainAvailable = await checkBlockchainAvailability(parsedName.name);
+      // const isAvailable = backendAvailable && blockchainAvailable;
+      
+      const isAvailable = backendAvailable;
       const pricing = storage.calculateDomainPrice(parsedName.name);
       
       const fullName = `${parsedName.name}.trust`;
