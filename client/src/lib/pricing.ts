@@ -63,8 +63,8 @@ export function isValidDomainName(name: string): boolean {
   // Remove .trust suffix if present
   const cleanName = name.replace(/\.trust$/, '');
   
-  // Check length (3-64 characters)
-  if (cleanName.length < 3 || cleanName.length > 64) {
+  // Check length (3-63 characters)
+  if (cleanName.length < 3 || cleanName.length > 63) {
     return false;
   }
   

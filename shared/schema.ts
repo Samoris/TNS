@@ -85,11 +85,11 @@ export const insertSubdomainSchema = createInsertSchema(subdomains).omit({
 
 // Domain search and availability schema
 export const domainSearchSchema = z.object({
-  name: z.string().min(3).max(64).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens allowed"),
+  name: z.string().min(3).max(63).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens allowed"),
 });
 
 export const domainRegistrationSchema = z.object({
-  name: z.string().min(3).max(64),
+  name: z.string().min(3).max(63),
   owner: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
   duration: z.number().min(1).max(10), // years
   secret: z.string().min(32),
