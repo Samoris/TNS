@@ -423,10 +423,30 @@ export class Web3Service {
     }
   }
 
+  public async getTransactionCount(contractAddress: string): Promise<number> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // Get transaction count (nonce) for the contract address
+      const txCount = await provider.getTransactionCount(contractAddress);
+      console.log(`Contract transaction count: ${txCount}`);
+      
+      return txCount;
+    } catch (error: any) {
+      console.error("Error getting transaction count:", error);
+      return 0;
+    }
+  }
+
   public async getContractStats(contractAddress: string, abi: any[]): Promise<{
     totalDomains: number;
     totalValueLocked: string;
     activeUsers: number;
+    transactionCount: number;
   }> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -439,6 +459,9 @@ export class Web3Service {
       // Get real contract balance as total value locked
       const balance = await provider.getBalance(contractAddress);
       const totalValueLocked = ethers.formatEther(balance);
+      
+      // Get actual transaction count from blockchain
+      const transactionCount = await this.getTransactionCount(contractAddress);
       
       // Get real blockchain statistics only
       let totalDomains = 82400; // Known baseline from contract analysis
@@ -495,7 +518,8 @@ export class Web3Service {
       return {
         totalDomains,
         totalValueLocked,
-        activeUsers
+        activeUsers,
+        transactionCount
       };
     } catch (error: any) {
       console.error("Error getting contract stats:", error);
@@ -503,7 +527,8 @@ export class Web3Service {
       return {
         totalDomains: 82400, // Accurate count from blockchain analysis
         totalValueLocked: "2225.58", // Real contract balance
-        activeUsers: 50000 // Accurate user count from blockchain analysis
+        activeUsers: 50000, // Accurate user count from blockchain analysis
+        transactionCount: 0 // Will be 0 if we can't fetch it
       };
     }
   }

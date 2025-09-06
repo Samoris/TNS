@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Users, DollarSign, Activity } from "lucide-react";
+import { Globe, Users, DollarSign, Activity, Hash } from "lucide-react";
 import { useContractStats } from "@/hooks/use-contract-stats";
 import { formatPrice } from "@/lib/pricing";
 
@@ -24,7 +24,7 @@ export function ContractStats() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {/* Total Domains */}
       <Card className="trust-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -83,6 +83,29 @@ export function ContractStats() {
               <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-16 rounded"></div>
             ) : (
               formatPrice(stats?.totalValueLocked || "0")
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            <Badge variant="secondary" className="mt-1">
+              <Activity className="mr-1 h-3 w-3" />
+              Live
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Transaction Count */}
+      <Card className="trust-card">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+          <Hash className="h-4 w-4 text-trust-orange" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            {isLoading ? (
+              <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-16 rounded"></div>
+            ) : (
+              stats?.transactionCount.toLocaleString() || "0"
             )}
           </div>
           <div className="text-xs text-muted-foreground">
