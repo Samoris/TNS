@@ -14,8 +14,8 @@ export function useContractStats() {
     queryFn: async () => {
       return await web3Service.getContractStats(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI);
     },
-    refetchInterval: 30000, // Refresh every 30 seconds (blockchain queries are expensive)
-    staleTime: 20000, // Consider data stale after 20 seconds
+    refetchInterval: 60000, // Refresh every 60 seconds (comprehensive queries are expensive)
+    staleTime: 45000, // Consider data stale after 45 seconds
     refetchOnWindowFocus: true,
   });
 }

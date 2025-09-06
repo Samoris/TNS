@@ -472,9 +472,9 @@ export class Web3Service {
         const filter = contract.filters.DomainRegistered();
         
         // Query in chunks to avoid timeouts
-        const blockRange = 100000; // Query 100k blocks at a time
-        const maxLookback = 1000000; // Maximum 1M blocks to look back
-        let allEvents = [];
+        const blockRange = 250000; // Query 250k blocks at a time for efficiency
+        const maxLookback = 10000000; // Maximum 10M blocks to look back to capture full history
+        let allEvents: any[] = [];
         
         for (let lookback = 0; lookback < maxLookback; lookback += blockRange) {
           try {
@@ -489,8 +489,8 @@ export class Web3Service {
               console.log(`Found ${events.length} events in this range, total so far: ${allEvents.length}`);
             }
             
-            // If we get fewer than 100 events in a range, we're likely near the beginning
-            if (events.length < 100 && lookback > blockRange) {
+            // If we get fewer than 25 events in a range and we've gone back far enough, stop
+            if (events.length < 25 && lookback > blockRange * 5) {
               console.log(`Low event count, stopping search. Total events found: ${allEvents.length}`);
               break;
             }
