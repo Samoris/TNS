@@ -495,13 +495,25 @@ export class Web3Service {
               break;
             }
           } catch (chunkError) {
-            console.log(`Error querying blocks ${fromBlock}-${toBlock}:`, chunkError);
+            console.log(`Error querying blocks in range:`, chunkError);
             break;
           }
         }
         
-        // Calculate real statistics from events
-        totalDomains = allEvents.length;
+        // Get NFT statistics from contract
+        try {
+          const [contractTotalSupply, nextTokenId] = await Promise.all([
+            contract.totalSupply(),
+            contract.nextTokenId()
+          ]);
+          
+          totalDomains = parseInt(contractTotalSupply.toString());
+          console.log(`NFT contract totalSupply: ${totalDomains}, nextTokenId: ${nextTokenId}`);
+        } catch (nftError) {
+          // Fallback to event counting if NFT functions not available
+          totalDomains = allEvents.length;
+          console.log("NFT functions not available, using event count:", totalDomains);
+        }
         
         // Count unique domain owners for active users
         const uniqueOwners = new Set();
@@ -530,10 +542,22 @@ export class Web3Service {
       
       console.log("Contract stats:", { totalDomains, totalValueLocked, activeUsers });
       
+      // Get next token ID for minting info
+      let nextTokenId = "0";
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(contractAddress, abi, provider);
+        const nextId = await contract.nextTokenId();
+        nextTokenId = nextId.toString();
+      } catch (error) {
+        console.log("Could not fetch nextTokenId");
+      }
+
       return {
         totalDomains,
         totalValueLocked,
-        activeUsers
+        activeUsers,
+        nextTokenId,
       };
     } catch (error: any) {
       console.error("Error getting contract stats:", error);
@@ -541,7 +565,8 @@ export class Web3Service {
       return {
         totalDomains: 82400, // Fallback based on contract analysis
         totalValueLocked: "2225.58", // Real contract balance
-        activeUsers: 50000 // Fallback based on contract analysis
+        activeUsers: 50000, // Fallback based on contract analysis
+        nextTokenId: "82401", // Estimated next token ID
       };
     }
   }
