@@ -408,15 +408,61 @@ export class Web3Service {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(contractAddress, abi, provider);
       
+      // Normalize domain name (remove .trust suffix)
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
       // Call isAvailable function
-      const isAvailable = await contract.isAvailable(domainName);
-      console.log("Domain", domainName, "availability:", isAvailable);
+      const isAvailable = await contract.isAvailable(normalizedDomain);
+      console.log("Domain", normalizedDomain, "availability from blockchain:", isAvailable);
       
       return isAvailable;
     } catch (error: any) {
       console.error("Error checking domain availability:", error);
-      // If we can't check, assume it's available
-      return true;
+      // If we can't check, assume it's NOT available to be safe
+      return false;
+    }
+  }
+
+  public async getContractStats(contractAddress: string, abi: any[]): Promise<{
+    totalDomains: number;
+    totalValueLocked: string;
+    activeUsers: number;
+  }> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      // Create ethers provider and contract instance
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(contractAddress, abi, provider);
+      
+      // Get next token ID to calculate total domains
+      const nextTokenId = await contract._nextTokenId ? await contract._nextTokenId() : 1;
+      const totalDomains = Number(nextTokenId) - 1;
+      
+      // Get contract balance as total value locked
+      const balance = await provider.getBalance(contractAddress);
+      const totalValueLocked = ethers.formatEther(balance);
+      
+      // For active users, we'll need to track unique domain owners
+      // This is an approximation since we can't easily get unique owners from the contract
+      const activeUsers = Math.max(1, Math.floor(totalDomains * 0.7)); // Estimate
+      
+      console.log("Contract stats:", { totalDomains, totalValueLocked, activeUsers });
+      
+      return {
+        totalDomains,
+        totalValueLocked,
+        activeUsers
+      };
+    } catch (error: any) {
+      console.error("Error getting contract stats:", error);
+      return {
+        totalDomains: 0,
+        totalValueLocked: "0",
+        activeUsers: 0
+      };
     }
   }
 
