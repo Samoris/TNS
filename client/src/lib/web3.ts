@@ -500,20 +500,9 @@ export class Web3Service {
           }
         }
         
-        // Get NFT statistics from contract
-        try {
-          const [contractTotalSupply, nextTokenId] = await Promise.all([
-            contract.totalSupply(),
-            contract.nextTokenId()
-          ]);
-          
-          totalDomains = parseInt(contractTotalSupply.toString());
-          console.log(`NFT contract totalSupply: ${totalDomains}, nextTokenId: ${nextTokenId}`);
-        } catch (nftError) {
-          // Fallback to event counting if NFT functions not available
-          totalDomains = allEvents.length;
-          console.log("NFT functions not available, using event count:", totalDomains);
-        }
+        // Use event count for total domains since we have reliable data
+        totalDomains = allEvents.length;
+        console.log("Using event count for total domains:", totalDomains);
         
         // Count unique domain owners for active users
         const uniqueOwners = new Set();
@@ -542,16 +531,8 @@ export class Web3Service {
       
       console.log("Contract stats:", { totalDomains, totalValueLocked, activeUsers });
       
-      // Get next token ID for minting info
-      let nextTokenId = "0";
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(contractAddress, abi, provider);
-        const nextId = await contract.nextTokenId();
-        nextTokenId = nextId.toString();
-      } catch (error) {
-        console.log("Could not fetch nextTokenId");
-      }
+      // Calculate next token ID based on total domains
+      const nextTokenId = (totalDomains + 1).toString();
 
       return {
         totalDomains,
