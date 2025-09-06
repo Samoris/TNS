@@ -14,8 +14,8 @@ export function useContractStats() {
     queryFn: async () => {
       return await web3Service.getContractStats(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI);
     },
-    refetchInterval: 15000, // Refresh every 15 seconds for real-time updates
-    staleTime: 10000, // Consider data stale after 10 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    staleTime: 3000, // Consider data stale after 3 seconds for more frequent updates
     refetchOnWindowFocus: true,
   });
 }
