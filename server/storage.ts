@@ -243,7 +243,8 @@ export class MemStorage implements IStorage {
   // Utility methods
   async isDomainAvailable(name: string): Promise<boolean> {
     const domain = await this.getDomainByName(name);
-    return !domain || (domain.expirationDate < new Date() && !domain.isActive);
+    // Domain is available if it doesn't exist or if it's expired (regardless of isActive status)
+    return !domain || domain.expirationDate < new Date();
   }
 
   calculateDomainPrice(name: string): { pricePerYear: string; tier: string } {

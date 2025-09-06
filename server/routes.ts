@@ -130,20 +130,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
-      // Check domain is available
-      const isAvailable = await storage.isDomainAvailable(name);
+      // Validate transaction hash format
+      if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+        return res.status(400).json({ message: "Invalid transaction hash format" });
+      }
+      
+      // Validate and normalize domain name
+      const normalizedName = name.toLowerCase().replace(/\.trust$/, '');
+      if (normalizedName.length < 3 || normalizedName.length > 63) {
+        return res.status(400).json({ message: "Domain name must be 3-63 characters" });
+      }
+      if (!/^[a-z0-9-]+$/.test(normalizedName)) {
+        return res.status(400).json({ message: "Invalid domain name format" });
+      }
+      
+      // Validate owner address format
+      if (!/^0x[a-fA-F0-9]{40}$/.test(owner)) {
+        return res.status(400).json({ message: "Invalid owner address format" });
+      }
+      
+      // Re-check domain availability to prevent race conditions
+      const isAvailable = await storage.isDomainAvailable(normalizedName);
       if (!isAvailable) {
         return res.status(400).json({ message: "Domain not available" });
       }
       
-      // Calculate pricing and expiration
-      const pricing = storage.calculateDomainPrice(name);
+      // Calculate pricing and expiration using normalized name
+      const pricing = storage.calculateDomainPrice(normalizedName);
       const expirationDate = new Date();
       expirationDate.setFullYear(expirationDate.getFullYear() + duration);
       
-      // Create domain
+      // Create domain with normalized name
       const domain = await storage.createDomain({
-        name: name.endsWith('.trust') ? name : `${name}.trust`,
+        name: `${normalizedName}.trust`,
         owner,
         registrant: owner,
         resolver: null,

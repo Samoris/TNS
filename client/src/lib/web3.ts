@@ -334,8 +334,11 @@ export class Web3Service {
     }
 
     try {
+      // Normalize domain name to lowercase and remove .trust extension for contract call
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
       console.log("Calling contract register function with:");
-      console.log("- Domain:", domainName);
+      console.log("- Domain:", normalizedDomain);
       console.log("- Duration:", duration);
       console.log("- Value:", cost, "TRUST");
       console.log("- Contract:", contractAddress);
@@ -348,9 +351,9 @@ export class Web3Service {
       // Parse cost to wei
       const valueWei = ethers.parseEther(cost);
       
-      // Call the register function on the actual contract
-      console.log("Calling contract.register with:", domainName, duration, "value:", valueWei.toString());
-      const tx = await contract.register(domainName, duration, {
+      // Call the register function on the actual contract with normalized domain
+      console.log("Calling contract.register with:", normalizedDomain, duration, "value:", valueWei.toString());
+      const tx = await contract.register(normalizedDomain, duration, {
         value: valueWei,
         gasLimit: 200000 // Higher gas limit for contract interaction
       });
