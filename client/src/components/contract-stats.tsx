@@ -39,12 +39,12 @@ export function ContractStats() {
               stats?.totalDomains.toLocaleString() || "0"
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             <Badge variant="secondary" className="mt-1">
               <Activity className="mr-1 h-3 w-3" />
               Live
             </Badge>
-          </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -62,12 +62,12 @@ export function ContractStats() {
               stats?.activeUsers.toLocaleString() || "0"
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             <Badge variant="secondary" className="mt-1">
               <Activity className="mr-1 h-3 w-3" />
               Live
             </Badge>
-          </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -85,12 +85,12 @@ export function ContractStats() {
               formatPrice(stats?.totalValueLocked || "0")
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             <Badge variant="secondary" className="mt-1">
               <Activity className="mr-1 h-3 w-3" />
               Live
             </Badge>
-          </p>
+          </div>
         </CardContent>
       </Card>
     </div>

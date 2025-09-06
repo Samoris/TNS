@@ -63,12 +63,34 @@ export default function RegisterPage() {
     getExplorerUrl,
   } = useWallet();
 
-  // Domain availability check
-  const { data: domainData, isLoading: isDomainLoading, error: domainError } = useQuery<DomainSearchResult>({
-    queryKey: ["/api/domains/search", selectedDomain ? selectedDomain.replace('.trust', '') : ''],
-    enabled: !!selectedDomain && selectedDomain.length >= 3,
+  // Check blockchain availability in real-time
+  const domainName = selectedDomain ? selectedDomain.replace('.trust', '') : '';
+  const { data: blockchainAvailable, isLoading: isCheckingBlockchain } = useQuery({
+    queryKey: ["blockchain-availability", domainName],
+    queryFn: async () => {
+      if (!domainName) return true;
+      return await web3Service.checkDomainAvailability(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, domainName);
+    },
+    enabled: !!domainName && domainName.length >= 3,
+    refetchOnWindowFocus: false,
+    staleTime: 10000,
+  });
+
+  // Get backend data for pricing
+  const { data: backendData, isLoading: isLoadingBackend } = useQuery<DomainSearchResult>({
+    queryKey: ["/api/domains/search", domainName],
+    enabled: !!domainName && domainName.length >= 3,
     refetchOnWindowFocus: false,
   });
+
+  // Combine blockchain and backend data
+  const domainData = backendData ? {
+    ...backendData,
+    available: blockchainAvailable ?? false // Use blockchain availability as source of truth
+  } : undefined;
+
+  const isDomainLoading = isCheckingBlockchain || isLoadingBackend;
+  const domainError = null;
 
   const pricing = selectedDomain ? calculateDomainPrice(selectedDomain) : null;
   const totalCost = pricing ? pricing.totalCost(registrationYears) : "0";

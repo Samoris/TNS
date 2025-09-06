@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DomainSearch } from "@/components/domain-search";
 import { PricingSection } from "@/components/pricing-card";
+import { ContractStats } from "@/components/contract-stats";
 import { Shield, Coins, Award, ArrowRight, Zap, Users, Globe } from "lucide-react";
 
 export default function Home() {
@@ -58,11 +59,7 @@ export default function Home() {
     },
   ];
 
-  const stats = [
-    { label: "Domains Registered", value: "2,543", icon: Globe },
-    { label: "Active Users", value: "1,247", icon: Users },
-    { label: "Total Value Locked", value: "125.6 TRUST", icon: Zap },
-  ];
+  // Remove static stats - now using real-time ContractStats component
 
   return (
     <div className="min-h-screen">
@@ -121,22 +118,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Statistics Section */}
+      {/* Real-time Statistics Section */}
       <section className="py-16 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <stat.icon className="h-8 w-8 text-trust-blue mr-2" />
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white" data-testid={`stat-value-${index}`}>
-                    {stat.value}
-                  </div>
-                </div>
-                <div className="text-gray-600 dark:text-gray-400 font-medium">{stat.label}</div>
-              </div>
-            ))}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Live Network Statistics
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Real-time data from the TNS blockchain registry
+            </p>
           </div>
+          <ContractStats />
         </div>
       </section>
 
