@@ -446,7 +446,6 @@ export class Web3Service {
     totalDomains: number;
     totalValueLocked: string;
     activeUsers: number;
-    transactionCount: number;
   }> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -460,14 +459,6 @@ export class Web3Service {
       const balance = await provider.getBalance(contractAddress);
       const totalValueLocked = ethers.formatEther(balance);
       
-      // Get actual transaction count from blockchain
-      let transactionCount = 0;
-      try {
-        transactionCount = await this.getTransactionCount(contractAddress);
-      } catch (txError) {
-        console.log("Could not get transaction count:", txError);
-        transactionCount = 0;
-      }
       
       // Get real blockchain statistics only
       let totalDomains = 82400; // Known baseline from contract analysis
@@ -524,8 +515,7 @@ export class Web3Service {
       return {
         totalDomains,
         totalValueLocked,
-        activeUsers,
-        transactionCount
+        activeUsers
       };
     } catch (error: any) {
       console.error("Error getting contract stats:", error);
@@ -533,8 +523,7 @@ export class Web3Service {
       return {
         totalDomains: 82400, // Accurate count from blockchain analysis
         totalValueLocked: "2225.58", // Real contract balance
-        activeUsers: 50000, // Accurate user count from blockchain analysis
-        transactionCount: 0 // Will be 0 if we can't fetch it
+        activeUsers: 50000 // Accurate user count from blockchain analysis
       };
     }
   }

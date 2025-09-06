@@ -6,7 +6,6 @@ export interface ContractStats {
   totalDomains: number;
   totalValueLocked: string;
   activeUsers: number;
-  transactionCount: number;
 }
 
 export function useContractStats() {
