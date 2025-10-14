@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import logoImage from "@assets/1_9Bz1z1LNSTaI8IDi8McQjQ (2)_1760441953277.png";
 
 export function Header() {
   const [location] = useLocation();
@@ -55,9 +56,11 @@ export function Header() {
           <div className="flex items-center">
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-r from-trust-blue to-trust-violet rounded-lg flex items-center justify-center">
-                <Globe className="text-white text-lg" />
-              </div>
+              <img 
+                src={logoImage} 
+                alt="TNS Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">TNS</span>
               <Badge variant="secondary" className="ml-2 bg-trust-violet/10 text-trust-violet">
                 BETA
