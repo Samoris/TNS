@@ -24,8 +24,8 @@ export default function Home() {
     },
     {
       icon: Coins,
-      title: "Premium Pricing",
-      description: "Starting from 50 TRUST per year",
+      title: "Affordable Pricing",
+      description: "Starting from 30 TRUST per year",
       color: "text-trust-violet",
       bgColor: "bg-trust-violet/10",
     },

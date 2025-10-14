@@ -108,7 +108,7 @@ export function PricingSection() {
   const pricingTiers: PricingTier[] = [
     {
       characters: "5+",
-      pricePerYear: "50",
+      pricePerYear: "30",
       description: "5+ Characters",
       examples: ["alice.trust", "company.trust"],
       features: [
@@ -120,7 +120,7 @@ export function PricingSection() {
     },
     {
       characters: "4",
-      pricePerYear: "300",
+      pricePerYear: "70",
       description: "4 Characters",
       examples: ["tech.trust", "city.trust"],
       features: [
@@ -133,7 +133,7 @@ export function PricingSection() {
     },
     {
       characters: "3",
-      pricePerYear: "500",
+      pricePerYear: "100",
       description: "3 Characters",
       examples: ["web.trust", "nft.trust"],
       features: [
