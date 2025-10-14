@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/pricing";
 import type { DomainWithRecords } from "@shared/schema";
 import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, TNS_RESOLVER_ADDRESS, TNS_RESOLVER_ABI } from "@/lib/contracts";
 
 interface DomainCardProps {
   domain: DomainWithRecords;
@@ -51,6 +51,21 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   const [newRecord, setNewRecord] = useState({ recordType: "address", key: "", value: "" });
   const [newSubdomain, setNewSubdomain] = useState({ name: "", owner: walletAddress });
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  // Resolver states
+  const [isAddingResolverAddress, setIsAddingResolverAddress] = useState(false);
+  const [isAddingTextRecord, setIsAddingTextRecord] = useState(false);
+  const [isAddingContentHash, setIsAddingContentHash] = useState(false);
+  const [newResolverAddress, setNewResolverAddress] = useState("");
+  const [newTextRecord, setNewTextRecord] = useState({ key: "email", value: "" });
+  const [newContentHash, setNewContentHash] = useState("");
+  const [resolverData, setResolverData] = useState<{
+    ethAddress: string;
+    contentHash: string;
+    textKeys: string[];
+    textValues: string[];
+  } | null>(null);
+  const [loadingResolver, setLoadingResolver] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -166,6 +181,116 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       });
     },
   });
+
+  // Resolver mutations
+  const setResolverAddressMutation = useMutation({
+    mutationFn: async (address: string) => {
+      const txHash = await web3Service.setAddr(
+        TNS_RESOLVER_ADDRESS,
+        TNS_RESOLVER_ABI,
+        domain.name,
+        address
+      );
+      return txHash;
+    },
+    onSuccess: async (txHash) => {
+      setIsAddingResolverAddress(false);
+      setNewResolverAddress("");
+      await loadResolverData();
+      toast({
+        title: "Address set successfully!",
+        description: `Domain now resolves to the specified address. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to set address",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setTextRecordMutation = useMutation({
+    mutationFn: async (record: { key: string; value: string }) => {
+      const txHash = await web3Service.setText(
+        TNS_RESOLVER_ADDRESS,
+        TNS_RESOLVER_ABI,
+        domain.name,
+        record.key,
+        record.value
+      );
+      return txHash;
+    },
+    onSuccess: async (txHash) => {
+      setIsAddingTextRecord(false);
+      setNewTextRecord({ key: "email", value: "" });
+      await loadResolverData();
+      toast({
+        title: "Text record set successfully!",
+        description: `Text record has been updated. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to set text record",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setContentHashMutation = useMutation({
+    mutationFn: async (contenthash: string) => {
+      const txHash = await web3Service.setContenthash(
+        TNS_RESOLVER_ADDRESS,
+        TNS_RESOLVER_ABI,
+        domain.name,
+        contenthash
+      );
+      return txHash;
+    },
+    onSuccess: async (txHash) => {
+      setIsAddingContentHash(false);
+      setNewContentHash("");
+      await loadResolverData();
+      toast({
+        title: "Content hash set successfully!",
+        description: `IPFS content hash has been updated. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to set content hash",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Load resolver data
+  const loadResolverData = async () => {
+    try {
+      setLoadingResolver(true);
+      const data = await web3Service.getResolverData(
+        TNS_RESOLVER_ADDRESS,
+        TNS_RESOLVER_ABI,
+        domain.name
+      );
+      setResolverData(data);
+    } catch (error) {
+      console.error("Failed to load resolver data:", error);
+    } finally {
+      setLoadingResolver(false);
+    }
+  };
+
+  // Load resolver data when dialog opens
+  useEffect(() => {
+    if (isManageOpen) {
+      loadResolverData();
+    }
+  }, [isManageOpen]);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -297,6 +422,268 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                           Primary domains represent your main identity on TNS
                         </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Resolver Settings */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Resolver Settings</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Configure how your domain resolves to addresses, content, and metadata
+                    </p>
+
+                    {loadingResolver ? (
+                      <p className="text-gray-500 text-sm">Loading resolver data...</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* ETH Address Resolution */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium">ETH Address</Label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAddingResolverAddress(true)}
+                              data-testid="set-resolver-address-button"
+                            >
+                              {resolverData?.ethAddress && resolverData.ethAddress !== "0x0000000000000000000000000000000000000000" ? (
+                                <><Edit3 className="h-3 w-3 mr-1" /> Update</>
+                              ) : (
+                                <><Plus className="h-3 w-3 mr-1" /> Set Address</>
+                              )}
+                            </Button>
+                          </div>
+
+                          {resolverData?.ethAddress && resolverData.ethAddress !== "0x0000000000000000000000000000000000000000" ? (
+                            <div className="flex items-center">
+                              <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded flex-1 font-mono">
+                                {resolverData.ethAddress}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(resolverData.ethAddress, "Resolver address")}
+                                className="ml-2"
+                              >
+                                {copiedField === "Resolver address" ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">No address set</p>
+                          )}
+
+                          {isAddingResolverAddress && (
+                            <Card className="mt-2 p-3 bg-gray-50 dark:bg-gray-800">
+                              <div className="space-y-2">
+                                <Input
+                                  placeholder="0x..."
+                                  value={newResolverAddress}
+                                  onChange={(e) => setNewResolverAddress(e.target.value)}
+                                  data-testid="resolver-address-input"
+                                />
+                                <div className="flex space-x-2">
+                                  <Button
+                                    onClick={() => setResolverAddressMutation.mutate(newResolverAddress)}
+                                    disabled={!newResolverAddress || setResolverAddressMutation.isPending}
+                                    size="sm"
+                                    data-testid="confirm-resolver-address-button"
+                                  >
+                                    {setResolverAddressMutation.isPending ? "Setting..." : "Set Address"}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setIsAddingResolverAddress(false)}
+                                    size="sm"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        </div>
+
+                        {/* Text Records */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium">Text Records</Label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAddingTextRecord(true)}
+                              data-testid="add-text-record-button"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Record
+                            </Button>
+                          </div>
+
+                          {isAddingTextRecord && (
+                            <Card className="mb-2 p-3 bg-gray-50 dark:bg-gray-800">
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label htmlFor="textRecordKey" className="text-xs">Key</Label>
+                                    <select
+                                      id="textRecordKey"
+                                      value={newTextRecord.key}
+                                      onChange={(e) => setNewTextRecord({ ...newTextRecord, key: e.target.value })}
+                                      className="w-full p-2 border rounded text-sm"
+                                      data-testid="text-record-key-select"
+                                    >
+                                      <option value="email">Email</option>
+                                      <option value="url">URL</option>
+                                      <option value="avatar">Avatar</option>
+                                      <option value="description">Description</option>
+                                      <option value="com.twitter">Twitter</option>
+                                      <option value="com.github">GitHub</option>
+                                      <option value="com.discord">Discord</option>
+                                      <option value="org.telegram">Telegram</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="textRecordValue" className="text-xs">Value</Label>
+                                    <Input
+                                      id="textRecordValue"
+                                      placeholder="Enter value..."
+                                      value={newTextRecord.value}
+                                      onChange={(e) => setNewTextRecord({ ...newTextRecord, value: e.target.value })}
+                                      className="text-sm"
+                                      data-testid="text-record-value-input"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    onClick={() => setTextRecordMutation.mutate(newTextRecord)}
+                                    disabled={!newTextRecord.value || setTextRecordMutation.isPending}
+                                    size="sm"
+                                    data-testid="confirm-text-record-button"
+                                  >
+                                    {setTextRecordMutation.isPending ? "Adding..." : "Add Record"}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setIsAddingTextRecord(false)}
+                                    size="sm"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+
+                          {resolverData && resolverData.textKeys.length > 0 ? (
+                            <div className="space-y-1">
+                              {resolverData.textKeys.map((key, index) => (
+                                resolverData.textValues[index] && (
+                                  <div
+                                    key={key}
+                                    className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs"
+                                  >
+                                    <div className="flex-1">
+                                      <span className="font-medium">{key}:</span>{" "}
+                                      <span className="text-gray-600 dark:text-gray-400">{resolverData.textValues[index]}</span>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copyToClipboard(resolverData.textValues[index], key)}
+                                      className="h-6"
+                                    >
+                                      {copiedField === key ? (
+                                        <Check className="h-3 w-3 text-green-500" />
+                                      ) : (
+                                        <Copy className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">No text records set</p>
+                          )}
+                        </div>
+
+                        {/* Content Hash (IPFS) */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium">Content Hash (IPFS)</Label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAddingContentHash(true)}
+                              data-testid="set-content-hash-button"
+                            >
+                              {resolverData?.contentHash && resolverData.contentHash !== "0x" ? (
+                                <><Edit3 className="h-3 w-3 mr-1" /> Update</>
+                              ) : (
+                                <><Plus className="h-3 w-3 mr-1" /> Set Hash</>
+                              )}
+                            </Button>
+                          </div>
+
+                          {resolverData?.contentHash && resolverData.contentHash !== "0x" ? (
+                            <div className="flex items-center">
+                              <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded flex-1 font-mono break-all">
+                                {resolverData.contentHash}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(resolverData.contentHash, "Content hash")}
+                                className="ml-2"
+                              >
+                                {copiedField === "Content hash" ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500">No content hash set</p>
+                          )}
+
+                          {isAddingContentHash && (
+                            <Card className="mt-2 p-3 bg-gray-50 dark:bg-gray-800">
+                              <div className="space-y-2">
+                                <Input
+                                  placeholder="0x... or IPFS hash"
+                                  value={newContentHash}
+                                  onChange={(e) => setNewContentHash(e.target.value)}
+                                  data-testid="content-hash-input"
+                                />
+                                <div className="flex space-x-2">
+                                  <Button
+                                    onClick={() => setContentHashMutation.mutate(newContentHash)}
+                                    disabled={!newContentHash || setContentHashMutation.isPending}
+                                    size="sm"
+                                    data-testid="confirm-content-hash-button"
+                                  >
+                                    {setContentHashMutation.isPending ? "Setting..." : "Set Hash"}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setIsAddingContentHash(false)}
+                                    size="sm"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
