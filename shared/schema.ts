@@ -124,7 +124,7 @@ export type DomainWithRecords = Domain & {
 
 // Pricing tiers - Premium pricing structure
 export const PRICING_TIERS = {
-  THREE_CHAR: { minLength: 3, maxLength: 3, pricePerYear: "500" },
-  FOUR_CHAR: { minLength: 4, maxLength: 4, pricePerYear: "300" },
-  FIVE_PLUS_CHAR: { minLength: 5, maxLength: Infinity, pricePerYear: "50" },
+  THREE_CHAR: { minLength: 3, maxLength: 3, pricePerYear: "200" },
+  FOUR_CHAR: { minLength: 4, maxLength: 4, pricePerYear: "100" },
+  FIVE_PLUS_CHAR: { minLength: 5, maxLength: Infinity, pricePerYear: "30" },
 } as const;

@@ -24,9 +24,9 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Primary domain selection (users can set one domain as their main identity)
 
 ## Pricing Structure
-- **5+ characters**: 50 TRUST/year
-- **4 characters**: 300 TRUST/year  
-- **3 characters**: 500 TRUST/year
+- **5+ characters**: 30 TRUST/year
+- **4 characters**: 100 TRUST/year  
+- **3 characters**: 200 TRUST/year
 
 ## Architecture
 ### Smart Contracts (ERC-721 NFT)

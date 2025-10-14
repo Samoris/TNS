@@ -9,21 +9,21 @@ export interface PricingTier {
 export const PRICING_TIERS: PricingTier[] = [
   {
     characters: "5+",
-    pricePerYear: "50",
+    pricePerYear: "30",
     description: "5+ characters",
     minLength: 5,
     maxLength: Infinity,
   },
   {
     characters: "4",
-    pricePerYear: "300",
+    pricePerYear: "100",
     description: "4 characters",
     minLength: 4,
     maxLength: 4,
   },
   {
     characters: "3",
-    pricePerYear: "500",
+    pricePerYear: "200",
     description: "3 characters",
     minLength: 3,
     maxLength: 3,
