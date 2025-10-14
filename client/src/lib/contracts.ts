@@ -258,48 +258,5 @@ export const TNS_REGISTRY_ABI = [
     ],
     "name": "PrimaryDomainSet",
     "type": "event"
-  },
-  {
-    "inputs": [
-      { "internalType": "string", "name": "parentDomain", "type": "string" },
-      { "internalType": "string", "name": "subdomainLabel", "type": "string" },
-      { "internalType": "address", "name": "targetOwner", "type": "address" }
-    ],
-    "name": "createSubdomain",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "string", "name": "parentDomain", "type": "string" }
-    ],
-    "name": "getSubdomains",
-    "outputs": [
-      { "internalType": "string[]", "name": "", "type": "string[]" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "string", "name": "subdomain", "type": "string" }
-    ],
-    "name": "getParentDomain",
-    "outputs": [
-      { "internalType": "string", "name": "", "type": "string" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": true, "internalType": "string", "name": "parentDomain", "type": "string" },
-      { "indexed": true, "internalType": "string", "name": "subdomain", "type": "string" },
-      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" }
-    ],
-    "name": "SubdomainCreated",
-    "type": "event"
   }
 ];

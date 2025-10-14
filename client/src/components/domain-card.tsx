@@ -88,23 +88,20 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const addSubdomainMutation = useMutation({
     mutationFn: async (subdomain: typeof newSubdomain) => {
-      const txHash = await web3Service.createSubdomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        domain.name,
-        subdomain.name,
-        subdomain.owner
-      );
-      return txHash;
+      const response = await apiRequest("POST", `/api/domains/${domain.name}/subdomains`, {
+        subdomain: subdomain.name,
+        owner: walletAddress,
+        targetOwner: subdomain.owner,
+      });
+      return response.json();
     },
-    onSuccess: (txHash) => {
-      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
       setIsAddingSubdomain(false);
       setNewSubdomain({ name: "", owner: walletAddress });
       toast({
-        title: "Subdomain created successfully!",
-        description: `Subdomain ${newSubdomain.name}.${domain.name} created. Transaction: ${txHash.substring(0, 10)}...`,
+        title: "Subdomain created",
+        description: "Subdomain has been successfully created.",
       });
     },
     onError: (error: any) => {
