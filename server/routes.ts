@@ -389,15 +389,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Pricing information - Premium pricing structure
+  // Pricing information - USD-based pricing structure (at $0.10 per TRUST)
   app.get("/api/pricing", (req, res) => {
     res.json({
       tiers: [
-        { characters: "5+", pricePerYear: "30", description: "5+ characters" },
-        { characters: "4", pricePerYear: "70", description: "4 characters" },
-        { characters: "3", pricePerYear: "100", description: "3 characters" },
+        { characters: "5+", pricePerYear: "50", priceUsd: "5.00", description: "5+ characters" },
+        { characters: "4", pricePerYear: "300", priceUsd: "30.00", description: "4 characters" },
+        { characters: "3", pricePerYear: "500", priceUsd: "50.00", description: "3 characters" },
       ],
       currency: "TRUST",
+      displayCurrency: "USD",
+      trustPriceUsd: "0.10",
     });
   });
 
