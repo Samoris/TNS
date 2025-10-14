@@ -157,6 +157,8 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Authorization enforced via Registry contract - only domain owners can update their records
   - Returns zero values for expired domains automatically
   - Frontend web3 service updated with complete resolver functions
+  - **Security**: Added ReentrancyGuard to all state-changing functions (setAddr, setText, setContenthash, clearRecords)
+  - **Traceability**: Enhanced clearRecords to emit per-key events (AddressChanged, ContenthashChanged, TextChanged) for better audit trail
   - **Note**: Resolver contract must be deployed and address updated in contracts.ts
 
 ## Security Considerations

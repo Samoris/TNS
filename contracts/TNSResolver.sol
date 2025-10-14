@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 /**
  * @title TNS Resolver
  * @dev Stores and resolves domain data (addresses, content hashes, text records)
  * @notice This contract handles all resolution queries for .trust domains
  * @notice Only domain owners can update their domain's records
  */
-contract TNSResolver {
+contract TNSResolver is ReentrancyGuard {
     
     // Events
     event AddressChanged(string indexed domain, address newAddress);
@@ -70,6 +72,7 @@ contract TNSResolver {
      */
     function setAddr(string calldata domain, address newAddress) 
         external 
+        nonReentrant
         onlyDomainOwner(domain) 
     {
         addresses[domain] = newAddress;
@@ -96,6 +99,7 @@ contract TNSResolver {
      */
     function setContenthash(string calldata domain, bytes calldata hash) 
         external 
+        nonReentrant
         onlyDomainOwner(domain) 
     {
         contenthashes[domain] = hash;
@@ -122,6 +126,7 @@ contract TNSResolver {
      */
     function setText(string calldata domain, string calldata key, string calldata value) 
         external 
+        nonReentrant
         onlyDomainOwner(domain) 
     {
         texts[domain][key] = value;
@@ -218,17 +223,32 @@ contract TNSResolver {
      * @dev Clear all resolver records for a domain
      * @param domain The domain name (without .trust)
      * @notice Only domain owner can clear records
+     * @notice Emits per-key events for better traceability
      */
     function clearRecords(string calldata domain) 
         external 
+        nonReentrant
         onlyDomainOwner(domain) 
     {
-        delete addresses[domain];
-        delete contenthashes[domain];
+        // Clear address and emit event if set
+        if (addresses[domain] != address(0)) {
+            delete addresses[domain];
+            emit AddressChanged(domain, address(0));
+        }
         
-        // Clear all text records
+        // Clear contenthash and emit event if set
+        if (contenthashes[domain].length > 0) {
+            delete contenthashes[domain];
+            emit ContenthashChanged(domain, "");
+        }
+        
+        // Clear all text records and emit per-key events
         for (uint256 i = 0; i < supportedTextKeys.length; i++) {
-            delete texts[domain][supportedTextKeys[i]];
+            string memory key = supportedTextKeys[i];
+            if (bytes(texts[domain][key]).length > 0) {
+                delete texts[domain][key];
+                emit TextChanged(domain, key, "");
+            }
         }
         
         emit ResolverCleared(domain);
