@@ -280,9 +280,24 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       setResolverData(data);
     } catch (error) {
       console.error("Failed to load resolver data:", error);
+      toast({
+        title: "Failed to load resolver data",
+        description: error instanceof Error ? error.message : "Could not fetch resolver information",
+        variant: "destructive",
+      });
+      setResolverData(null);
     } finally {
       setLoadingResolver(false);
     }
+  };
+
+  // Validation functions
+  const isValidAddress = (address: string): boolean => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  };
+
+  const isValidContentHash = (hash: string): boolean => {
+    return hash.length > 0 && (hash.startsWith('0x') || hash.startsWith('Qm') || hash.startsWith('bafy'));
   };
 
   // Load resolver data when dialog opens
@@ -487,11 +502,15 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                   value={newResolverAddress}
                                   onChange={(e) => setNewResolverAddress(e.target.value)}
                                   data-testid="resolver-address-input"
+                                  className={newResolverAddress && !isValidAddress(newResolverAddress) ? "border-red-500" : ""}
                                 />
+                                {newResolverAddress && !isValidAddress(newResolverAddress) && (
+                                  <p className="text-xs text-red-500">Invalid Ethereum address format</p>
+                                )}
                                 <div className="flex space-x-2">
                                   <Button
                                     onClick={() => setResolverAddressMutation.mutate(newResolverAddress)}
-                                    disabled={!newResolverAddress || setResolverAddressMutation.isPending}
+                                    disabled={!newResolverAddress || !isValidAddress(newResolverAddress) || setResolverAddressMutation.isPending}
                                     size="sm"
                                     data-testid="confirm-resolver-address-button"
                                   >
@@ -499,7 +518,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                   </Button>
                                   <Button
                                     variant="outline"
-                                    onClick={() => setIsAddingResolverAddress(false)}
+                                    onClick={() => {
+                                      setIsAddingResolverAddress(false);
+                                      setNewResolverAddress("");
+                                    }}
                                     size="sm"
                                   >
                                     Cancel
@@ -555,15 +577,18 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                       placeholder="Enter value..."
                                       value={newTextRecord.value}
                                       onChange={(e) => setNewTextRecord({ ...newTextRecord, value: e.target.value })}
-                                      className="text-sm"
+                                      className={`text-sm ${newTextRecord.value && newTextRecord.value.trim() === "" ? "border-red-500" : ""}`}
                                       data-testid="text-record-value-input"
                                     />
+                                    {newTextRecord.value && newTextRecord.value.trim() === "" && (
+                                      <p className="text-xs text-red-500 mt-1">Value cannot be empty or whitespace only</p>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex space-x-2">
                                   <Button
                                     onClick={() => setTextRecordMutation.mutate(newTextRecord)}
-                                    disabled={!newTextRecord.value || setTextRecordMutation.isPending}
+                                    disabled={!newTextRecord.value || newTextRecord.value.trim() === "" || setTextRecordMutation.isPending}
                                     size="sm"
                                     data-testid="confirm-text-record-button"
                                   >
@@ -571,7 +596,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                   </Button>
                                   <Button
                                     variant="outline"
-                                    onClick={() => setIsAddingTextRecord(false)}
+                                    onClick={() => {
+                                      setIsAddingTextRecord(false);
+                                      setNewTextRecord({ key: "email", value: "" });
+                                    }}
                                     size="sm"
                                   >
                                     Cancel
@@ -658,15 +686,19 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                             <Card className="mt-2 p-3 bg-gray-50 dark:bg-gray-800">
                               <div className="space-y-2">
                                 <Input
-                                  placeholder="0x... or IPFS hash"
+                                  placeholder="0x... or IPFS hash (Qm... or bafy...)"
                                   value={newContentHash}
                                   onChange={(e) => setNewContentHash(e.target.value)}
                                   data-testid="content-hash-input"
+                                  className={newContentHash && !isValidContentHash(newContentHash) ? "border-red-500" : ""}
                                 />
+                                {newContentHash && !isValidContentHash(newContentHash) && (
+                                  <p className="text-xs text-red-500">Invalid content hash format (must start with 0x, Qm, or bafy)</p>
+                                )}
                                 <div className="flex space-x-2">
                                   <Button
                                     onClick={() => setContentHashMutation.mutate(newContentHash)}
-                                    disabled={!newContentHash || setContentHashMutation.isPending}
+                                    disabled={!newContentHash || !isValidContentHash(newContentHash) || setContentHashMutation.isPending}
                                     size="sm"
                                     data-testid="confirm-content-hash-button"
                                   >
@@ -674,7 +706,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                   </Button>
                                   <Button
                                     variant="outline"
-                                    onClick={() => setIsAddingContentHash(false)}
+                                    onClick={() => {
+                                      setIsAddingContentHash(false);
+                                      setNewContentHash("");
+                                    }}
                                     size="sm"
                                   >
                                     Cancel
