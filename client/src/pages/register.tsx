@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,10 +47,19 @@ interface RegistrationStep {
   status: "pending" | "active" | "completed" | "error";
 }
 
+interface CommitmentData {
+  secret: string;
+  commitmentHash: string;
+  commitmentTx: string;
+  commitmentTime: number;
+}
+
 export default function RegisterPage() {
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const [registrationYears, setRegistrationYears] = useState<number>(1);
   const [registeredDomain, setRegisteredDomain] = useState<any>(null);
+  const [commitmentData, setCommitmentData] = useState<CommitmentData | null>(null);
+  const [timeUntilRegister, setTimeUntilRegister] = useState<number>(0);
 
   const { toast } = useToast();
   const {
@@ -95,6 +104,24 @@ export default function RegisterPage() {
   const pricing = selectedDomain ? calculateDomainPrice(selectedDomain) : null;
   const totalCost = pricing ? pricing.totalCost(registrationYears) : "0";
 
+  // Timer for commitment waiting period (1 minute = 60 seconds)
+  const MIN_WAIT_TIME = 60;
+
+  // Update timer countdown
+  useEffect(() => {
+    if (!commitmentData) return;
+    
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - commitmentData.commitmentTime) / 1000);
+      const remaining = Math.max(0, MIN_WAIT_TIME - elapsed);
+      setTimeUntilRegister(remaining);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [commitmentData]);
+
+  const canRegister = commitmentData && timeUntilRegister === 0;
+
   const steps: RegistrationStep[] = [
     {
       id: "domain",
@@ -113,21 +140,88 @@ export default function RegisterPage() {
         : "active",
     },
     {
-      id: "register",
-      title: "Register Domain",
-      description: "Complete domain registration",
+      id: "commit",
+      title: "Make Commitment",
+      description: "Secure your registration (Step 1 of 2)",
       status: !isConnected || !isCorrectNetwork 
         ? "pending" 
-        : registeredDomain 
+        : commitmentData 
         ? "completed" 
         : "active",
     },
+    {
+      id: "register",
+      title: "Complete Registration",
+      description: "Mint your NFT domain (Step 2 of 2)",
+      status: !commitmentData 
+        ? "pending" 
+        : registeredDomain 
+        ? "completed" 
+        : canRegister
+        ? "active"
+        : "pending",
+    },
   ];
 
-  // Direct registration mutation
-  const registrationMutation = useMutation({
+  // Commitment mutation (Step 1)
+  const commitmentMutation = useMutation({
     mutationFn: async () => {
       if (!selectedDomain || !address) throw new Error("Missing required data");
+      
+      const domainName = selectedDomain.replace('.trust', '');
+      console.log("Making commitment for domain:", domainName);
+      
+      // Generate secret and commitment hash
+      const secret = web3Service.generateSecret();
+      const commitmentHash = web3Service.createCommitmentHash(domainName, address, secret);
+      
+      console.log("Secret generated:", secret.substring(0, 10) + "...");
+      console.log("Commitment hash:", commitmentHash);
+      
+      // Send commitment to blockchain
+      const txHash = await web3Service.makeCommitment(
+        TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        commitmentHash
+      );
+      
+      console.log("Commitment transaction:", txHash);
+      
+      return {
+        secret,
+        commitmentHash,
+        commitmentTx: txHash,
+        commitmentTime: Date.now()
+      };
+    },
+    onSuccess: (data) => {
+      setCommitmentData(data);
+      setTimeUntilRegister(MIN_WAIT_TIME);
+      toast({
+        title: "Commitment successful!",
+        description: "Please wait 1 minute before completing registration to prevent front-running.",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Commitment error:", error);
+      toast({
+        title: "Commitment failed",
+        description: error.message || "Failed to make commitment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Registration mutation (Step 2)
+  const registrationMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedDomain || !address || !commitmentData) {
+        throw new Error("Missing required data or commitment");
+      }
+      
+      if (!canRegister) {
+        throw new Error("Please wait for the commitment period to complete");
+      }
       
       const domainName = selectedDomain.replace('.trust', '');
       
@@ -135,22 +229,24 @@ export default function RegisterPage() {
       console.log("Total cost:", totalCost, "TRUST");
       
       try {
-        // Real blockchain transaction with optimized contract
+        // Real blockchain transaction with ERC721 NFT minting
         console.log("Starting blockchain registration for:", domainName);
-        console.log("Using optimized contract:", TNS_REGISTRY_ADDRESS);
+        console.log("Using ERC721 NFT contract:", TNS_REGISTRY_ADDRESS);
         
-        // Real blockchain registration using ethers.js
-        console.log("Calling smart contract register function");
+        // Real blockchain registration using ethers.js with secret
+        console.log("Calling smart contract register function with commitment secret");
         
         const txHash = await web3Service.registerDomain(
           TNS_REGISTRY_ADDRESS,
           TNS_REGISTRY_ABI,
           domainName,
           registrationYears,
-          totalCost.toString()
+          totalCost.toString(),
+          commitmentData.secret // Pass the secret from commitment
         );
         
         console.log("Transaction successful:", txHash);
+        console.log("NFT minted for domain:", domainName);
         
         // Register domain on backend for tracking
         const response = await apiRequest("POST", "/api/domains/register", {
@@ -172,7 +268,8 @@ export default function RegisterPage() {
           ...result,
           txHash: txHash,
           contractAddress: TNS_REGISTRY_ADDRESS,
-          realTransaction: true
+          realTransaction: true,
+          isNFT: true
         };
       } catch (error: any) {
         console.error("Registration error:", error);
@@ -181,9 +278,10 @@ export default function RegisterPage() {
     },
     onSuccess: (data) => {
       setRegisteredDomain(data.domain);
+      setCommitmentData(null);
       toast({
-        title: "Domain registered successfully!",
-        description: `${selectedDomain} is now yours! Transaction: ${data.txHash?.substring(0, 10)}...`,
+        title: "🎉 NFT Domain registered successfully!",
+        description: `${selectedDomain} is now yours as an ERC-721 NFT! Check your wallet.`,
       });
     },
     onError: (error: any) => {
@@ -198,6 +296,20 @@ export default function RegisterPage() {
 
   const handleDomainSelect = (domain: string, pricing: any) => {
     setSelectedDomain(domain);
+    setCommitmentData(null);
+    setRegisteredDomain(null);
+  };
+
+  const handleCommitment = () => {
+    if (!isConnected) {
+      connectWallet();
+      return;
+    }
+    if (!isCorrectNetwork) {
+      switchNetwork();
+      return;
+    }
+    commitmentMutation.mutate();
   };
 
   const handleRegistration = () => {
@@ -207,6 +319,14 @@ export default function RegisterPage() {
     }
     if (!isCorrectNetwork) {
       switchNetwork();
+      return;
+    }
+    if (!canRegister) {
+      toast({
+        title: "Please wait",
+        description: `Wait ${timeUntilRegister} more seconds before completing registration`,
+        variant: "destructive",
+      });
       return;
     }
     registrationMutation.mutate();
@@ -298,20 +418,25 @@ export default function RegisterPage() {
               <WalletConnection onConnected={() => {}} />
             )}
 
-            {/* Step 3: Registration */}
+            {/* Step 3: Registration (2-Step Process) */}
             {isConnected && isCorrectNetwork && !registeredDomain && selectedDomain && domainData?.available && (
               <Card className="trust-card">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Shield className="mr-2 h-5 w-5 text-trust-blue" />
-                    Register Domain
+                    Register Domain (Secure 2-Step Process)
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Alert>
                     <Info className="h-4 w-4" />
                     <AlertDescription>
-                      Complete your domain registration with a single transaction. You'll receive an NFT representing ownership of your .trust domain.
+                      {!commitmentData 
+                        ? "Step 1: Make a commitment to secure your registration against front-running. Step 2: Complete registration after 1 minute to mint your ERC-721 NFT."
+                        : canRegister
+                        ? "Step 2: Complete your registration now! Your commitment is verified and you can mint your NFT domain."
+                        : `⏳ Waiting period active. You can register in ${timeUntilRegister} seconds. This prevents front-running attacks.`
+                      }
                     </AlertDescription>
                   </Alert>
                   
@@ -330,18 +455,54 @@ export default function RegisterPage() {
                         <span>Total cost:</span>
                         <span className="font-semibold text-trust-blue">{formatPrice(totalCost)}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span>NFT Type:</span>
+                        <span className="font-semibold">ERC-721</span>
+                      </div>
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleRegistration}
-                    disabled={registrationMutation.isPending}
-                    className="w-full trust-button"
-                    data-testid="register-button"
-                  >
-                    <Wallet className="mr-2 h-4 w-4" />
-                    {registrationMutation.isPending ? "Registering..." : "Register Domain"}
-                  </Button>
+                  {commitmentData && (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Commitment Status</span>
+                        <CheckCircle className="h-4 w-4 text-trust-emerald" />
+                      </div>
+                      {!canRegister && (
+                        <div className="space-y-2">
+                          <Progress value={(MIN_WAIT_TIME - timeUntilRegister) / MIN_WAIT_TIME * 100} className="h-2" />
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            Time remaining: {timeUntilRegister} seconds
+                          </p>
+                        </div>
+                      )}
+                      {canRegister && (
+                        <p className="text-sm text-trust-emerald">✓ Ready to register!</p>
+                      )}
+                    </div>
+                  )}
+
+                  {!commitmentData ? (
+                    <Button
+                      onClick={handleCommitment}
+                      disabled={commitmentMutation.isPending}
+                      className="w-full trust-button"
+                      data-testid="commit-button"
+                    >
+                      <Shield className="mr-2 h-4 w-4" />
+                      {commitmentMutation.isPending ? "Making Commitment..." : "Step 1: Make Commitment"}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleRegistration}
+                      disabled={!canRegister || registrationMutation.isPending}
+                      className="w-full trust-button"
+                      data-testid="register-button"
+                    >
+                      <Wallet className="mr-2 h-4 w-4" />
+                      {registrationMutation.isPending ? "Minting NFT..." : !canRegister ? `Wait ${timeUntilRegister}s...` : "Step 2: Complete Registration & Mint NFT"}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
