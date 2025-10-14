@@ -153,6 +153,16 @@ export default function ManagePage() {
             <p className="text-gray-600 dark:text-gray-300">
               Manage your TNS domains, records, and subdomains
             </p>
+            {domains && domains.find(d => d.isPrimary) && (
+              <div className="mt-3 flex items-center space-x-2">
+                <Badge className="bg-trust-violet text-white text-sm px-3 py-1" data-testid="primary-domain-badge">
+                  Primary Domain
+                </Badge>
+                <span className="text-lg font-semibold text-trust-blue dark:text-trust-blue" data-testid="primary-domain-name">
+                  {domains.find(d => d.isPrimary)?.name}
+                </span>
+              </div>
+            )}
           </div>
           <div className="mt-4 lg:mt-0 flex space-x-4">
             <Link href="/search">

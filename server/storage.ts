@@ -45,6 +45,9 @@ export interface IStorage {
   createSubdomain(subdomain: InsertSubdomain): Promise<Subdomain>;
   updateSubdomain(id: string, updates: Partial<Subdomain>): Promise<Subdomain | undefined>;
 
+  // Primary domain
+  setPrimaryDomain(owner: string, domainName: string): Promise<void>;
+
   // Utility methods
   isDomainAvailable(name: string): Promise<boolean>;
   calculateDomainPrice(name: string): { pricePerYear: string; tier: string };
@@ -116,6 +119,7 @@ export class MemStorage implements IStorage {
       id,
       registrationDate: new Date(),
       isActive: true,
+      isPrimary: false,
       resolver: insertDomain.resolver ?? null,
       tokenId: insertDomain.tokenId ?? null,
       txHash: insertDomain.txHash ?? null,
@@ -246,6 +250,25 @@ export class MemStorage implements IStorage {
     const domain = await this.getDomainByName(name);
     // Domain is available if it doesn't exist or if it's expired (regardless of isActive status)
     return !domain || domain.expirationDate < new Date();
+  }
+
+  // Primary domain
+  async setPrimaryDomain(owner: string, domainName: string): Promise<void> {
+    const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+    
+    // First, unset all primary domains for this owner
+    const ownerDomains = Array.from(this.domains.values()).filter(
+      domain => domain.owner === owner && domain.isPrimary
+    );
+    for (const domain of ownerDomains) {
+      await this.updateDomain(domain.id, { isPrimary: false });
+    }
+    
+    // Then set the requested domain as primary
+    const domain = await this.getDomainByName(fullName);
+    if (domain) {
+      await this.updateDomain(domain.id, { isPrimary: true });
+    }
   }
 
   calculateDomainPrice(name: string): { pricePerYear: string; tier: string } {

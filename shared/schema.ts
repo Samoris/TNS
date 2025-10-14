@@ -18,6 +18,7 @@ export const domains = pgTable("domains", {
   registrationDate: timestamp("registration_date").notNull().defaultNow(),
   expirationDate: timestamp("expiration_date").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  isPrimary: boolean("is_primary").notNull().default(false), // primary domain for the owner
   tokenId: text("token_id"), // NFT token ID
   pricePerYear: decimal("price_per_year", { precision: 18, scale: 8 }).notNull(),
   txHash: text("tx_hash"), // blockchain transaction hash

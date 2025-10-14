@@ -20,6 +20,7 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Reentrancy protection on all critical functions
 - 60-second minimum wait between commitment and registration
 - Permissionless burn function for expired domain NFTs
+- Primary domain selection (users can set one domain as their main identity)
 
 ## Pricing Structure
 - **5+ characters**: 50 TRUST/year
@@ -101,3 +102,12 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Added "Burn NFT" button in UI for expired domains
   - Proper cache invalidation to refresh domain list after burn
   - DomainBurned event emitted on successful burn
+- 2025-10-14: **Added Primary Domain Feature**:
+  - Users can now set one of their domains as "primary" to represent their main identity
+  - Primary domain badge displayed on domain cards and in manage page header
+  - "Set as Primary Domain" button in domain management dialog
+  - Only one domain per owner can be primary (automatically unsets previous primary)
+  - Backend API endpoint `/api/domains/:name/set-primary` with ownership validation
+
+## Security Considerations
+- **API Authentication**: Current write endpoints (including set-primary) trust the owner field from request body for simplicity. In production, this should be replaced with signature verification (EIP-712) or session-based authentication to prevent unauthorized operations.

@@ -140,6 +140,30 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     },
   });
 
+  const setPrimaryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/domains/${domain.name}/set-primary`, {
+        owner: walletAddress,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
+      toast({
+        title: "Primary domain set",
+        description: `${domain.name} is now your primary domain`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to set primary domain",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -190,6 +214,11 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            {domain.isPrimary && (
+              <Badge className="bg-trust-violet text-white" data-testid={`primary-badge-${domain.name || 'unknown'}`}>
+                Primary
+              </Badge>
+            )}
             {getStatusBadge()}
             <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
               <DialogTrigger asChild>
@@ -252,6 +281,21 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         </div>
                       </div>
                     </div>
+                    {!domain.isPrimary && (
+                      <div className="mt-4">
+                        <Button
+                          onClick={() => setPrimaryMutation.mutate()}
+                          disabled={setPrimaryMutation.isPending || isExpired}
+                          className="trust-button w-full"
+                          data-testid="set-primary-button"
+                        >
+                          {setPrimaryMutation.isPending ? "Setting..." : "Set as Primary Domain"}
+                        </Button>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                          Primary domains represent your main identity on TNS
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Separator />

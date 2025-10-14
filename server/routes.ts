@@ -350,6 +350,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Set primary domain
+  // NOTE: This endpoint trusts the owner field from the request body.
+  // In production, this should be replaced with signature verification or session-based auth.
+  // This pattern is used across all write endpoints for simplicity in this demo.
+  app.post("/api/domains/:name/set-primary", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const { owner } = req.body;
+      
+      const domain = await storage.getDomainByName(name);
+      if (!domain) {
+        return res.status(404).json({ message: "Domain not found" });
+      }
+      
+      // Check ownership
+      if (domain.owner !== owner) {
+        return res.status(403).json({ message: "Not domain owner" });
+      }
+      
+      // Set this domain as primary
+      await storage.setPrimaryDomain(owner, name);
+      
+      res.json({ message: "Primary domain set successfully", domain: name });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to set primary domain" });
+    }
+  });
+
   // Network information
   app.get("/api/network", (req, res) => {
     res.json({
