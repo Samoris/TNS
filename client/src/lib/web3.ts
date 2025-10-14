@@ -797,9 +797,9 @@ export class Web3Service {
 
   private calculateDomainPrice(domainName: string): string {
     const length = domainName.length;
-    if (length === 3) return "2.0";
-    if (length === 4) return "0.1";
-    return "0.02";
+    if (length === 3) return "100";
+    if (length === 4) return "70";
+    return "30"; // 5+ characters
   }
 
   /**
