@@ -91,7 +91,7 @@ export function Header() {
             {isConnected && (
               <div className="hidden sm:flex items-center">
                 {isCorrectNetwork ? (
-                  <Badge variant="default" className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
+                  <Badge variant="default" className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 text-xs">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                     Intuition Testnet
                   </Badge>
