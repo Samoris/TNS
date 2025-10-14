@@ -110,8 +110,8 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Only one domain per owner can be primary (automatically unsets previous primary)
   - Backend API endpoint `/api/domains/:name/set-primary` with ownership validation
 - 2025-10-14: **Updated Contract Address**:
-  - Contract address updated to: `0x60F8B78ef7F5409E9924aca9D569E7670Af7f4Be`
-  - All frontend references updated to use new deployment
+  - Contract address updated to: `0xd89c8BD57dDFD24B9A72b2E2593D08d8f6A67edb`
+  - All frontend references updated to use new deployment with fixed TRUST pricing (30/70/100)
 - 2025-10-14: **Fixed MetaMask Rejection Error**:
   - Enhanced global error handler to gracefully handle user transaction rejections
   - MetaMask cancellations (error code 4001) no longer trigger error overlay

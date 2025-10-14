@@ -1,5 +1,5 @@
 // TNS Contract Configuration - ERC721 NFT Contract (UPDATE THIS ADDRESS AFTER DEPLOYMENT)
-export const TNS_REGISTRY_ADDRESS = "0x60F8B78ef7F5409E9924aca9D569E7670Af7f4Be";
+export const TNS_REGISTRY_ADDRESS = "0xd89c8BD57dDFD24B9A72b2E2593D08d8f6A67edb";
 
 // TNS Registry ABI - ERC721 NFT contract with security features
 export const TNS_REGISTRY_ABI = [
