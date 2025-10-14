@@ -22,9 +22,9 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Permissionless burn function for expired domain NFTs
 
 ## Pricing Structure
-- **5+ characters**: 0.02 TRUST/year
-- **4 characters**: 0.1 TRUST/year  
-- **3 characters**: 2 TRUST/year
+- **5+ characters**: 50 TRUST/year
+- **4 characters**: 300 TRUST/year  
+- **3 characters**: 500 TRUST/year
 
 ## Architecture
 ### Smart Contracts (ERC-721 NFT)

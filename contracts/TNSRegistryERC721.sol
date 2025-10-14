@@ -55,9 +55,9 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     uint256 private _nextTokenId = 1;
     
     // Pricing constants (in wei)
-    uint256 public constant PRICE_3_CHARS = 2 ether;    // 2 TRUST/year
-    uint256 public constant PRICE_4_CHARS = 0.1 ether;  // 0.1 TRUST/year  
-    uint256 public constant PRICE_5_PLUS = 0.02 ether;  // 0.02 TRUST/year
+    uint256 public constant PRICE_3_CHARS = 500 ether;  // 500 TRUST/year
+    uint256 public constant PRICE_4_CHARS = 300 ether;  // 300 TRUST/year  
+    uint256 public constant PRICE_5_PLUS = 50 ether;    // 50 TRUST/year
     
     // Front-running protection constants
     uint256 public constant MIN_COMMITMENT_AGE = 1 minutes;
