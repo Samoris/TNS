@@ -70,6 +70,9 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     uint256 public constant MAX_COMMITMENT_AGE = 24 hours;
     uint256 public constant MIN_REGISTRATION_INTERVAL = 2;
     
+    // Grace period: 30 days after expiration before domain can be re-registered
+    uint256 public constant GRACE_PERIOD = 30 days;
+    
     modifier validDomain(string calldata domain) {
         require(bytes(domain).length >= 3, "Domain too short");
         require(bytes(domain).length <= 63, "Domain too long");
@@ -151,7 +154,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         );
         
         require(duration > 0 && duration <= 10, "Invalid duration");
-        require(!domains[domain].exists || isExpired(domain), "Domain not available");
+        require(isAvailable(domain), "Domain not available or in grace period");
         
         uint256 cost = calculateCost(domain, duration);
         require(msg.value >= cost, "Insufficient payment");
@@ -191,6 +194,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     
     /**
      * @dev Renew an existing domain (with overflow protection)
+     * @notice Owner can renew even during grace period
      */
     function renew(string calldata domain, uint256 duration) 
         external 
@@ -198,7 +202,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         nonReentrant
     {
         require(domains[domain].exists, "Domain not registered");
-        require(!isExpired(domain), "Domain expired, must re-register");
+        require(!isExpired(domain) || isInGracePeriod(domain), "Domain past grace period, must re-register");
         
         uint256 tokenId = domainToTokenId[domain];
         require(ownerOf(tokenId) == msg.sender, "Not domain owner");
@@ -230,7 +234,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     /**
-     * @dev Check if a domain is expired
+     * @dev Check if a domain has expired
      */
     function isExpired(string calldata domain) public view returns (bool) {
         if (!domains[domain].exists) return false;
@@ -238,17 +242,31 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     /**
+     * @dev Check if a domain is in the grace period
+     * @notice During grace period, only the original owner can renew
+     */
+    function isInGracePeriod(string calldata domain) public view returns (bool) {
+        if (!domains[domain].exists) return false;
+        if (block.timestamp <= domains[domain].expirationTime) return false;
+        return block.timestamp <= domains[domain].expirationTime + GRACE_PERIOD;
+    }
+    
+    /**
      * @dev Check if a domain is available for registration
+     * @notice Domain must be past grace period to be available for new registration
      */
     function isAvailable(string calldata domain) public view returns (bool) {
-        return !domains[domain].exists || isExpired(domain);
+        if (!domains[domain].exists) return true;
+        // Domain is only available after expiration + grace period
+        return block.timestamp > domains[domain].expirationTime + GRACE_PERIOD;
     }
     
     /**
      * @dev Burn an expired domain NFT and make it available for re-registration
      * @param domain The domain name to burn
-     * @notice Anyone can call this to clean up expired domains
+     * @notice Anyone can call this to clean up expired domains after grace period
      * @notice This permanently burns the NFT and clears all domain data
+     * @notice Grace period must pass before burning is allowed
      */
     function burnExpiredDomain(string calldata domain) 
         external 
@@ -257,6 +275,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     {
         require(domains[domain].exists, "Domain not registered");
         require(isExpired(domain), "Domain not expired");
+        require(!isInGracePeriod(domain), "Domain in grace period - owner can still renew");
         
         uint256 tokenId = domainToTokenId[domain];
         address previousOwner = _ownerOf(tokenId);

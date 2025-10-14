@@ -19,7 +19,8 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Front-running protection via commit-reveal scheme
 - Reentrancy protection on all critical functions
 - 60-second minimum wait between commitment and registration
-- Permissionless burn function for expired domain NFTs
+- **30-day grace period** for expired domains (owner can renew, prevents immediate re-registration)
+- Permissionless burn function for expired domain NFTs (after grace period)
 - Primary domain selection (users can set one domain as their main identity)
 
 ## Pricing Structure
@@ -126,6 +127,15 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Frontend calls blockchain transaction via web3Service.setPrimaryDomain()
   - **Note**: Contract must be redeployed with new functions for this feature to work
   - New ABI includes setPrimaryDomain, getPrimaryDomain, and PrimaryDomainSet event
+- 2025-10-14: **Added 30-Day Grace Period for Expired Domains**:
+  - Expired domains enter a 30-day grace period where only the original owner can renew
+  - Domains cannot be re-registered or burned during grace period
+  - Added GRACE_PERIOD constant (30 days) to contract
+  - Added isInGracePeriod() function to check if domain is in grace period
+  - Updated isAvailable() to return false for domains in grace period
+  - Updated register() to reject domains in grace period
+  - Updated renew() to allow renewal during grace period by original owner
+  - Updated burnExpiredDomain() to only allow burning after grace period ends
 
 ## Security Considerations
 - **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.

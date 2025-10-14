@@ -50,6 +50,17 @@ export const TNS_REGISTRY_ABI = [
     "inputs": [
       { "internalType": "string", "name": "domain", "type": "string" }
     ],
+    "name": "isInGracePeriod",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "domain", "type": "string" }
+    ],
     "name": "getDomainOwner",
     "outputs": [
       { "internalType": "address", "name": "", "type": "address" }
@@ -183,6 +194,15 @@ export const TNS_REGISTRY_ABI = [
   {
     "inputs": [],
     "name": "MIN_REGISTRATION_INTERVAL",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GRACE_PERIOD",
     "outputs": [
       { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
