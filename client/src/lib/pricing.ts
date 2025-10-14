@@ -16,14 +16,14 @@ export const PRICING_TIERS: PricingTier[] = [
   },
   {
     characters: "4",
-    pricePerYear: "100",
+    pricePerYear: "70",
     description: "4 characters",
     minLength: 4,
     maxLength: 4,
   },
   {
     characters: "3",
-    pricePerYear: "200",
+    pricePerYear: "100",
     description: "3 characters",
     minLength: 3,
     maxLength: 3,

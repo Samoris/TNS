@@ -25,8 +25,8 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 
 ## Pricing Structure
 - **5+ characters**: 30 TRUST/year
-- **4 characters**: 100 TRUST/year  
-- **3 characters**: 200 TRUST/year
+- **4 characters**: 70 TRUST/year  
+- **3 characters**: 100 TRUST/year
 
 ## Architecture
 ### Smart Contracts (ERC-721 NFT)
@@ -116,10 +116,10 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Enhanced global error handler to gracefully handle user transaction rejections
   - MetaMask cancellations (error code 4001) no longer trigger error overlay
   - User rejections logged quietly without interrupting the UI
-- 2025-10-14: **Updated Backend Pricing to Premium Rates**:
+- 2025-10-14: **Updated Pricing Structure**:
   - Fixed backend pricing tiers in shared/schema.ts and server/routes.ts
-  - Updated pricing from old rates (0.02, 0.1, 2.0) to premium rates (50, 300, 500 TRUST)
-  - Backend now correctly returns premium pricing for all domain searches and registrations
+  - Updated pricing: 5+ chars (30 TRUST), 4 chars (70 TRUST), 3 chars (100 TRUST)
+  - Backend and frontend now use consistent pricing across all components
 - 2025-10-14: **Primary Domain Now Uses Blockchain Transaction**:
   - Added setPrimaryDomain() and getPrimaryDomain() functions to TNSRegistryERC721.sol
   - Primary domain status now stored on-chain instead of backend database

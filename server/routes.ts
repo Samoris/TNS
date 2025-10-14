@@ -394,8 +394,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({
       tiers: [
         { characters: "5+", pricePerYear: "30", description: "5+ characters" },
-        { characters: "4", pricePerYear: "100", description: "4 characters" },
-        { characters: "3", pricePerYear: "200", description: "3 characters" },
+        { characters: "4", pricePerYear: "70", description: "4 characters" },
+        { characters: "3", pricePerYear: "100", description: "3 characters" },
       ],
       currency: "TRUST",
     });
