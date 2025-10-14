@@ -557,7 +557,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                       id="textRecordKey"
                                       value={newTextRecord.key}
                                       onChange={(e) => setNewTextRecord({ ...newTextRecord, key: e.target.value })}
-                                      className="w-full p-2 border rounded text-sm"
+                                      className="w-full p-2 border rounded text-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                                       data-testid="text-record-key-select"
                                     >
                                       <option value="email">Email</option>
@@ -750,7 +750,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                 id="recordType"
                                 value={newRecord.recordType}
                                 onChange={(e) => setNewRecord({ ...newRecord, recordType: e.target.value })}
-                                className="w-full p-2 border rounded"
+                                className="w-full p-2 border rounded bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
                               >
                                 <option value="address">Address</option>
                                 <option value="content">Content</option>
