@@ -24,11 +24,14 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Flame,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/pricing";
 import type { DomainWithRecords } from "@shared/schema";
+import { web3Service } from "@/lib/web3";
+import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
 
 interface DomainCardProps {
   domain: DomainWithRecords;
@@ -104,6 +107,33 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     onError: (error: any) => {
       toast({
         title: "Failed to create subdomain",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const burnDomainMutation = useMutation({
+    mutationFn: async () => {
+      const txHash = await web3Service.burnExpiredDomain(
+        TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        domain.name
+      );
+      return txHash;
+    },
+    onSuccess: (txHash) => {
+      // Invalidate both query keys to ensure all domain lists refresh
+      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
+      toast({
+        title: "Domain burned successfully!",
+        description: `${domain.name} has been burned and is now available for re-registration. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to burn domain",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -437,7 +467,18 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
             <div>{(domain.records || []).length} records, {(domain.subdomains || []).length} subdomains</div>
           </div>
           
-          {isExpiringSoon && (
+          {isExpired ? (
+            <Button 
+              variant="outline" 
+              className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+              onClick={() => burnDomainMutation.mutate()}
+              disabled={burnDomainMutation.isPending}
+              data-testid={`burn-${domain.name}`}
+            >
+              <Flame className="h-4 w-4 mr-1" />
+              {burnDomainMutation.isPending ? "Burning..." : "Burn NFT"}
+            </Button>
+          ) : isExpiringSoon && (
             <Button variant="outline" className="trust-button" data-testid={`renew-${domain.name}`}>
               <Calendar className="h-4 w-4 mr-1" />
               Renew
