@@ -16,8 +16,7 @@ export const TNS_REGISTRY_ABI = [
     "inputs": [
       { "internalType": "string", "name": "domain", "type": "string" },
       { "internalType": "uint256", "name": "duration", "type": "uint256" },
-      { "internalType": "bytes32", "name": "secret", "type": "bytes32" },
-      { "internalType": "uint256", "name": "maxCost", "type": "uint256" }
+      { "internalType": "bytes32", "name": "secret", "type": "bytes32" }
     ],
     "name": "register",
     "outputs": [],
@@ -33,34 +32,8 @@ export const TNS_REGISTRY_ABI = [
     "outputs": [
       { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
-    "stateMutability": "view",
+    "stateMutability": "pure",
     "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "trustPriceUsdCents",
-    "outputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "priceInCents", "type": "uint256" }
-    ],
-    "name": "setTrustPrice",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      { "indexed": false, "internalType": "uint256", "name": "newPriceInCents", "type": "uint256" }
-    ],
-    "name": "TrustPriceUpdated",
-    "type": "event"
   },
   {
     "inputs": [
@@ -250,8 +223,7 @@ export const TNS_REGISTRY_ABI = [
   {
     "inputs": [
       { "internalType": "string", "name": "domain", "type": "string" },
-      { "internalType": "uint256", "name": "duration", "type": "uint256" },
-      { "internalType": "uint256", "name": "maxCost", "type": "uint256" }
+      { "internalType": "uint256", "name": "duration", "type": "uint256" }
     ],
     "name": "renew",
     "outputs": [],

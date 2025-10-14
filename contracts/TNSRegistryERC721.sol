@@ -60,17 +60,10 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     // Token ID counter
     uint256 private _nextTokenId = 1;
     
-    // USD-based pricing (in cents)
-    uint256 public constant USD_PRICE_3_CHARS = 5000;   // $50.00
-    uint256 public constant USD_PRICE_4_CHARS = 3000;   // $30.00  
-    uint256 public constant USD_PRICE_5_PLUS = 500;     // $5.00
-    
-    // TRUST/USD price oracle (in cents, e.g., 10 = $0.10 per TRUST)
-    // Default: 1 TRUST = $0.10 USD
-    uint256 public trustPriceUsdCents = 10;
-    
-    // Event for price updates
-    event TrustPriceUpdated(uint256 newPriceInCents);
+    // Pricing constants (in wei) - Fixed TRUST pricing
+    uint256 public constant PRICE_3_CHARS = 100 ether;  // 100 TRUST/year
+    uint256 public constant PRICE_4_CHARS = 70 ether;   // 70 TRUST/year  
+    uint256 public constant PRICE_5_PLUS = 30 ether;    // 30 TRUST/year
     
     // Front-running protection constants
     uint256 public constant MIN_COMMITMENT_AGE = 1 minutes;
@@ -103,47 +96,27 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     /**
-     * @dev Calculate registration cost for a domain in TRUST tokens
-     * @notice Converts USD price to TRUST based on current trustPriceUsdCents
-     * @param domain The domain name
-     * @param duration Duration in years (1-10)
-     * @return Cost in TRUST wei
+     * @dev Calculate registration cost for a domain
      */
     function calculateCost(string calldata domain, uint256 duration) 
         public 
-        view 
+        pure 
         returns (uint256) 
     {
         require(duration > 0 && duration <= 10, "Invalid duration");
-        require(trustPriceUsdCents > 0, "TRUST price not set");
         
         uint256 length = bytes(domain).length;
-        uint256 usdPricePerYearCents;
+        uint256 pricePerYear;
         
         if (length == 3) {
-            usdPricePerYearCents = USD_PRICE_3_CHARS;
+            pricePerYear = PRICE_3_CHARS;
         } else if (length == 4) {
-            usdPricePerYearCents = USD_PRICE_4_CHARS;
+            pricePerYear = PRICE_4_CHARS;
         } else {
-            usdPricePerYearCents = USD_PRICE_5_PLUS;
+            pricePerYear = PRICE_5_PLUS;
         }
         
-        // Total USD cost in cents
-        uint256 totalUsdCents = usdPricePerYearCents * duration;
-        
-        // Convert to TRUST: (usdCents * 1 ether) / trustPriceUsdCents
-        // This gives us the amount in TRUST wei
-        return (totalUsdCents * 1 ether) / trustPriceUsdCents;
-    }
-    
-    /**
-     * @dev Update TRUST/USD price (only owner)
-     * @param priceInCents Price of 1 TRUST in USD cents (e.g., 10 = $0.10)
-     */
-    function setTrustPrice(uint256 priceInCents) external onlyOwner {
-        require(priceInCents > 0, "Price must be greater than 0");
-        trustPriceUsdCents = priceInCents;
-        emit TrustPriceUpdated(priceInCents);
+        return pricePerYear * duration;
     }
     
     /**
@@ -160,9 +133,8 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
      * @param domain The domain name to register
      * @param duration Duration in years (1-10)
      * @param secret Secret used in commitment (for front-running protection)
-     * @param maxCost Maximum cost willing to pay (slippage protection)
      */
-    function register(string calldata domain, uint256 duration, bytes32 secret, uint256 maxCost) 
+    function register(string calldata domain, uint256 duration, bytes32 secret) 
         external 
         payable 
         nonReentrant
@@ -185,7 +157,6 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         require(isAvailable(domain), "Domain not available or in grace period");
         
         uint256 cost = calculateCost(domain, duration);
-        require(cost <= maxCost, "Cost exceeds maxCost (price increased)");
         require(msg.value >= cost, "Insufficient payment");
         
         uint256 tokenId = _nextTokenId++;
@@ -224,11 +195,8 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     /**
      * @dev Renew an existing domain (with overflow protection)
      * @notice Owner can renew even during grace period
-     * @param domain The domain name to renew
-     * @param duration Duration in years (1-10)
-     * @param maxCost Maximum cost willing to pay (slippage protection)
      */
-    function renew(string calldata domain, uint256 duration, uint256 maxCost) 
+    function renew(string calldata domain, uint256 duration) 
         external 
         payable
         nonReentrant
@@ -241,7 +209,6 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         require(duration > 0 && duration <= 10, "Invalid duration");
         
         uint256 cost = calculateCost(domain, duration);
-        require(cost <= maxCost, "Cost exceeds maxCost (price increased)");
         require(msg.value >= cost, "Insufficient payment");
         
         // Fix integer overflow: explicit check before addition

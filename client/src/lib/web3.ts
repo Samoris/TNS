@@ -414,17 +414,9 @@ export class Web3Service {
       // Parse cost to wei
       const valueWei = ethers.parseEther(cost);
       
-      // Calculate maxCost with 5% slippage tolerance to protect against price fluctuations
-      const slippageTolerance = 0.05; // 5%
-      const maxCostWei = (valueWei * BigInt(Math.floor((1 + slippageTolerance) * 10000))) / BigInt(10000);
-      
-      console.log("Slippage protection:");
-      console.log("- Cost:", valueWei.toString(), "wei");
-      console.log("- MaxCost (with 5% slippage):", maxCostWei.toString(), "wei");
-      
-      // Call the register function with secret and maxCost
-      console.log("Calling contract.register with:", normalizedDomain, duration, "secret", "maxCost:", maxCostWei.toString(), "value:", valueWei.toString());
-      const tx = await contract.register(normalizedDomain, duration, secret, maxCostWei, {
+      // Call the register function with secret
+      console.log("Calling contract.register with:", normalizedDomain, duration, "secret", "value:", valueWei.toString());
+      const tx = await contract.register(normalizedDomain, duration, secret, {
         value: valueWei,
         gasLimit: 300000 // Higher gas limit for NFT minting
       });

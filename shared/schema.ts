@@ -122,9 +122,9 @@ export type DomainWithRecords = Domain & {
   subdomains: Subdomain[];
 };
 
-// Pricing tiers - USD-based pricing structure (at $0.10 per TRUST)
+// Pricing tiers - Fixed TRUST pricing
 export const PRICING_TIERS = {
-  THREE_CHAR: { minLength: 3, maxLength: 3, pricePerYear: "500", priceUsd: "50.00" },
-  FOUR_CHAR: { minLength: 4, maxLength: 4, pricePerYear: "300", priceUsd: "30.00" },
-  FIVE_PLUS_CHAR: { minLength: 5, maxLength: Infinity, pricePerYear: "50", priceUsd: "5.00" },
+  THREE_CHAR: { minLength: 3, maxLength: 3, pricePerYear: "100" },
+  FOUR_CHAR: { minLength: 4, maxLength: 4, pricePerYear: "70" },
+  FIVE_PLUS_CHAR: { minLength: 5, maxLength: Infinity, pricePerYear: "30" },
 } as const;

@@ -24,11 +24,9 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Primary domain selection (users can set one domain as their main identity)
 
 ## Pricing Structure
-- **5+ characters**: $5.00 USD per year (50 TRUST at $0.10/TRUST)
-- **4 characters**: $30.00 USD per year (300 TRUST at $0.10/TRUST)
-- **3 characters**: $50.00 USD per year (500 TRUST at $0.10/TRUST)
-
-Note: Pricing is denominated in USD and converted to TRUST based on a configurable exchange rate set by the contract owner (default: 1 TRUST = $0.10 USD).
+- **5+ characters**: 30 TRUST per year
+- **4 characters**: 70 TRUST per year
+- **3 characters**: 100 TRUST per year
 
 ## Architecture
 ### Smart Contracts (ERC-721 NFT)
@@ -138,15 +136,11 @@ Note: Pricing is denominated in USD and converted to TRUST based on a configurab
   - Updated register() to reject domains in grace period
   - Updated renew() to allow renewal during grace period by original owner
   - Updated burnExpiredDomain() to only allow burning after grace period ends
-- 2025-10-14: **Implemented USD-Based Pricing with Slippage Protection**:
-  - Changed pricing from fixed TRUST amounts to USD-based ($5, $30, $50)
-  - Added trustPriceUsdCents variable for TRUST/USD conversion (default: 10 cents = $0.10)
-  - Added setTrustPrice() function for owner to update exchange rate
-  - Added maxCost parameter to register() and renew() for slippage protection
-  - Frontend automatically calculates maxCost with 5% slippage tolerance
-  - Updated calculateCost() to convert USD prices to TRUST based on exchange rate
-  - Updated pricing display across frontend and backend to show USD values
-  - Contract validates actual cost doesn't exceed maxCost before executing transaction
+- 2025-10-14: **Reverted to Fixed TRUST Pricing**:
+  - Removed USD-based pricing system
+  - Restored simple fixed pricing: 30/70/100 TRUST per year
+  - Removed maxCost slippage protection (not needed for fixed pricing)
+  - Simplified calculateCost() function back to pure fixed calculation
 
 ## Security Considerations
 - **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.
