@@ -142,17 +142,20 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const setPrimaryMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/domains/${domain.name}/set-primary`, {
-        owner: walletAddress,
-      });
-      return response.json();
+      // Call blockchain transaction to set primary domain
+      const txHash = await web3Service.setPrimaryDomain(
+        TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        domain.name
+      );
+      return txHash;
     },
-    onSuccess: () => {
+    onSuccess: (txHash) => {
       queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
       queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
       toast({
-        title: "Primary domain set",
-        description: `${domain.name} is now your primary domain`,
+        title: "Primary domain set on blockchain!",
+        description: `${domain.name} is now your primary domain. Transaction: ${txHash.substring(0, 10)}...`,
       });
     },
     onError: (error: any) => {

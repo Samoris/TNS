@@ -119,6 +119,13 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Fixed backend pricing tiers in shared/schema.ts and server/routes.ts
   - Updated pricing from old rates (0.02, 0.1, 2.0) to premium rates (50, 300, 500 TRUST)
   - Backend now correctly returns premium pricing for all domain searches and registrations
+- 2025-10-14: **Primary Domain Now Uses Blockchain Transaction**:
+  - Added setPrimaryDomain() and getPrimaryDomain() functions to TNSRegistryERC721.sol
+  - Primary domain status now stored on-chain instead of backend database
+  - Added PrimaryDomainSet event for blockchain tracking
+  - Frontend calls blockchain transaction via web3Service.setPrimaryDomain()
+  - **Note**: Contract must be redeployed with new functions for this feature to work
+  - New ABI includes setPrimaryDomain, getPrimaryDomain, and PrimaryDomainSet event
 
 ## Security Considerations
-- **API Authentication**: Current write endpoints (including set-primary) trust the owner field from request body for simplicity. In production, this should be replaced with signature verification (EIP-712) or session-based authentication to prevent unauthorized operations.
+- **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.

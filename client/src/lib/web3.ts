@@ -521,6 +521,62 @@ export class Web3Service {
     }
   }
 
+  /**
+   * Set a domain as the primary domain for the user
+   */
+  public async setPrimaryDomain(contractAddress: string, abi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      // Normalize domain name to lowercase and remove .trust extension
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      console.log("Setting primary domain:", normalizedDomain);
+      
+      // Create ethers provider and contract instance
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      
+      // Call setPrimaryDomain function
+      const tx = await contract.setPrimaryDomain(normalizedDomain, {
+        gasLimit: 100000
+      });
+      
+      console.log("Set primary domain transaction sent:", tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+      
+      console.log("Primary domain set successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Set primary domain error:", error);
+      
+      if (error.message?.includes('Domain does not exist')) {
+        throw new Error("Domain does not exist");
+      } else if (error.message?.includes('Domain has expired')) {
+        throw new Error("Domain has expired - renew it first");
+      } else if (error.message?.includes('Not domain owner')) {
+        throw new Error("You don't own this domain");
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error("Insufficient TRUST tokens for gas fees");
+      }
+      
+      throw new Error(error.message || "Failed to set primary domain");
+    }
+  }
+
   public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");

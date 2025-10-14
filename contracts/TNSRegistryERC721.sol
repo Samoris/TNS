@@ -34,6 +34,11 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         address indexed burner
     );
     
+    event PrimaryDomainSet(
+        address indexed owner,
+        string indexed domain
+    );
+    
     // Domain data structure
     struct Domain {
         string name;
@@ -46,6 +51,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     mapping(string => uint256) public domainToTokenId;
     mapping(uint256 => string) public tokenIdToDomain;
     mapping(address => string[]) private ownerDomains;
+    mapping(address => string) public primaryDomain; // Primary domain for each address
     
     // Front-running protection: commitment scheme
     mapping(bytes32 => uint256) private commitments;
@@ -379,6 +385,32 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+    
+    /**
+     * @dev Set a domain as the primary domain for the caller
+     * @param domain The domain name to set as primary (without .trust)
+     */
+    function setPrimaryDomain(string calldata domain) external validDomain(domain) {
+        require(domains[domain].exists, "Domain does not exist");
+        require(!isExpired(domain), "Domain has expired");
+        
+        uint256 tokenId = domainToTokenId[domain];
+        require(ownerOf(tokenId) == msg.sender, "Not domain owner");
+        
+        // Set as primary domain
+        primaryDomain[msg.sender] = domain;
+        
+        emit PrimaryDomainSet(msg.sender, domain);
+    }
+    
+    /**
+     * @dev Get the primary domain for an address
+     * @param owner The address to query
+     * @return The primary domain name (empty string if none set)
+     */
+    function getPrimaryDomain(address owner) external view returns (string memory) {
+        return primaryDomain[owner];
     }
     
     /**

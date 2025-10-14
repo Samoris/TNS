@@ -209,5 +209,34 @@ export const TNS_REGISTRY_ABI = [
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "domain", "type": "string" }
+    ],
+    "name": "setPrimaryDomain",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
+    ],
+    "name": "getPrimaryDomain",
+    "outputs": [
+      { "internalType": "string", "name": "", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": true, "internalType": "string", "name": "domain", "type": "string" }
+    ],
+    "name": "PrimaryDomainSet",
+    "type": "event"
   }
 ];
