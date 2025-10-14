@@ -11,11 +11,14 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - **Explorer URL**: https://testnet.explorer.intuition.systems
 
 ## Core Features
-- Domain registration with `.trust` extension
+- Domain registration with `.trust` extension (2-step commit-reveal process)
 - Address resolution (map domains to wallet addresses)
 - Hierarchical domain structure (subdomains)
-- NFT ownership of domains (ERC-721 tokens)
+- NFT ownership of domains (ERC-721 tokens with OpenZeppelin standard)
 - Multi-resource support (addresses, IPFS hashes, etc.)
+- Front-running protection via commit-reveal scheme
+- Reentrancy protection on all critical functions
+- 60-second minimum wait between commitment and registration
 
 ## Pricing Structure
 - **5+ characters**: 0.02 TRUST/year
@@ -23,10 +26,14 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - **3 characters**: 2 TRUST/year
 
 ## Architecture
-### Smart Contracts (Simulated)
-- **TNS Registry**: Core contract maintaining domain ownership and resolvers
-- **TNS Registrar**: Handles domain registration and renewals
-- **TNS Resolver**: Maps domains to addresses and other resources
+### Smart Contracts (ERC-721 NFT)
+- **TNSRegistryERC721**: Main contract inheriting OpenZeppelin ERC721, Ownable, and ReentrancyGuard
+  - Mints actual ERC-721 NFT for each domain
+  - Implements commit-reveal registration (makeCommitment + register)
+  - Includes reentrancy protection and front-running prevention
+  - Supports domain renewal with overflow protection
+  - Maps domains to addresses and other resources
+  - Full marketplace compatibility (OpenSea, Rarible, etc.)
 
 ### Frontend Components
 - Domain search and registration interface
@@ -54,12 +61,13 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - [✓] Core architecture implementation completed  
 - [✓] Domain search and registration frontend
 - [✓] Wallet integration with MetaMask
-- [✓] Simplified direct registration process (removed commit-reveal)
 - [✓] Domain management dashboard
 - [✓] Subdomain creation and management
-- [✓] **Gas-optimized smart contract deployment** (User Deployed: 0xb4D38068F8982c15CaD9f98adE6C2954567e2153)
-- [✓] **Real blockchain transactions enabled** (Replaced demo mode)
-- [✓] **Deployable contract code provided** (Ready for user deployment)
+- [✓] **ERC-721 NFT Contract** (TNSRegistryERC721.sol with OpenZeppelin)
+- [✓] **Security Features** (Reentrancy guard, front-running protection, overflow checks)
+- [✓] **2-Step Commit-Reveal Registration** (60-second wait, 24-hour window)
+- [✓] **Frontend Commit-Reveal UI** (Countdown timer, clear 2-step process)
+- [✓] **Real blockchain transactions enabled** (Actual NFT minting on-chain)
 
 ## User Preferences
 - Focus on clean, intuitive UI similar to ENS
@@ -70,8 +78,19 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 ## Recent Changes
 - 2025-01-21: Project initialized with TNS specifications
 - 2025-01-21: Defined pricing structure and network configuration
-- 2025-01-21: **User deployed production contract** (0xb4D38068F8982c15CaD9f98adE6C2954567e2153)
-- 2025-01-21: **Enabled real blockchain transactions** - replaced demo mode with actual on-chain registration
-- 2025-01-21: **Fixed wallet connection issues** - removed debugging logs and streamlined connection flow
-- 2025-01-21: **Created deployable contract** - provided complete smart contract code ready for user deployment
-- 2025-01-21: **Removed demo mode messaging** - cleaned up frontend to show production-ready interface
+- 2025-10-14: **Implemented ERC-721 NFT Contract** - TNSRegistryERC721.sol with OpenZeppelin standard for actual NFT minting
+- 2025-10-14: **Added Security Features**:
+  - ReentrancyGuard on withdraw(), register(), and renew() functions
+  - Commit-reveal scheme to prevent front-running attacks
+  - Integer overflow checks in duration calculations
+  - Restricted receive() function to only accept payments during registration
+- 2025-10-14: **Implemented 2-Step Registration Flow**:
+  - Step 1: makeCommitment() to create secure hash with secret
+  - 60-second minimum wait period between commitment and registration
+  - Step 2: register() with secret to mint ERC-721 NFT
+  - 24-hour maximum window to complete registration
+- 2025-10-14: **Updated Frontend UI**:
+  - Added commitment state management with secret, hash, and timestamp
+  - Implemented countdown timer showing remaining wait time
+  - Clear visual indicators for 2-step process
+  - Progress bar and status messages for user feedback
