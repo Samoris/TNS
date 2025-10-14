@@ -1,12 +1,22 @@
-// TNS Contract Configuration - New Optimized Contract (checksummed address)
+// TNS Contract Configuration - ERC721 NFT Contract (UPDATE THIS ADDRESS AFTER DEPLOYMENT)
 export const TNS_REGISTRY_ADDRESS = "0xb4D38068F8982c15CaD9f98adE6C2954567e2153";
 
-// TNS Registry ABI - Optimized contract functions
+// TNS Registry ABI - ERC721 NFT contract with security features
 export const TNS_REGISTRY_ABI = [
   {
     "inputs": [
+      { "internalType": "bytes32", "name": "commitment", "type": "bytes32" }
+    ],
+    "name": "makeCommitment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       { "internalType": "string", "name": "domain", "type": "string" },
-      { "internalType": "uint256", "name": "duration", "type": "uint256" }
+      { "internalType": "uint256", "name": "duration", "type": "uint256" },
+      { "internalType": "bytes32", "name": "secret", "type": "bytes32" }
     ],
     "name": "register",
     "outputs": [],
@@ -151,13 +161,53 @@ export const TNS_REGISTRY_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_COMMITMENT_AGE",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_COMMITMENT_AGE",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_REGISTRATION_INTERVAL",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "string", "name": "domain", "type": "string" },
+      { "indexed": true, "internalType": "address", "name": "owner", "type": "address" },
+      { "indexed": true, "internalType": "uint256", "name": "tokenId", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "expirationTime", "type": "uint256" }
+    ],
+    "name": "DomainRegistered",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "domain", "type": "string" },
+      { "internalType": "uint256", "name": "duration", "type": "uint256" }
+    ],
+    "name": "renew",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
   }
 ];
-
-// Simple function signature for register call
-export function getRegisterFunctionSignature(): string {
-  // Just return the function signature without parameters for now
-  // This will make the transaction simpler but may require the contract
-  // to handle the domain registration differently
-  return '0x1b2f8a3d'; // register() - simplified version
-}
