@@ -19,6 +19,7 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - Front-running protection via commit-reveal scheme
 - Reentrancy protection on all critical functions
 - 60-second minimum wait between commitment and registration
+- Permissionless burn function for expired domain NFTs
 
 ## Pricing Structure
 - **5+ characters**: 0.02 TRUST/year
@@ -94,3 +95,9 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Implemented countdown timer showing remaining wait time
   - Clear visual indicators for 2-step process
   - Progress bar and status messages for user feedback
+- 2025-10-14: **Added Burn Function for Expired Domains**:
+  - Permissionless burnExpiredDomain() function - anyone can burn expired NFTs
+  - Completely removes domain data and burns NFT to free up domain name
+  - Added "Burn NFT" button in UI for expired domains
+  - Proper cache invalidation to refresh domain list after burn
+  - DomainBurned event emitted on successful burn
