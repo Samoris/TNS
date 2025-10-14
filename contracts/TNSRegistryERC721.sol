@@ -4,13 +4,15 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title TNS Registry - Full ERC721 NFT Implementation
  * @dev Domain registration contract that mints actual ERC-721 NFTs for .trust domains
  * @notice Each registered domain is a real NFT that can be transferred and traded
+ * @notice Includes reentrancy protection, front-running protection, and overflow checks
  */
-contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
+contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     
     // Events
     event DomainRegistered(
@@ -39,6 +41,10 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
     mapping(uint256 => string) public tokenIdToDomain;
     mapping(address => string[]) private ownerDomains;
     
+    // Front-running protection: commitment scheme
+    mapping(bytes32 => uint256) private commitments;
+    mapping(address => uint256) private lastRegistrationBlock;
+    
     // Token ID counter
     uint256 private _nextTokenId = 1;
     
@@ -46,6 +52,11 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
     uint256 public constant PRICE_3_CHARS = 2 ether;    // 2 TRUST/year
     uint256 public constant PRICE_4_CHARS = 0.1 ether;  // 0.1 TRUST/year  
     uint256 public constant PRICE_5_PLUS = 0.02 ether;  // 0.02 TRUST/year
+    
+    // Front-running protection constants
+    uint256 public constant MIN_COMMITMENT_AGE = 1 minutes;
+    uint256 public constant MAX_COMMITMENT_AGE = 24 hours;
+    uint256 public constant MIN_REGISTRATION_INTERVAL = 2;
     
     modifier validDomain(string calldata domain) {
         require(bytes(domain).length >= 3, "Domain too short");
@@ -94,13 +105,39 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
     }
     
     /**
-     * @dev Register a new domain and mint an ERC-721 NFT
+     * @dev Commit to a domain registration (front-running protection step 1)
+     * @param commitment Hash of keccak256(abi.encodePacked(domain, msg.sender, secret))
      */
-    function register(string calldata domain, uint256 duration) 
+    function makeCommitment(bytes32 commitment) external {
+        require(commitment != bytes32(0), "Invalid commitment");
+        commitments[commitment] = block.timestamp;
+    }
+    
+    /**
+     * @dev Register a new domain and mint an ERC-721 NFT (with front-running protection)
+     * @param domain The domain name to register
+     * @param duration Duration in years (1-10)
+     * @param secret Secret used in commitment (for front-running protection)
+     */
+    function register(string calldata domain, uint256 duration, bytes32 secret) 
         external 
         payable 
+        nonReentrant
         validDomain(domain) 
     {
+        // Front-running protection: verify commitment
+        bytes32 commitment = keccak256(abi.encodePacked(domain, msg.sender, secret));
+        uint256 commitmentTime = commitments[commitment];
+        require(commitmentTime > 0, "No commitment found");
+        require(block.timestamp >= commitmentTime + MIN_COMMITMENT_AGE, "Commitment too new");
+        require(block.timestamp <= commitmentTime + MAX_COMMITMENT_AGE, "Commitment expired");
+        
+        // Rate limiting: prevent rapid registrations from same address
+        require(
+            block.number >= lastRegistrationBlock[msg.sender] + MIN_REGISTRATION_INTERVAL,
+            "Registration too soon"
+        );
+        
         require(duration > 0 && duration <= 10, "Invalid duration");
         require(!domains[domain].exists || isExpired(domain), "Domain not available");
         
@@ -121,6 +158,10 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
         tokenIdToDomain[tokenId] = domain;
         ownerDomains[msg.sender].push(domain);
         
+        // Clear commitment after use
+        delete commitments[commitment];
+        lastRegistrationBlock[msg.sender] = block.number;
+        
         // MINT THE ACTUAL ERC-721 NFT
         _safeMint(msg.sender, tokenId);
         
@@ -129,18 +170,20 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
         
         emit DomainRegistered(domain, msg.sender, tokenId, expirationTime);
         
-        // Refund excess payment
+        // Refund excess payment (use call instead of transfer for better compatibility)
         if (msg.value > cost) {
-            payable(msg.sender).transfer(msg.value - cost);
+            (bool success, ) = payable(msg.sender).call{value: msg.value - cost}("");
+            require(success, "Refund failed");
         }
     }
     
     /**
-     * @dev Renew an existing domain
+     * @dev Renew an existing domain (with overflow protection)
      */
     function renew(string calldata domain, uint256 duration) 
         external 
-        payable 
+        payable
+        nonReentrant
     {
         require(domains[domain].exists, "Domain not registered");
         require(!isExpired(domain), "Domain expired, must re-register");
@@ -152,13 +195,25 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
         uint256 cost = calculateCost(domain, duration);
         require(msg.value >= cost, "Insufficient payment");
         
-        domains[domain].expirationTime += (duration * 365 days);
+        // Fix integer overflow: explicit check before addition
+        uint256 extensionTime = duration * 365 days;
+        uint256 currentExpiration = domains[domain].expirationTime;
         
-        emit DomainRenewed(domain, tokenId, domains[domain].expirationTime);
+        // Check for overflow before adding
+        require(
+            currentExpiration <= type(uint256).max - extensionTime,
+            "Expiration time overflow"
+        );
         
-        // Refund excess payment
+        uint256 newExpiration = currentExpiration + extensionTime;
+        domains[domain].expirationTime = newExpiration;
+        
+        emit DomainRenewed(domain, tokenId, newExpiration);
+        
+        // Refund excess payment (use call instead of transfer)
         if (msg.value > cost) {
-            payable(msg.sender).transfer(msg.value - cost);
+            (bool success, ) = payable(msg.sender).call{value: msg.value - cost}("");
+            require(success, "Refund failed");
         }
     }
     
@@ -281,10 +336,15 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
     }
     
     /**
-     * @dev Withdraw contract funds (only owner)
+     * @dev Withdraw contract funds (only owner, with reentrancy protection)
      */
-    function withdraw() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+    function withdraw() external onlyOwner nonReentrant {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        
+        // Use call instead of transfer for better compatibility
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Withdrawal failed");
     }
     
     /**
@@ -295,7 +355,10 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable {
     }
     
     /**
-     * @dev Fallback function to handle direct payments
+     * @dev Restricted receive function - revert on direct payments to prevent locked funds
+     * @notice Only accept payments through register() or renew() functions
      */
-    receive() external payable {}
+    receive() external payable {
+        revert("Direct payments not accepted. Use register() or renew()");
+    }
 }

@@ -5,6 +5,11 @@
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
+    "type": "error"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "sender", "type": "address" },
       { "internalType": "uint256", "name": "tokenId", "type": "uint256" },
@@ -136,6 +141,33 @@
     ],
     "name": "Transfer",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_COMMITMENT_AGE",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_COMMITMENT_AGE",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_REGISTRATION_INTERVAL",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -312,6 +344,15 @@
     "type": "function"
   },
   {
+    "inputs": [
+      { "internalType": "bytes32", "name": "commitment", "type": "bytes32" }
+    ],
+    "name": "makeCommitment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "name",
     "outputs": [
@@ -352,7 +393,8 @@
   {
     "inputs": [
       { "internalType": "string", "name": "domain", "type": "string" },
-      { "internalType": "uint256", "name": "duration", "type": "uint256" }
+      { "internalType": "uint256", "name": "duration", "type": "uint256" },
+      { "internalType": "bytes32", "name": "secret", "type": "bytes32" }
     ],
     "name": "register",
     "outputs": [],
