@@ -161,6 +161,23 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - **Security**: Added ReentrancyGuard to all state-changing functions (setAddr, setText, setContenthash, clearRecords)
   - **Traceability**: Enhanced clearRecords to emit per-key events (AddressChanged, ContenthashChanged, TextChanged) for better audit trail
   - **Note**: Resolver contract must be deployed and address updated in contracts.ts
+- 2025-10-14: **Implemented Resolver Management UI**:
+  - Added complete resolver settings section to domain management dialog
+  - Three dedicated forms: ETH address resolution, text records, and IPFS content hash
+  - **Comprehensive Validation**:
+    - ETH address: Format validation (0x + 40 hex chars) with red border and inline error messages
+    - Text records: Empty/whitespace-only value detection with visual feedback
+    - Content hash: Format validation (0x, Qm, or bafy prefixes) with inline error messages
+  - **User Experience Features**:
+    - Cancel buttons always enabled for immediate form exit
+    - Submit buttons disabled when input is invalid or empty
+    - Loading states during blockchain transactions
+    - Toast notifications for success and error states
+  - **Error Handling**:
+    - User-facing toast notifications when resolver data fails to load
+    - Graceful handling of MetaMask transaction rejections
+    - Form state reset on successful mutations
+  - **Architecture Review**: Implementation verified by architect as production-ready with all validation, error handling, and UX requirements met
 
 ## Security Considerations
 - **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.
