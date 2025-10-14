@@ -30,13 +30,21 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 
 ## Architecture
 ### Smart Contracts (ERC-721 NFT)
-- **TNSRegistryERC721**: Main contract inheriting OpenZeppelin ERC721, Ownable, and ReentrancyGuard
+- **TNSRegistryERC721**: Main registry contract inheriting OpenZeppelin ERC721, Ownable, and ReentrancyGuard
   - Mints actual ERC-721 NFT for each domain
   - Implements commit-reveal registration (makeCommitment + register)
-  - Includes reentrancy protection and front-running prevention
+  - Includes reentrancy protection and front-running protection
   - Supports domain renewal with overflow protection
-  - Maps domains to addresses and other resources
+  - Manages per-domain resolver assignment (setResolver/resolver functions)
   - Full marketplace compatibility (OpenSea, Rarible, etc.)
+
+- **TNSResolver**: Separate resolver contract for storing resolution data
+  - Stores ETH addresses for domains (setAddr/addr)
+  - Stores content hashes for IPFS/IPNS (setContenthash/contenthash)
+  - Stores text records for metadata (setText/text)
+  - Supports standard text keys: email, url, avatar, description, social media handles
+  - Authorization enforced via Registry contract (only domain owners can update)
+  - Returns zero values for expired domains
 
 ### Frontend Components
 - Domain search and registration interface
@@ -141,6 +149,16 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Restored simple fixed pricing: 30/70/100 TRUST per year
   - Removed maxCost slippage protection (not needed for fixed pricing)
   - Simplified calculateCost() function back to pure fixed calculation
+- 2025-10-14: **Implemented Resolver Contract Architecture**:
+  - Created TNSResolver.sol contract for storing resolution data (addresses, content hashes, text records)
+  - Added setResolver/resolver functions to TNSRegistryERC721 for per-domain resolver assignment
+  - Resolver supports: ETH addresses (setAddr/addr), IPFS content hashes (setContenthash/contenthash), text records (setText/text)
+  - Supported text keys: email, url, avatar, description, social media handles (Twitter, GitHub, Discord, etc.)
+  - Authorization enforced via Registry contract - only domain owners can update their records
+  - Returns zero values for expired domains automatically
+  - Frontend web3 service updated with complete resolver functions
+  - **Note**: Resolver contract must be deployed and address updated in contracts.ts
 
 ## Security Considerations
 - **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.
+- **Resolver Authorization**: All resolver record updates require domain ownership verification through the Registry contract, preventing unauthorized modifications.

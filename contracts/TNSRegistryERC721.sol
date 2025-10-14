@@ -39,6 +39,11 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         string indexed domain
     );
     
+    event ResolverChanged(
+        string indexed domain,
+        address indexed resolver
+    );
+    
     // Domain data structure
     struct Domain {
         string name;
@@ -52,6 +57,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     mapping(uint256 => string) public tokenIdToDomain;
     mapping(address => string[]) private ownerDomains;
     mapping(address => string) public primaryDomain; // Primary domain for each address
+    mapping(string => address) public resolvers; // Domain => Resolver contract address
     
     // Front-running protection: commitment scheme
     mapping(bytes32 => uint256) private commitments;
@@ -430,6 +436,37 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
      */
     function getPrimaryDomain(address owner) external view returns (string memory) {
         return primaryDomain[owner];
+    }
+    
+    /**
+     * @dev Set the resolver contract for a domain
+     * @param domain The domain name (without .trust)
+     * @param resolverAddress The address of the resolver contract
+     */
+    function setResolver(string calldata domain, address resolverAddress) 
+        external 
+        validDomain(domain) 
+    {
+        require(domains[domain].exists, "Domain does not exist");
+        require(!isExpired(domain), "Domain has expired");
+        
+        uint256 tokenId = domainToTokenId[domain];
+        require(ownerOf(tokenId) == msg.sender, "Not domain owner");
+        
+        resolvers[domain] = resolverAddress;
+        emit ResolverChanged(domain, resolverAddress);
+    }
+    
+    /**
+     * @dev Get the resolver contract for a domain
+     * @param domain The domain name (without .trust)
+     * @return The resolver contract address (address(0) if not set)
+     */
+    function resolver(string calldata domain) external view returns (address) {
+        if (!domains[domain].exists || isExpired(domain)) {
+            return address(0);
+        }
+        return resolvers[domain];
     }
     
     /**

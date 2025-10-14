@@ -801,6 +801,335 @@ export class Web3Service {
     if (length === 4) return "0.1";
     return "0.02";
   }
+
+  /**
+   * Set the resolver contract for a domain (Registry function)
+   */
+  public async setResolver(registryAddress: string, registryAbi: any[], domainName: string, resolverAddress: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      console.log("Setting resolver for domain:", normalizedDomain, "to", resolverAddress);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(registryAddress, registryAbi, signer);
+
+      const tx = await contract.setResolver(normalizedDomain, resolverAddress, {
+        gasLimit: 100000
+      });
+
+      console.log("Set resolver transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+
+      console.log("Resolver set successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Set resolver error:", error);
+      throw new Error(error.message || "Failed to set resolver");
+    }
+  }
+
+  /**
+   * Get the resolver contract address for a domain (Registry function)
+   */
+  public async getResolver(registryAddress: string, registryAbi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(registryAddress, registryAbi, provider);
+
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      const resolverAddress = await contract.resolver(normalizedDomain);
+
+      console.log("Resolver for", normalizedDomain, ":", resolverAddress);
+      return resolverAddress;
+    } catch (error: any) {
+      console.error("Get resolver error:", error);
+      return ethers.ZeroAddress;
+    }
+  }
+
+  /**
+   * Set the ETH address for a domain (Resolver function)
+   */
+  public async setAddr(resolverAddress: string, resolverAbi: any[], domainName: string, address: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      console.log("Setting address for domain:", normalizedDomain, "to", address);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
+
+      const tx = await contract.setAddr(normalizedDomain, address, {
+        gasLimit: 100000
+      });
+
+      console.log("Set address transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+
+      console.log("Address set successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Set address error:", error);
+      throw new Error(error.message || "Failed to set address");
+    }
+  }
+
+  /**
+   * Get the ETH address for a domain (Resolver function)
+   */
+  public async getAddr(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, provider);
+
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      const address = await contract.addr(normalizedDomain);
+
+      console.log("Address for", normalizedDomain, ":", address);
+      return address;
+    } catch (error: any) {
+      console.error("Get address error:", error);
+      return ethers.ZeroAddress;
+    }
+  }
+
+  /**
+   * Set a text record for a domain (Resolver function)
+   */
+  public async setText(resolverAddress: string, resolverAbi: any[], domainName: string, key: string, value: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      console.log("Setting text record for domain:", normalizedDomain, "key:", key, "value:", value);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
+
+      const tx = await contract.setText(normalizedDomain, key, value, {
+        gasLimit: 150000
+      });
+
+      console.log("Set text transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+
+      console.log("Text record set successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Set text error:", error);
+      throw new Error(error.message || "Failed to set text record");
+    }
+  }
+
+  /**
+   * Get a text record for a domain (Resolver function)
+   */
+  public async getText(resolverAddress: string, resolverAbi: any[], domainName: string, key: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, provider);
+
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      const value = await contract.text(normalizedDomain, key);
+
+      console.log("Text record for", normalizedDomain, key, ":", value);
+      return value;
+    } catch (error: any) {
+      console.error("Get text error:", error);
+      return "";
+    }
+  }
+
+  /**
+   * Set content hash (IPFS) for a domain (Resolver function)
+   */
+  public async setContenthash(resolverAddress: string, resolverAbi: any[], domainName: string, contenthash: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      console.log("Setting contenthash for domain:", normalizedDomain);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
+
+      // Convert hex string to bytes if needed
+      const hashBytes = contenthash.startsWith('0x') ? contenthash : '0x' + contenthash;
+
+      const tx = await contract.setContenthash(normalizedDomain, hashBytes, {
+        gasLimit: 150000
+      });
+
+      console.log("Set contenthash transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+
+      console.log("Contenthash set successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Set contenthash error:", error);
+      throw new Error(error.message || "Failed to set contenthash");
+    }
+  }
+
+  /**
+   * Get content hash for a domain (Resolver function)
+   */
+  public async getContenthash(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, provider);
+
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      const contenthash = await contract.contenthash(normalizedDomain);
+
+      console.log("Contenthash for", normalizedDomain, ":", contenthash);
+      return contenthash;
+    } catch (error: any) {
+      console.error("Get contenthash error:", error);
+      return "0x";
+    }
+  }
+
+  /**
+   * Get all resolver data for a domain (Resolver function)
+   */
+  public async getResolverData(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<{
+    ethAddress: string;
+    contentHash: string;
+    textKeys: string[];
+    textValues: string[];
+  }> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, provider);
+
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      const data = await contract.getResolverData(normalizedDomain);
+
+      console.log("Resolver data for", normalizedDomain, ":", data);
+
+      return {
+        ethAddress: data[0],
+        contentHash: data[1],
+        textKeys: data[2],
+        textValues: data[3]
+      };
+    } catch (error: any) {
+      console.error("Get resolver data error:", error);
+      return {
+        ethAddress: ethers.ZeroAddress,
+        contentHash: "0x",
+        textKeys: [],
+        textValues: []
+      };
+    }
+  }
+
+  /**
+   * Clear all resolver records for a domain (Resolver function)
+   */
+  public async clearRecords(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      console.log("Clearing all records for domain:", normalizedDomain);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
+
+      const tx = await contract.clearRecords(normalizedDomain, {
+        gasLimit: 200000
+      });
+
+      console.log("Clear records transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+
+      console.log("Records cleared successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Clear records error:", error);
+      throw new Error(error.message || "Failed to clear records");
+    }
+  }
 }
 
 export const web3Service = Web3Service.getInstance();
