@@ -4,11 +4,17 @@ import "./index.css";
 
 // Global unhandled rejection handler
 window.addEventListener("unhandledrejection", (event) => {
+  // Handle cases where event.reason might not be an error object
+  const reason = event.reason;
+  const reasonString = typeof reason === 'string' ? reason : reason?.message || String(reason);
+  
   // Check if this is a user rejection from MetaMask (expected behavior)
   const isUserRejection = 
-    event.reason?.code === 4001 || 
-    event.reason?.message?.includes("User rejected") ||
-    event.reason?.message?.includes("user rejected");
+    reason?.code === 4001 || 
+    reason?.code === "ACTION_REJECTED" ||
+    reasonString?.toLowerCase().includes("user rejected") ||
+    reasonString?.toLowerCase().includes("user denied") ||
+    reasonString?.toLowerCase().includes("cancelled");
   
   if (isUserRejection) {
     // User rejected the transaction - this is normal, just log it
@@ -17,8 +23,10 @@ window.addEventListener("unhandledrejection", (event) => {
     return;
   }
   
-  // For other errors, log and prevent overlay
-  console.error("Unhandled promise rejection:", event.reason);
+  // For other errors, log them but still prevent the overlay
+  if (reason) {
+    console.error("Unhandled promise rejection:", reason);
+  }
   event.preventDefault();
 });
 
