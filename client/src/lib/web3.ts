@@ -577,6 +577,74 @@ export class Web3Service {
     }
   }
 
+  /**
+   * Create a subdomain under a parent domain
+   */
+  public async createSubdomain(
+    contractAddress: string,
+    abi: any[],
+    parentDomain: string,
+    subdomainLabel: string,
+    targetOwner: string
+  ): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      // Normalize parent domain name to lowercase and remove .trust extension
+      const normalizedParent = parentDomain.toLowerCase().replace('.trust', '');
+      
+      console.log("Creating subdomain:", subdomainLabel, "under", normalizedParent, "for", targetOwner);
+      
+      // Create ethers provider and contract instance
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      
+      // Call createSubdomain function
+      const tx = await contract.createSubdomain(normalizedParent, subdomainLabel, targetOwner, {
+        gasLimit: 200000
+      });
+      
+      console.log("Create subdomain transaction sent:", tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+      
+      console.log("Subdomain created successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Create subdomain error:", error);
+      
+      if (error.message?.includes('Parent domain does not exist')) {
+        throw new Error("Parent domain does not exist");
+      } else if (error.message?.includes('Parent domain has expired')) {
+        throw new Error("Parent domain has expired - renew it first");
+      } else if (error.message?.includes('Not parent domain owner')) {
+        throw new Error("You don't own the parent domain");
+      } else if (error.message?.includes('Subdomain already exists')) {
+        throw new Error("This subdomain already exists");
+      } else if (error.message?.includes('Subdomain label too short')) {
+        throw new Error("Subdomain name is too short");
+      } else if (error.message?.includes('Subdomain label too long')) {
+        throw new Error("Subdomain name is too long");
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error("Insufficient TRUST tokens for gas fees");
+      }
+      
+      throw new Error(error.message || "Failed to create subdomain");
+    }
+  }
+
   public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");

@@ -39,6 +39,12 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         string indexed domain
     );
     
+    event SubdomainCreated(
+        string indexed parentDomain,
+        string indexed subdomain,
+        address indexed owner
+    );
+    
     // Domain data structure
     struct Domain {
         string name;
@@ -52,6 +58,8 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     mapping(uint256 => string) public tokenIdToDomain;
     mapping(address => string[]) private ownerDomains;
     mapping(address => string) public primaryDomain; // Primary domain for each address
+    mapping(string => string[]) public subdomains; // Track subdomains for each parent domain
+    mapping(string => string) public subdomainToParent; // Map subdomain to parent
     
     // Front-running protection: commitment scheme
     mapping(bytes32 => uint256) private commitments;
@@ -404,6 +412,78 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+    
+    /**
+     * @dev Create a subdomain under a parent domain
+     * @param parentDomain The parent domain name (without .trust)
+     * @param subdomainLabel The subdomain label (e.g., "www" for www.example.trust)
+     * @param targetOwner The address that will own the subdomain
+     */
+    function createSubdomain(
+        string calldata parentDomain,
+        string calldata subdomainLabel,
+        address targetOwner
+    ) external validDomain(parentDomain) {
+        require(bytes(subdomainLabel).length >= 1, "Subdomain label too short");
+        require(bytes(subdomainLabel).length <= 63, "Subdomain label too long");
+        require(targetOwner != address(0), "Invalid target owner");
+        
+        // Check parent domain exists and is not expired
+        require(domains[parentDomain].exists, "Parent domain does not exist");
+        require(!isExpired(parentDomain), "Parent domain has expired");
+        
+        // Check caller owns the parent domain
+        uint256 parentTokenId = domainToTokenId[parentDomain];
+        require(ownerOf(parentTokenId) == msg.sender, "Not parent domain owner");
+        
+        // Construct full subdomain name
+        string memory fullSubdomain = string(abi.encodePacked(subdomainLabel, ".", parentDomain));
+        
+        // Check subdomain doesn't already exist
+        require(!domains[fullSubdomain].exists, "Subdomain already exists");
+        
+        // Subdomains inherit parent expiration time
+        uint256 expirationTime = domains[parentDomain].expirationTime;
+        
+        // Mint NFT for subdomain
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(targetOwner, tokenId);
+        
+        // Store subdomain data
+        domains[fullSubdomain] = Domain({
+            name: fullSubdomain,
+            expirationTime: expirationTime,
+            exists: true
+        });
+        
+        domainToTokenId[fullSubdomain] = tokenId;
+        tokenIdToDomain[tokenId] = fullSubdomain;
+        ownerDomains[targetOwner].push(fullSubdomain);
+        
+        // Track parent-subdomain relationship
+        subdomains[parentDomain].push(fullSubdomain);
+        subdomainToParent[fullSubdomain] = parentDomain;
+        
+        emit SubdomainCreated(parentDomain, fullSubdomain, targetOwner);
+    }
+    
+    /**
+     * @dev Get all subdomains for a parent domain
+     * @param parentDomain The parent domain to query
+     * @return Array of subdomain names
+     */
+    function getSubdomains(string calldata parentDomain) external view returns (string[] memory) {
+        return subdomains[parentDomain];
+    }
+    
+    /**
+     * @dev Get parent domain for a subdomain
+     * @param subdomain The subdomain to query
+     * @return The parent domain name (empty string if not a subdomain)
+     */
+    function getParentDomain(string calldata subdomain) external view returns (string memory) {
+        return subdomainToParent[subdomain];
     }
     
     /**

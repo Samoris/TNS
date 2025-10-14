@@ -141,6 +141,18 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Restored simple fixed pricing: 30/70/100 TRUST per year
   - Removed maxCost slippage protection (not needed for fixed pricing)
   - Simplified calculateCost() function back to pure fixed calculation
+- 2025-10-14: **Subdomain Creation Now Uses Blockchain Transactions**:
+  - Added createSubdomain() function to TNSRegistryERC721.sol smart contract
+  - Subdomains now minted as separate ERC-721 NFTs on-chain
+  - Added SubdomainCreated event for blockchain tracking
+  - Subdomains inherit parent domain's expiration time
+  - Only parent domain owner can create subdomains
+  - Subdomain owner can be different from parent owner (delegation support)
+  - Added getSubdomains() and getParentDomain() view functions
+  - Frontend calls blockchain transaction via web3Service.createSubdomain()
+  - Updated ABI with subdomain functions and events
+  - **Note**: Contract must be redeployed with new subdomain functions
 
 ## Security Considerations
 - **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.
+- **Subdomain Security**: Subdomain creation is verified on-chain - only the parent domain NFT owner can create subdomains, with parent domain ownership checked by the smart contract.
