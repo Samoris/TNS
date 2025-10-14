@@ -1,8 +1,11 @@
 import { Link } from "wouter";
 import { Globe, Twitter, Github, MessageCircle } from "lucide-react";
+import { TNS_REGISTRY_ADDRESS } from "@/lib/contracts";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  
+  const shortAddress = `${TNS_REGISTRY_ADDRESS.substring(0, 6)}...${TNS_REGISTRY_ADDRESS.substring(38)}`;
 
   const footerLinks = {
     resources: [
@@ -14,6 +17,7 @@ export function Footer() {
     network: [
       { name: "Chain ID: 13579", href: "#" },
       { name: "Currency: TRUST", href: "#" },
+      { name: `Contract: ${shortAddress}`, href: `https://testnet.explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, external: true },
       { name: "Block Explorer ↗", href: "https://testnet.explorer.intuition.systems", external: true },
       { name: "Add to MetaMask", href: "#" },
     ],
