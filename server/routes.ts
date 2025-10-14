@@ -389,13 +389,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Pricing information
+  // Pricing information - Premium pricing structure
   app.get("/api/pricing", (req, res) => {
     res.json({
       tiers: [
-        { characters: "5+", pricePerYear: "0.02", description: "5+ characters" },
-        { characters: "4", pricePerYear: "0.1", description: "4 characters" },
-        { characters: "3", pricePerYear: "2.0", description: "3 characters" },
+        { characters: "5+", pricePerYear: "50", description: "5+ characters" },
+        { characters: "4", pricePerYear: "300", description: "4 characters" },
+        { characters: "3", pricePerYear: "500", description: "3 characters" },
       ],
       currency: "TRUST",
     });

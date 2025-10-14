@@ -115,6 +115,10 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Enhanced global error handler to gracefully handle user transaction rejections
   - MetaMask cancellations (error code 4001) no longer trigger error overlay
   - User rejections logged quietly without interrupting the UI
+- 2025-10-14: **Updated Backend Pricing to Premium Rates**:
+  - Fixed backend pricing tiers in shared/schema.ts and server/routes.ts
+  - Updated pricing from old rates (0.02, 0.1, 2.0) to premium rates (50, 300, 500 TRUST)
+  - Backend now correctly returns premium pricing for all domain searches and registrations
 
 ## Security Considerations
 - **API Authentication**: Current write endpoints (including set-primary) trust the owner field from request body for simplicity. In production, this should be replaced with signature verification (EIP-712) or session-based authentication to prevent unauthorized operations.
