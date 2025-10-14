@@ -4,6 +4,14 @@ pragma solidity ^0.8.30;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
+ * @dev Interface to the Registry contract
+ */
+interface ITNSRegistry {
+    function getDomainOwner(string calldata domain) external view returns (address);
+    function isExpired(string calldata domain) external view returns (bool);
+}
+
+/**
  * @title TNS Resolver
  * @dev Stores and resolves domain data (addresses, content hashes, text records)
  * @notice This contract handles all resolution queries for .trust domains
@@ -16,12 +24,6 @@ contract TNSResolver is ReentrancyGuard {
     event ContenthashChanged(string indexed domain, bytes contenthash);
     event TextChanged(string indexed domain, string indexed key, string value);
     event ResolverCleared(string indexed domain);
-    
-    // Interface to the Registry contract
-    interface ITNSRegistry {
-        function getDomainOwner(string calldata domain) external view returns (address);
-        function isExpired(string calldata domain) external view returns (bool);
-    }
     
     // Reference to the registry contract
     ITNSRegistry public registry;
