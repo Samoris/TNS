@@ -28,6 +28,12 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         uint256 expirationTime
     );
     
+    event DomainBurned(
+        string indexed domain,
+        uint256 indexed tokenId,
+        address indexed burner
+    );
+    
     // Domain data structure
     struct Domain {
         string name;
@@ -230,6 +236,46 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
      */
     function isAvailable(string calldata domain) public view returns (bool) {
         return !domains[domain].exists || isExpired(domain);
+    }
+    
+    /**
+     * @dev Burn an expired domain NFT and make it available for re-registration
+     * @param domain The domain name to burn
+     * @notice Anyone can call this to clean up expired domains
+     * @notice This permanently burns the NFT and clears all domain data
+     */
+    function burnExpiredDomain(string calldata domain) 
+        external 
+        nonReentrant 
+        validDomain(domain) 
+    {
+        require(domains[domain].exists, "Domain not registered");
+        require(isExpired(domain), "Domain not expired");
+        
+        uint256 tokenId = domainToTokenId[domain];
+        address previousOwner = _ownerOf(tokenId);
+        
+        // Remove domain from previous owner's list
+        if (previousOwner != address(0)) {
+            string[] storage ownerDomainsList = ownerDomains[previousOwner];
+            for (uint i = 0; i < ownerDomainsList.length; i++) {
+                if (keccak256(bytes(ownerDomainsList[i])) == keccak256(bytes(domain))) {
+                    ownerDomainsList[i] = ownerDomainsList[ownerDomainsList.length - 1];
+                    ownerDomainsList.pop();
+                    break;
+                }
+            }
+        }
+        
+        // Clear all domain data
+        delete domains[domain];
+        delete domainToTokenId[domain];
+        delete tokenIdToDomain[tokenId];
+        
+        // Burn the NFT
+        _burn(tokenId);
+        
+        emit DomainBurned(domain, tokenId, msg.sender);
     }
     
     /**
