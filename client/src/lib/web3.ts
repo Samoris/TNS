@@ -323,7 +323,69 @@ export class Web3Service {
       .join('');
   }
 
-  public async registerDomain(contractAddress: string, abi: any[], domainName: string, duration: number, cost: string): Promise<string> {
+  /**
+   * Generate a random secret for commit-reveal registration
+   */
+  public generateSecret(): string {
+    return ethers.hexlify(ethers.randomBytes(32));
+  }
+
+  /**
+   * Create commitment hash for domain registration (Step 1 of 2)
+   */
+  public createCommitmentHash(domain: string, address: string, secret: string): string {
+    const normalizedDomain = domain.toLowerCase().replace('.trust', '');
+    return ethers.keccak256(
+      ethers.solidityPacked(
+        ["string", "address", "bytes32"],
+        [normalizedDomain, address, secret]
+      )
+    );
+  }
+
+  /**
+   * Make commitment for domain registration (Step 1 of 2)
+   */
+  public async makeCommitment(contractAddress: string, abi: any[], commitment: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      console.log("Making commitment:", commitment);
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      
+      const tx = await contract.makeCommitment(commitment, {
+        gasLimit: 100000
+      });
+      
+      console.log("Commitment transaction sent:", tx.hash);
+      
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Commitment transaction receipt not received");
+      }
+      
+      console.log("Commitment confirmed:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Commitment error:", error);
+      throw new Error(error.message || "Failed to make commitment");
+    }
+  }
+
+  /**
+   * Register domain with commit-reveal scheme (Step 2 of 2)
+   */
+  public async registerDomain(contractAddress: string, abi: any[], domainName: string, duration: number, cost: string, secret: string): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
     }
@@ -342,6 +404,7 @@ export class Web3Service {
       console.log("- Duration:", duration);
       console.log("- Value:", cost, "TRUST");
       console.log("- Contract:", contractAddress);
+      console.log("- Secret:", secret.substring(0, 10) + "...");
       
       // Create ethers provider and contract instance
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -351,15 +414,15 @@ export class Web3Service {
       // Parse cost to wei
       const valueWei = ethers.parseEther(cost);
       
-      // Call the register function on the actual contract with normalized domain
-      console.log("Calling contract.register with:", normalizedDomain, duration, "value:", valueWei.toString());
-      const tx = await contract.register(normalizedDomain, duration, {
+      // Call the register function with secret
+      console.log("Calling contract.register with:", normalizedDomain, duration, "secret", "value:", valueWei.toString());
+      const tx = await contract.register(normalizedDomain, duration, secret, {
         value: valueWei,
-        gasLimit: 200000 // Higher gas limit for contract interaction
+        gasLimit: 300000 // Higher gas limit for NFT minting
       });
       
       console.log("Transaction sent:", tx.hash);
-      console.log("Registering domain on blockchain...");
+      console.log("Registering domain on blockchain and minting NFT...");
       
       // Wait for transaction confirmation
       const receipt = await tx.wait();
@@ -367,7 +430,7 @@ export class Web3Service {
         throw new Error("Transaction receipt not received");
       }
       console.log("Transaction confirmed:", receipt.hash);
-      console.log("Domain registration completed successfully!");
+      console.log("Domain registration and NFT minting completed successfully!");
       
       // Check if there were any events emitted
       if (receipt.logs && receipt.logs.length > 0) {
@@ -380,17 +443,23 @@ export class Web3Service {
       
       // Enhanced error reporting
       if (error.code === 'CALL_EXCEPTION' && error.receipt && error.receipt.gasUsed < 50000) {
-        // Low gas usage typically indicates domain already registered or invalid parameters
-        throw new Error("Domain registration failed - domain may already be registered by someone else on the blockchain");
+        throw new Error("Domain registration failed - domain may already be registered or commitment not found");
       } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-        throw new Error("Contract call failed - check domain availability and payment amount");
+        throw new Error("Contract call failed - check commitment status and payment amount");
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
         throw new Error("Insufficient TRUST tokens for gas fees");
+      } else if (error.message?.includes('No commitment found')) {
+        throw new Error("Commitment not found - please make commitment first and wait 1 minute");
+      } else if (error.message?.includes('Commitment too new')) {
+        throw new Error("Please wait at least 1 minute after making commitment");
+      } else if (error.message?.includes('Commitment expired')) {
+        throw new Error("Commitment expired - please make a new commitment");
+      } else if (error.message?.includes('Registration too soon')) {
+        throw new Error("Please wait a few blocks before registering another domain");
+      } else if (error.message?.includes('Domain not available')) {
+        throw new Error("Domain is already registered by someone else");
       } else if (error.message?.includes('revert')) {
         const revertReason = error.reason || error.message;
-        if (revertReason.includes('Domain not available')) {
-          throw new Error("Domain is already registered by someone else on the blockchain");
-        }
         throw new Error("Contract rejected transaction - " + revertReason);
       }
       
