@@ -467,6 +467,60 @@ export class Web3Service {
     }
   }
 
+  /**
+   * Burn an expired domain NFT to make it available for re-registration
+   */
+  public async burnExpiredDomain(contractAddress: string, abi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      // Normalize domain name to lowercase and remove .trust extension
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      console.log("Burning expired domain:", normalizedDomain);
+      
+      // Create ethers provider and contract instance
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      
+      // Call burnExpiredDomain function
+      const tx = await contract.burnExpiredDomain(normalizedDomain, {
+        gasLimit: 200000
+      });
+      
+      console.log("Burn transaction sent:", tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+      
+      console.log("Domain burned successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Burn domain error:", error);
+      
+      if (error.message?.includes('Domain not registered')) {
+        throw new Error("Domain is not registered");
+      } else if (error.message?.includes('Domain not expired')) {
+        throw new Error("Domain has not expired yet - cannot burn active domains");
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error("Insufficient TRUST tokens for gas fees");
+      }
+      
+      throw new Error(error.message || "Failed to burn expired domain");
+    }
+  }
+
   public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
