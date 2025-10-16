@@ -1,6 +1,7 @@
 import { Link } from "wouter";
-import { Globe, Twitter, Github, MessageCircle } from "lucide-react";
+import { Twitter, Github, MessageCircle } from "lucide-react";
 import { TNS_REGISTRY_ADDRESS } from "@/lib/contracts";
+import logoImage from "@assets/IMG_4619_1760618474376.png";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -41,10 +42,11 @@ export function Footer() {
           {/* Brand Section */}
           <div className="col-span-2">
             <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-trust-blue to-trust-violet rounded-lg flex items-center justify-center">
-                <Globe className="text-white text-lg" />
-              </div>
-              <span className="ml-3 text-2xl font-bold">TNS</span>
+              <img 
+                src={logoImage} 
+                alt="TNS Logo" 
+                className="h-10 w-auto object-contain"
+              />
             </div>
             <p className="text-gray-300 max-w-md mb-6">
               Trust Name Service provides decentralized domain names for the Intuition blockchain ecosystem, 

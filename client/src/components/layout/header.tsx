@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import logoImage from "@assets/1_9Bz1z1LNSTaI8IDi8McQjQ (2)_1760441953277.png";
+import logoImage from "@assets/IMG_4619_1760618474376.png";
 
 export function Header() {
   const [location] = useLocation();
@@ -59,9 +59,8 @@ export function Header() {
               <img 
                 src={logoImage} 
                 alt="TNS Logo" 
-                className="w-10 h-10 object-contain"
+                className="h-10 w-auto object-contain"
               />
-              <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">TNS</span>
               <Badge variant="secondary" className="ml-2 bg-trust-violet/10 text-trust-violet">
                 BETA
               </Badge>
