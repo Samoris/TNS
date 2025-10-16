@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import logoImage from "@assets/IMG_4619_1760618474376.png";
+import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_1760633880162.jpeg";
 
 export function Header() {
   const [location] = useLocation();

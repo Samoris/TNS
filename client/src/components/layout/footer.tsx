@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { SiX, SiDiscord } from "react-icons/si";
 import { TNS_REGISTRY_ADDRESS } from "@/lib/contracts";
-import logoImage from "@assets/IMG_4619_1760618474376.png";
+import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_1760633880162.jpeg";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
