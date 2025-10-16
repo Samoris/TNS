@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Twitter, Github, MessageCircle } from "lucide-react";
+import { Twitter } from "lucide-react";
+import { SiDiscord } from "react-icons/si";
 import { TNS_REGISTRY_ADDRESS } from "@/lib/contracts";
 import logoImage from "@assets/IMG_4619_1760618474376.png";
 
@@ -31,7 +32,7 @@ export function Footer() {
 
   const socialLinks = [
     { name: "Twitter", icon: Twitter, href: "https://x.com/TNS_trust", external: true },
-    { name: "Discord", icon: MessageCircle, href: "https://discord.gg/J8qZRrTKEf", external: true },
+    { name: "Discord", icon: SiDiscord, href: "https://discord.gg/J8qZRrTKEf", external: true },
   ];
 
   return (
