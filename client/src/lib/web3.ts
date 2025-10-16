@@ -694,18 +694,11 @@ export class Web3Service {
         
         console.log(`Real blockchain data: ${totalDomains} total domains, ${activeUsers} unique users from ${allEvents.length} events`);
         
-        // Fallback to reasonable estimates if we couldn't get comprehensive data
-        if (totalDomains === 0) {
-          console.log("No events found, using contract analysis estimates");
-          totalDomains = 82400;
-          activeUsers = 50000;
-        }
-        
       } catch (eventError) {
         console.log("Could not query blockchain events comprehensively:", eventError);
-        // Fallback to contract analysis estimates
-        totalDomains = 82400;
-        activeUsers = 50000;
+        // Return zeros if we can't get real data - no fake estimates
+        totalDomains = 0;
+        activeUsers = 0;
       }
       
       console.log("Contract stats:", { totalDomains, totalValueLocked, activeUsers });
@@ -717,11 +710,11 @@ export class Web3Service {
       };
     } catch (error: any) {
       console.error("Error getting contract stats:", error);
-      // Even on error, provide estimates based on contract analysis
+      // Return zeros on error - no fake data
       return {
-        totalDomains: 82400, // Fallback based on contract analysis
-        totalValueLocked: "2225.58", // Real contract balance
-        activeUsers: 50000, // Fallback based on contract analysis
+        totalDomains: 0,
+        totalValueLocked: "0",
+        activeUsers: 0,
       };
     }
   }
