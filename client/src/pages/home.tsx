@@ -81,7 +81,7 @@ export default function Home() {
               <span className="text-trust-blue">.trust</span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Trust Naming Service (TNS) provides decentralized, human-readable names for your crypto addresses 
+              Trust Name Service (TNS) provides decentralized, human-readable names for your crypto addresses 
               on Intuition blockchain. Own your digital identity with .trust domains.
             </p>
 

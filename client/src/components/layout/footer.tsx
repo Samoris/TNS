@@ -47,7 +47,7 @@ export function Footer() {
               <span className="ml-3 text-2xl font-bold">TNS</span>
             </div>
             <p className="text-gray-300 max-w-md mb-6">
-              Trust Naming Service provides decentralized domain names for the Intuition blockchain ecosystem, 
+              Trust Name Service provides decentralized domain names for the Intuition blockchain ecosystem, 
               making Web3 addresses human-readable and secure.
             </p>
             <div className="flex space-x-4">
@@ -113,7 +113,7 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
           <div className="text-gray-400 text-sm mb-4 md:mb-0">
-            © {currentYear} Trust Naming Service. Built on Intuition blockchain.
+            © {currentYear} Trust Name Service. Built on Intuition blockchain.
           </div>
           <div className="flex space-x-6 text-sm text-gray-400">
             {footerLinks.legal.map((link) => (

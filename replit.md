@@ -1,4 +1,4 @@
-# Trust Naming Service (TNS)
+# Trust Name Service (TNS)
 
 ## Project Overview
 A decentralized naming service similar to ENS (Ethereum Name Service) built for the Intuition testnet. TNS allows users to register human-readable `.trust` domain names that map to blockchain addresses and other resources.
