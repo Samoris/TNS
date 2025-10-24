@@ -377,18 +377,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
               <Globe className="text-trust-blue h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <CardTitle className="text-lg" data-testid={`domain-name-${domain.name || 'unknown'}`}>
-                  {domain.name || 'Unknown Domain'}
-                </CardTitle>
-                <Badge 
-                  variant="secondary" 
-                  className="text-xs bg-trust-blue/10 text-trust-blue dark:bg-trust-blue/20"
-                  data-testid={`record-count-${domain.name || 'unknown'}`}
-                >
-                  {loadingResolver ? '...' : `${getRecordCount()} ${getRecordCount() === 1 ? 'record' : 'records'}`}
-                </Badge>
-              </div>
+              <CardTitle className="text-lg" data-testid={`domain-name-${domain.name || 'unknown'}`}>
+                {domain.name || 'Unknown Domain'}
+              </CardTitle>
               <p className="text-sm text-gray-500" data-testid={`expiry-date-${domain.name || 'unknown'}`}>
                 Expires: {domain.expirationDate ? new Date(domain.expirationDate).toLocaleDateString() : 'N/A'}
               </p>
