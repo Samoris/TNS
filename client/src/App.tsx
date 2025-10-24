@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Search from "@/pages/search";
 import Register from "@/pages/register";
 import Manage from "@/pages/manage";
+import SendPayment from "@/pages/send-payment";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/search" component={Search} />
           <Route path="/register" component={Register} />
           <Route path="/manage" component={Manage} />
+          <Route path="/send-payment" component={SendPayment} />
           <Route component={NotFound} />
         </Switch>
       </main>

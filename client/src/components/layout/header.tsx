@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { web3Service } from "@/lib/web3";
+import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
 import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_1760633880162.jpeg";
 
 export function Header() {
@@ -42,10 +45,27 @@ export function Header() {
     localStorage.setItem("theme", newTheme);
   };
 
+  // Query for primary domain (reverse resolution)
+  const { data: primaryDomain } = useQuery({
+    queryKey: ['/api/primary-domain', address],
+    queryFn: async () => {
+      if (!address) return "";
+      const domain = await web3Service.getPrimaryDomain(
+        TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        address
+      );
+      return domain;
+    },
+    enabled: isConnected && !!address,
+    refetchInterval: 5000,
+  });
+
   const navigation = [
     { name: "Search", href: "/", active: location === "/" },
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
+    { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
     { name: "Docs", href: "#", active: false },
   ];
 
@@ -128,12 +148,20 @@ export function Header() {
                   <Button variant="outline" className="flex items-center space-x-2" data-testid="wallet-dropdown">
                     <Wallet className="h-4 w-4" />
                     <span className="hidden sm:block">
-                      {formatAddress(address!)}
+                      {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <div className="p-3">
+                    {primaryDomain && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        <div className="text-sm font-bold text-trust-blue" data-testid="text-primary-domain">
+                          {primaryDomain}.trust
+                        </div>
+                      </div>
+                    )}
                     <div className="text-sm font-medium">Connected Wallet</div>
                     <div className="text-xs text-gray-500 font-mono">{address}</div>
                     {balance && (
