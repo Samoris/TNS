@@ -1123,6 +1123,93 @@ export class Web3Service {
       throw new Error(error.message || "Failed to clear records");
     }
   }
+
+  /**
+   * Get the primary domain for an address (reverse resolution)
+   */
+  public async getPrimaryDomain(registryAddress: string, registryAbi: any[], ownerAddress: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(registryAddress, registryAbi, provider);
+
+      const primaryDomain = await contract.getPrimaryDomain(ownerAddress);
+
+      console.log("Primary domain for", ownerAddress, ":", primaryDomain);
+      return primaryDomain;
+    } catch (error: any) {
+      console.error("Get primary domain error:", error);
+      return "";
+    }
+  }
+
+  /**
+   * Resolve a domain to its payment address via Payment Forwarder contract
+   */
+  public async resolvePaymentAddress(forwarderAddress: string, forwarderAbi: any[], domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(forwarderAddress, forwarderAbi, provider);
+
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      const paymentAddress = await contract.resolvePaymentAddress(normalizedDomain);
+
+      console.log("Payment address for", normalizedDomain, ":", paymentAddress);
+      return paymentAddress;
+    } catch (error: any) {
+      console.error("Resolve payment address error:", error);
+      return ethers.ZeroAddress;
+    }
+  }
+
+  /**
+   * Send payment to a .trust domain via Payment Forwarder contract
+   */
+  public async sendToTrustDomain(forwarderAddress: string, forwarderAbi: any[], domainName: string, amountInTrust: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      console.log("Sending", amountInTrust, "TRUST to domain:", normalizedDomain);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(forwarderAddress, forwarderAbi, signer);
+
+      const amountWei = ethers.parseEther(amountInTrust);
+
+      const tx = await contract.sendToTrustDomain(normalizedDomain, {
+        value: amountWei,
+        gasLimit: 150000
+      });
+
+      console.log("Payment transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+
+      console.log("Payment sent successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Send payment error:", error);
+      throw new Error(error.message || "Failed to send payment");
+    }
+  }
 }
 
 export const web3Service = Web3Service.getInstance();
