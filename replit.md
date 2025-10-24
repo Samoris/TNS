@@ -13,9 +13,11 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 ## Core Features
 - Domain registration with `.trust` extension (2-step commit-reveal process)
 - Address resolution (map domains to wallet addresses)
+- **Payment forwarding** - Send TRUST tokens directly to .trust domain names on-chain
+- **Reverse resolution** - Display primary domain instead of wallet address
 - Hierarchical domain structure (subdomains)
 - NFT ownership of domains (ERC-721 tokens with OpenZeppelin standard)
-- Multi-resource support (addresses, IPFS hashes, etc.)
+- Multi-resource support (addresses, IPFS hashes, text records)
 - Front-running protection via commit-reveal scheme
 - Reentrancy protection on all critical functions
 - 60-second minimum wait between commitment and registration
@@ -46,11 +48,21 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
   - Authorization enforced via Registry contract (only domain owners can update)
   - Returns zero values for expired domains
 
+- **TNSPaymentForwarder**: Payment gateway contract for sending funds to domains
+  - Resolves .trust domains to payment addresses on-chain
+  - Automatically uses resolver address if set, otherwise domain owner
+  - Validates domain existence and expiration before transfer
+  - Includes reentrancy protection via OpenZeppelin ReentrancyGuard
+  - Emits PaymentSent and PaymentFailed events for tracking
+  - Supports batch resolution for multiple domains
+
 ### Frontend Components
 - Domain search and registration interface
 - Domain management dashboard
 - Address resolution functionality
 - Subdomain management
+- **Send Payment page** - User-friendly interface for sending TRUST to .trust domains
+- **Reverse resolution in header** - Displays primary domain instead of wallet address
 
 ### Backend API
 - Domain availability checking
@@ -79,6 +91,9 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - [✓] **2-Step Commit-Reveal Registration** (60-second wait, 24-hour window)
 - [✓] **Frontend Commit-Reveal UI** (Countdown timer, clear 2-step process)
 - [✓] **Real blockchain transactions enabled** (Actual NFT minting on-chain)
+- [✓] **Payment Forwarder Contract** (TNSPaymentForwarder.sol with reentrancy protection)
+- [✓] **Send Payment Page** (Resolve domains and send TRUST tokens on-chain)
+- [✓] **Reverse Resolution** (Display primary domain in wallet button and header)
 
 ## User Preferences
 - Focus on clean, intuitive UI similar to ENS
@@ -178,7 +193,28 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
     - Graceful handling of MetaMask transaction rejections
     - Form state reset on successful mutations
   - **Architecture Review**: Implementation verified by architect as production-ready with all validation, error handling, and UX requirements met
+- 2025-10-24: **Implemented Payment Forwarding System**:
+  - Created TNSPaymentForwarder.sol smart contract for on-chain payments to .trust domains
+  - Contract resolves domains to payment addresses (uses resolver address if set, otherwise domain owner)
+  - Includes reentrancy protection and domain validation (existence and expiration checks)
+  - Emits PaymentSent event with domain, recipient, sender, and amount
+  - Added web3 service functions: resolvePaymentAddress() and sendToTrustDomain()
+  - Created Send Payment page with domain resolution and amount validation
+  - **UI Features**:
+    - Resolve button to verify domain and get payment address before sending
+    - Visual confirmation of resolved address with green checkmark
+    - Amount input with TRUST token validation
+    - Error handling for invalid domains, expired domains, and failed transactions
+  - **Note**: Payment Forwarder contract must be deployed and address updated in contracts.ts
+- 2025-10-24: **Implemented Reverse Resolution (Address to Domain)**:
+  - Added getPrimaryDomain() web3 service function to query primary domain by address
+  - Header now displays primary domain (e.g., "intuition.trust") instead of truncated address
+  - Crown icon indicates primary domain in wallet dropdown
+  - Automatic fallback to formatted address when no primary domain is set
+  - Query updates every 5 seconds to keep display current
+  - **Benefits**: Users can identify themselves by their primary domain across the platform
 
 ## Security Considerations
 - **Primary Domain Security**: Primary domain status is now stored on-chain and requires ownership verification by the smart contract, preventing unauthorized changes.
 - **Resolver Authorization**: All resolver record updates require domain ownership verification through the Registry contract, preventing unauthorized modifications.
+- **Payment Forwarder Security**: TNSPaymentForwarder includes reentrancy protection, validates domain ownership and expiration, and emits events for all payment attempts. Payments cannot be misrouted as the contract validates the domain exists and is not expired before transferring funds.
