@@ -300,7 +300,11 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     return hash.length > 0 && (hash.startsWith('0x') || hash.startsWith('Qm') || hash.startsWith('bafy'));
   };
 
-  // Load resolver data when dialog opens
+  // Load resolver data when component mounts and when dialog opens
+  useEffect(() => {
+    loadResolverData();
+  }, []);
+
   useEffect(() => {
     if (isManageOpen) {
       loadResolverData();
@@ -339,6 +343,31 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     );
   };
 
+  const getRecordCount = () => {
+    if (!resolverData) return 0;
+    
+    let count = 0;
+    
+    // Count ETH address if set
+    if (resolverData.ethAddress && resolverData.ethAddress !== "0x0000000000000000000000000000000000000000") {
+      count++;
+    }
+    
+    // Count content hash if set
+    if (resolverData.contentHash && resolverData.contentHash !== "" && resolverData.contentHash !== "0x") {
+      count++;
+    }
+    
+    // Count text records
+    if (resolverData.textKeys && resolverData.textKeys.length > 0) {
+      // Only count non-empty text values
+      const nonEmptyTextRecords = resolverData.textValues.filter(v => v && v !== "").length;
+      count += nonEmptyTextRecords;
+    }
+    
+    return count;
+  };
+
   return (
     <Card className="trust-card">
       <CardHeader>
@@ -348,9 +377,20 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
               <Globe className="text-trust-blue h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-lg" data-testid={`domain-name-${domain.name || 'unknown'}`}>
-                {domain.name || 'Unknown Domain'}
-              </CardTitle>
+              <div className="flex items-center space-x-2">
+                <CardTitle className="text-lg" data-testid={`domain-name-${domain.name || 'unknown'}`}>
+                  {domain.name || 'Unknown Domain'}
+                </CardTitle>
+                {resolverData !== null && (
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs bg-trust-blue/10 text-trust-blue dark:bg-trust-blue/20"
+                    data-testid={`record-count-${domain.name || 'unknown'}`}
+                  >
+                    {getRecordCount()} {getRecordCount() === 1 ? 'record' : 'records'}
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-gray-500" data-testid={`expiry-date-${domain.name || 'unknown'}`}>
                 Expires: {domain.expirationDate ? new Date(domain.expirationDate).toLocaleDateString() : 'N/A'}
               </p>
