@@ -135,6 +135,7 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
 - 2025-10-14: **Updated Contract Addresses**:
   - Registry contract address: `0xdfe1aB8532925de628C419B65B41f23997c34B4a`
   - Resolver contract address: `0x259037FCc807Ca46549e8a15F6F4994e96D88035`
+  - Payment Forwarder contract address: `0x8BdD1Edf6C8531a2C9e6cBa73957626f1287443D`
   - All frontend references updated to use new deployments with resolver support
 - 2025-10-14: **Fixed MetaMask Rejection Error**:
   - Enhanced global error handler to gracefully handle user transaction rejections
@@ -205,7 +206,8 @@ A decentralized naming service similar to ENS (Ethereum Name Service) built for 
     - Visual confirmation of resolved address with green checkmark
     - Amount input with TRUST token validation
     - Error handling for invalid domains, expired domains, and failed transactions
-  - **Note**: Payment Forwarder contract must be deployed and address updated in contracts.ts
+  - **Deployment**: Payment Forwarder contract deployed to `0x8BdD1Edf6C8531a2C9e6cBa73957626f1287443D`
+  - Frontend integrated and ready to use
 - 2025-10-24: **Implemented Reverse Resolution (Address to Domain)**:
   - Added getPrimaryDomain() web3 service function to query primary domain by address
   - Header now displays primary domain (e.g., "intuition.trust") instead of truncated address
