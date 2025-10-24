@@ -971,7 +971,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <div>Annual Price: {formatPrice(domain.pricePerYear)}</div>
-            <div>{(domain.records || []).length} records, {(domain.subdomains || []).length} subdomains</div>
+            <div>
+              {loadingResolver ? '...' : getRecordCount()} {loadingResolver ? '' : (getRecordCount() === 1 ? 'record' : 'records')}, {(domain.subdomains || []).length} {(domain.subdomains || []).length === 1 ? 'subdomain' : 'subdomains'}
+            </div>
           </div>
           
           {isExpired ? (
