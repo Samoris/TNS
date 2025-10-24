@@ -381,15 +381,13 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                 <CardTitle className="text-lg" data-testid={`domain-name-${domain.name || 'unknown'}`}>
                   {domain.name || 'Unknown Domain'}
                 </CardTitle>
-                {resolverData !== null && (
-                  <Badge 
-                    variant="secondary" 
-                    className="text-xs bg-trust-blue/10 text-trust-blue dark:bg-trust-blue/20"
-                    data-testid={`record-count-${domain.name || 'unknown'}`}
-                  >
-                    {getRecordCount()} {getRecordCount() === 1 ? 'record' : 'records'}
-                  </Badge>
-                )}
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs bg-trust-blue/10 text-trust-blue dark:bg-trust-blue/20"
+                  data-testid={`record-count-${domain.name || 'unknown'}`}
+                >
+                  {loadingResolver ? '...' : `${getRecordCount()} ${getRecordCount() === 1 ? 'record' : 'records'}`}
+                </Badge>
               </div>
               <p className="text-sm text-gray-500" data-testid={`expiry-date-${domain.name || 'unknown'}`}>
                 Expires: {domain.expirationDate ? new Date(domain.expirationDate).toLocaleDateString() : 'N/A'}
