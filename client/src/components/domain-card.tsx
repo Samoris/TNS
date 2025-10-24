@@ -593,10 +593,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                       <option value="url">URL</option>
                                       <option value="avatar">Avatar</option>
                                       <option value="description">Description</option>
-                                      <option value="twitter.com">Twitter</option>
-                                      <option value="github.com">GitHub</option>
-                                      <option value="discord.com">Discord</option>
-                                      <option value="telegram.org">Telegram</option>
+                                      <option value="com.twitter">Twitter</option>
+                                      <option value="com.github">GitHub</option>
+                                      <option value="com.discord">Discord</option>
+                                      <option value="org.telegram">Telegram</option>
                                     </select>
                                   </div>
                                   <div>

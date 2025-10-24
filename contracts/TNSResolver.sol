@@ -33,7 +33,7 @@ contract TNSResolver is ReentrancyGuard {
     mapping(string => bytes) private contenthashes;         // domain => IPFS/content hash
     mapping(string => mapping(string => string)) private texts; // domain => key => value
     
-    // Supported text record keys (using standard .com format)
+    // Supported text record keys
     string[] private supportedTextKeys = [
         "email",
         "url", 
@@ -41,11 +41,11 @@ contract TNSResolver is ReentrancyGuard {
         "description",
         "notice",
         "keywords",
-        "discord.com",
-        "github.com",
-        "reddit.com",
-        "twitter.com",
-        "telegram.org"
+        "com.discord",
+        "com.github",
+        "com.reddit",
+        "com.twitter",
+        "org.telegram"
     ];
     
     /**
