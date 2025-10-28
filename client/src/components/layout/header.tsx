@@ -143,46 +143,58 @@ export function Header() {
                 {isLoading ? "Connecting..." : "Connect Wallet"}
               </Button>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center space-x-2" data-testid="wallet-dropdown">
-                    <Wallet className="h-4 w-4" />
-                    <span className="hidden sm:block">
-                      {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <div className="p-3">
-                    {primaryDomain && (
-                      <div className="mb-2 flex items-center gap-2">
-                        <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        <div className="text-sm font-bold text-trust-blue" data-testid="text-primary-domain">
-                          {primaryDomain}.trust
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center space-x-2" data-testid="wallet-dropdown">
+                      <Wallet className="h-4 w-4" />
+                      <span className="hidden sm:block">
+                        {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <div className="p-3">
+                      {primaryDomain && (
+                        <div className="mb-2 flex items-center gap-2">
+                          <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                          <div className="text-sm font-bold text-trust-blue" data-testid="text-primary-domain">
+                            {primaryDomain}.trust
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      <div className="text-sm font-medium">Connected Wallet</div>
+                      <div className="text-xs text-gray-500 font-mono">{address}</div>
+                      {balance && (
+                        <div className="text-sm font-medium mt-1">
+                          Balance: {balance} TRUST
+                        </div>
+                      )}
+                    </div>
+                    <DropdownMenuSeparator />
+                    {!isCorrectNetwork && (
+                      <DropdownMenuItem onClick={switchNetwork} data-testid="switch-network">
+                        <Globe className="mr-2 h-4 w-4" />
+                        Switch to Intuition Testnet
+                      </DropdownMenuItem>
                     )}
-                    <div className="text-sm font-medium">Connected Wallet</div>
-                    <div className="text-xs text-gray-500 font-mono">{address}</div>
-                    {balance && (
-                      <div className="text-sm font-medium mt-1">
-                        Balance: {balance} TRUST
-                      </div>
-                    )}
-                  </div>
-                  <DropdownMenuSeparator />
-                  {!isCorrectNetwork && (
-                    <DropdownMenuItem onClick={switchNetwork} data-testid="switch-network">
-                      <Globe className="mr-2 h-4 w-4" />
-                      Switch to Intuition Testnet
+                    <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet-dropdown">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Disconnect
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={disconnectWallet}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  title="Disconnect Wallet"
+                  data-testid="disconnect-wallet-button"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
         </div>
