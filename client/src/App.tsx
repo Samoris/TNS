@@ -15,6 +15,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Support from "@/pages/support";
 import Admin from "@/pages/admin";
+import Whitelist from "@/pages/whitelist";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -34,6 +35,7 @@ function Router() {
           <Route path="/terms" component={Terms} />
           <Route path="/support" component={Support} />
           <Route path="/admin" component={Admin} />
+          <Route path="/whitelist" component={Whitelist} />
           <Route component={NotFound} />
         </Switch>
       </main>

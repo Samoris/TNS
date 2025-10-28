@@ -104,6 +104,20 @@ export default function RegisterPage() {
   const pricing = selectedDomain ? calculateDomainPrice(selectedDomain) : null;
   const totalCost = pricing ? pricing.totalCost(registrationYears) : "0";
 
+  // Check if user is whitelisted
+  const { data: whitelistStatus } = useQuery({
+    queryKey: ["/api/whitelist/check", address],
+    enabled: !!address,
+    refetchOnWindowFocus: false,
+  });
+
+  const isWhitelisted = whitelistStatus?.eligible || false;
+  const remainingFreeMints = whitelistStatus?.remainingMints || 0;
+  
+  // Determine if domain is eligible for free mint (5+ chars only)
+  const domainLength = selectedDomain ? selectedDomain.replace('.trust', '').length : 0;
+  const isEligibleForFreeMint = isWhitelisted && domainLength >= 5;
+
   // Timer for commitment waiting period (1 minute = 60 seconds)
   const MIN_WAIT_TIME = 60;
 
@@ -608,11 +622,32 @@ export default function RegisterPage() {
 
                     <div>
                       <Label>Pricing</Label>
-                      <div className="space-y-2 text-sm">
+                      {isEligibleForFreeMint && (
+                        <Alert className="mt-2 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20" data-testid="alert-whitelist-eligible">
+                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          <AlertDescription className="text-green-700 dark:text-green-300">
+                            <span className="font-semibold">Whitelisted!</span> This domain is FREE for you
+                            ({remainingFreeMints} free mints remaining)
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {isWhitelisted && domainLength > 0 && domainLength < 5 && (
+                        <Alert className="mt-2 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20" data-testid="alert-whitelist-premium">
+                          <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <AlertDescription className="text-amber-700 dark:text-amber-300">
+                            You're whitelisted but premium 3-4 char domains still require payment
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      <div className="space-y-2 text-sm mt-2">
                         <div className="flex justify-between">
                           <span>Price per year:</span>
                           <span className="font-medium" data-testid="summary-price-per-year">
-                            {formatPrice(pricing?.pricePerYear || "0")}
+                            {isEligibleForFreeMint ? (
+                              <span className="text-green-600 dark:text-green-400 font-bold">FREE</span>
+                            ) : (
+                              formatPrice(pricing?.pricePerYear || "0")
+                            )}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -622,7 +657,11 @@ export default function RegisterPage() {
                         <div className="flex justify-between text-lg font-semibold pt-2 border-t">
                           <span>Total cost:</span>
                           <span className="text-trust-blue" data-testid="summary-total-cost">
-                            {formatPrice(totalCost)}
+                            {isEligibleForFreeMint ? (
+                              <span className="text-green-600 dark:text-green-400">FREE</span>
+                            ) : (
+                              formatPrice(totalCost)
+                            )}
                           </span>
                         </div>
                       </div>
