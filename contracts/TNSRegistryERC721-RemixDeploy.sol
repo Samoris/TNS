@@ -309,7 +309,6 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         require(isGracePeriodExpired(domain), "Grace period not expired");
         
         uint256 tokenId = domainToTokenId[domain];
-        address owner = ownerOf(tokenId);
         
         _burn(tokenId);
         
@@ -326,10 +325,10 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
      */
     function _update(address to, uint256 tokenId, address auth)
         internal
-        override
+        override(ERC721, ERC721URIStorage)
         returns (address)
     {
-        address from = _ownerOf(tokenId);
+        address from = super._update(to, tokenId, auth);
         
         // Update owner domains list
         if (from != address(0) && from != to) {
