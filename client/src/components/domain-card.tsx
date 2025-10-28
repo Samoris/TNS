@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice } from "@/lib/pricing";
+import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
 import type { DomainWithRecords } from "@shared/schema";
 import { web3Service } from "@/lib/web3";
 import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, TNS_RESOLVER_ADDRESS, TNS_RESOLVER_ABI } from "@/lib/contracts";
@@ -355,17 +355,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   };
 
   const calculateExtensionCost = (years: number): number => {
-    const domainName = domain.name.replace('.trust', '');
-    const length = domainName.length;
-    let pricePerYear = 30; // 5+ characters
-    
-    if (length === 3) {
-      pricePerYear = 100;
-    } else if (length === 4) {
-      pricePerYear = 70;
-    }
-    
-    return pricePerYear * years;
+    const { totalCost } = calculateDomainPrice(domain.name);
+    return parseFloat(totalCost(years));
   };
 
   const getStatusBadge = () => {
