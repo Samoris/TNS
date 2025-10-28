@@ -10,10 +10,10 @@ export function Footer() {
 
   const footerLinks = {
     resources: [
-      { name: "Documentation", href: "#" },
-      { name: "API Reference", href: "#" },
-      { name: "Smart Contracts", href: "#" },
-      { name: "Integration Guide", href: "#" },
+      { name: "Documentation", href: "/docs" },
+      { name: "API Reference", href: "/docs#technical" },
+      { name: "Smart Contracts", href: `https://testnet.explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, external: true },
+      { name: "Integration Guide", href: "/docs#registration" },
     ],
     network: [
       { name: "Chain ID: 13579", href: "#" },
@@ -74,13 +74,26 @@ export function Footer() {
             <ul className="space-y-2 text-gray-300">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="hover:text-white transition-colors text-sm"
-                    data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
-                  >
-                    {link.name}
-                  </a>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition-colors text-sm"
+                      data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      {link.name} ↗
+                    </a>
+                  ) : (
+                    <Link href={link.href}>
+                      <a
+                        className="hover:text-white transition-colors text-sm cursor-pointer"
+                        data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {link.name}
+                      </a>
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
