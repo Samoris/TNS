@@ -42,8 +42,7 @@ export default function AdminPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  // TODO: Replace with actual contract owner address
-  const CONTRACT_OWNER = "0xYourContractOwnerAddress";
+  const CONTRACT_OWNER = "0xE9bFe128b7F0F7486c206Aa87a2C2E796fc77BcD";
   const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
 
   const handleAddSingle = async () => {

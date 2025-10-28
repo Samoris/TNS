@@ -61,8 +61,7 @@ export function Header() {
     refetchInterval: 5000,
   });
 
-  // TODO: Replace with actual contract owner address
-  const CONTRACT_OWNER = "0xYourContractOwnerAddress";
+  const CONTRACT_OWNER = "0xE9bFe128b7F0F7486c206Aa87a2C2E796fc77BcD";
   const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
 
   const navigation = [
