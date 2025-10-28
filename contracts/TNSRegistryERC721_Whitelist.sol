@@ -163,6 +163,104 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     /**
+     * @dev Admin function to migrate domains from old contract
+     * @param domain The domain name to migrate (without .trust)
+     * @param owner The original owner address
+     * @param expirationTime The original expiration timestamp
+     * @notice Only contract owner can call this for migration purposes
+     * @notice Bypasses commitment, payment, and rate limiting
+     */
+    function adminMigrateDomain(
+        string calldata domain,
+        address owner,
+        uint256 expirationTime
+    ) external onlyOwner validDomain(domain) {
+        require(owner != address(0), "Invalid owner address");
+        require(expirationTime > block.timestamp, "Expiration time must be in future");
+        require(isAvailable(domain), "Domain already registered");
+        
+        // Mint NFT
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(owner, tokenId);
+        
+        // Store domain data with original expiration time
+        domains[domain] = Domain({
+            name: domain,
+            expirationTime: expirationTime,
+            exists: true
+        });
+        
+        // Create mappings
+        domainToTokenId[domain] = tokenId;
+        tokenIdToDomain[tokenId] = domain;
+        ownerDomains[owner].push(domain);
+        
+        // Set metadata
+        string memory metadata = string(abi.encodePacked(
+            '{"name":"', domain, '.trust",',
+            '"description":"Trust Name Service domain",',
+            '"domain":"', domain, '",',
+            '"expiration":', _uint2str(expirationTime), '}'
+        ));
+        _setTokenURI(tokenId, metadata);
+        
+        emit DomainRegistered(domain, owner, tokenId, expirationTime);
+    }
+    
+    /**
+     * @dev Batch migrate multiple domains at once
+     * @param domains Array of domain names
+     * @param owners Array of owner addresses (must match domains length)
+     * @param expirationTimes Array of expiration times (must match domains length)
+     * @notice Allows efficient migration of multiple domains in one transaction
+     */
+    function adminMigrateDomainBatch(
+        string[] calldata domains,
+        address[] calldata owners,
+        uint256[] calldata expirationTimes
+    ) external onlyOwner {
+        require(
+            domains.length == owners.length && domains.length == expirationTimes.length,
+            "Array lengths must match"
+        );
+        
+        for (uint256 i = 0; i < domains.length; i++) {
+            // Validate each domain
+            require(bytes(domains[i]).length >= 3, "Domain too short");
+            require(owners[i] != address(0), "Invalid owner address");
+            require(expirationTimes[i] > block.timestamp, "Expiration must be in future");
+            require(isAvailable(domains[i]), "Domain already registered");
+            
+            // Mint NFT
+            uint256 tokenId = _nextTokenId++;
+            _safeMint(owners[i], tokenId);
+            
+            // Store domain data
+            domains[domains[i]] = Domain({
+                name: domains[i],
+                expirationTime: expirationTimes[i],
+                exists: true
+            });
+            
+            // Create mappings
+            domainToTokenId[domains[i]] = tokenId;
+            tokenIdToDomain[tokenId] = domains[i];
+            ownerDomains[owners[i]].push(domains[i]);
+            
+            // Set metadata
+            string memory metadata = string(abi.encodePacked(
+                '{"name":"', domains[i], '.trust",',
+                '"description":"Trust Name Service domain",',
+                '"domain":"', domains[i], '",',
+                '"expiration":', _uint2str(expirationTimes[i]), '}'
+            ));
+            _setTokenURI(tokenId, metadata);
+            
+            emit DomainRegistered(domains[i], owners[i], tokenId, expirationTimes[i]);
+        }
+    }
+    
+    /**
      * @dev ERC721 - Get total number of NFTs minted
      */
     function totalSupply() public view returns (uint256) {
