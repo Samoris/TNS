@@ -50,7 +50,17 @@ Using Remix or admin panel:
 
 ## ✅ **Done!**
 
-Now whitelisted users can register domains for FREE automatically!
+Now whitelisted users can register **5+ character domains** for FREE automatically!
+
+### 💰 Pricing with Whitelist
+
+| Domain Length | Normal Price | Whitelisted Price |
+|---------------|--------------|-------------------|
+| 3 characters  | 100 TRUST/year | 100 TRUST (no discount) |
+| 4 characters  | 70 TRUST/year | 70 TRUST (no discount) |
+| 5+ characters | 30 TRUST/year | **FREE** ✅ |
+
+**Note**: Premium 3-4 character domains still require payment, even for whitelisted users.
 
 ---
 

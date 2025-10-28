@@ -90,15 +90,26 @@ function setWhitelistManager(address _whitelistManager) external onlyOwner
 **Registration Logic**:
 
 1. User calls `register(domain, duration, secret)`
-2. Registry checks if whitelist contract is set
-3. If set, calls `whitelistManager.canMintFree(msg.sender)`
-4. If user has free mints:
-   - Calls `whitelistManager.useFreeMint()`
-   - Refunds any payment sent
-   - Mints domain for free
-5. If no free mints:
-   - Requires payment as normal
+2. Registry checks domain length
+3. **If domain is 5+ characters** and whitelist contract is set:
+   - Calls `whitelistManager.canMintFree(msg.sender)`
+   - If user has free mints:
+     - Calls `whitelistManager.useFreeMint()`
+     - Refunds any payment sent
+     - Mints domain for FREE
+4. **If domain is 3-4 characters** OR no free mints:
+   - Requires payment as normal (100 TRUST for 3 chars, 70 TRUST for 4 chars)
    - Continues with paid registration
+
+**Important**: Whitelist only applies to 5+ character domains (normally 30 TRUST/year)
+
+### Pricing Summary
+
+| Domain Length | Normal Price | Whitelisted Price |
+|---------------|--------------|-------------------|
+| 3 characters  | 100 TRUST/year | 100 TRUST/year (no discount) |
+| 4 characters  | 70 TRUST/year | 70 TRUST/year (no discount) |
+| 5+ characters | 30 TRUST/year | **FREE** ✅ |
 
 ## Deployment Guide
 
@@ -182,13 +193,15 @@ The admin panel (`/admin`) will need updates to:
 ### For Whitelisted Users
 
 1. User makes commitment (same process)
-2. User calls `register()` with payment (optional)
+2. User calls `register()` for a **5+ character domain**
 3. Contract checks whitelist automatically
 4. If whitelisted with free mints remaining:
-   - ✅ Domain minted for FREE
+   - ✅ Domain minted for FREE (saves 30 TRUST)
    - ✅ Any payment sent is refunded
    - ✅ Free mint quota decreased by 1
 5. Registration completes as NFT mint
+
+**Note**: For 3-4 character domains, whitelisted users still pay normal price (100 or 70 TRUST)
 
 ### For Non-Whitelisted Users
 
@@ -300,6 +313,12 @@ A: Yes, use `updateWhitelistAllowance()` to set a new total allowance.
 
 **Q: Does the whitelist affect renewals?**  
 A: No, whitelist only applies to new domain registrations, not renewals.
+
+**Q: Can whitelisted users get free 3 or 4 character domains?**  
+A: No, the whitelist only applies to 5+ character domains. Premium 3-4 character domains always require payment (100 TRUST and 70 TRUST respectively).
+
+**Q: Why only 5+ character domains?**  
+A: Premium short domains (3-4 characters) are intentionally kept paid to maintain their value and prevent abuse. The whitelist is designed to make standard-length domains accessible for free.
 
 ## Support
 

@@ -186,8 +186,9 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         uint256 cost = calculateCost(domain, duration);
         bool useFreeMint = false;
         
-        // Check if user is whitelisted for free mint
-        if (address(whitelistManager) != address(0)) {
+        // Check if user is whitelisted for free mint (only for 5+ character domains)
+        uint256 domainLength = bytes(domain).length;
+        if (address(whitelistManager) != address(0) && domainLength >= 5) {
             (bool canMintFree, ) = whitelistManager.canMintFree(msg.sender);
             if (canMintFree) {
                 useFreeMint = true;
