@@ -7,10 +7,19 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
+ * @title Whitelist Manager Interface
+ */
+interface IWhitelistManager {
+    function canMintFree(address user) external view returns (bool canMintFree, uint256 remainingMints);
+    function useFreeMint(address user, string calldata domain) external;
+}
+
+/**
  * @title TNS Registry - Full ERC721 NFT Implementation
  * @dev Domain registration contract that mints actual ERC-721 NFTs for .trust domains
  * @notice Each registered domain is a real NFT that can be transferred and traded
  * @notice Includes reentrancy protection, front-running protection, and overflow checks
+ * @notice Supports whitelist integration for free domain minting
  */
 contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     
@@ -63,6 +72,9 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     mapping(bytes32 => uint256) private commitments;
     mapping(address => uint256) private lastRegistrationBlock;
     
+    // Whitelist integration
+    IWhitelistManager public whitelistManager;
+    
     // Token ID counter
     uint256 private _nextTokenId = 1;
     
@@ -86,6 +98,15 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     constructor() ERC721("Trust Name Service", "TNS") Ownable(msg.sender) {}
+    
+    /**
+     * @dev Set the whitelist manager contract address
+     * @param _whitelistManager Address of the whitelist manager contract
+     */
+    function setWhitelistManager(address _whitelistManager) external onlyOwner {
+        require(_whitelistManager != address(0), "Invalid whitelist address");
+        whitelistManager = IWhitelistManager(_whitelistManager);
+    }
     
     /**
      * @dev ERC721 - Get total number of NFTs minted
@@ -163,7 +184,28 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         require(isAvailable(domain), "Domain not available or in grace period");
         
         uint256 cost = calculateCost(domain, duration);
-        require(msg.value >= cost, "Insufficient payment");
+        bool useFreeMint = false;
+        
+        // Check if user is whitelisted for free mint
+        if (address(whitelistManager) != address(0)) {
+            (bool canMintFree, ) = whitelistManager.canMintFree(msg.sender);
+            if (canMintFree) {
+                useFreeMint = true;
+                // Use the free mint
+                whitelistManager.useFreeMint(msg.sender, domain);
+                
+                // Refund any payment sent
+                if (msg.value > 0) {
+                    (bool success, ) = payable(msg.sender).call{value: msg.value}("");
+                    require(success, "Refund failed");
+                }
+            }
+        }
+        
+        // If not using free mint, require payment
+        if (!useFreeMint) {
+            require(msg.value >= cost, "Insufficient payment");
+        }
         
         uint256 tokenId = _nextTokenId++;
         uint256 expirationTime = block.timestamp + (duration * 365 days);
@@ -191,8 +233,8 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         
         emit DomainRegistered(domain, msg.sender, tokenId, expirationTime);
         
-        // Refund excess payment (use call instead of transfer for better compatibility)
-        if (msg.value > cost) {
+        // Refund excess payment for paid registrations only
+        if (!useFreeMint && msg.value > cost) {
             (bool success, ) = payable(msg.sender).call{value: msg.value - cost}("");
             require(success, "Refund failed");
         }
