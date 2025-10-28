@@ -66,6 +66,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     textValues: string[];
   } | null>(null);
   const [loadingResolver, setLoadingResolver] = useState(false);
+  
+  // Extend domain states
+  const [isExtending, setIsExtending] = useState(false);
+  const [extendDuration, setExtendDuration] = useState(1);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -176,6 +180,35 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     onError: (error: any) => {
       toast({
         title: "Failed to set primary domain",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const extendDomainMutation = useMutation({
+    mutationFn: async (years: number) => {
+      const txHash = await web3Service.renewDomain(
+        TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        domain.name,
+        years
+      );
+      return txHash;
+    },
+    onSuccess: (txHash) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
+      setIsExtending(false);
+      setExtendDuration(1);
+      toast({
+        title: "Domain extended successfully!",
+        description: `${domain.name} has been extended for ${extendDuration} year(s). Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to extend domain",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -319,6 +352,20 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       title: "Copied to clipboard",
       description: `${field} copied successfully`,
     });
+  };
+
+  const calculateExtensionCost = (years: number): number => {
+    const domainName = domain.name.replace('.trust', '');
+    const length = domainName.length;
+    let pricePerYear = 30; // 5+ characters
+    
+    if (length === 3) {
+      pricePerYear = 100;
+    } else if (length === 4) {
+      pricePerYear = 70;
+    }
+    
+    return pricePerYear * years;
   };
 
   const getStatusBadge = () => {
@@ -468,6 +515,106 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         </p>
                       </div>
                     )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Extend Domain */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Extend Domain</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Extend your domain registration before it expires
+                    </p>
+
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <Label className="text-xs">Current Expiration</Label>
+                          <p className="text-sm font-medium mt-1">
+                            {new Date(expirationDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Status</Label>
+                          <div className="mt-1">
+                            {getStatusBadge()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {!isExtending ? (
+                        <Button
+                          onClick={() => setIsExtending(true)}
+                          variant="outline"
+                          className="w-full"
+                          data-testid="extend-domain-button"
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Extend Domain
+                        </Button>
+                      ) : (
+                        <Card className="p-4 bg-gray-50 dark:bg-gray-800">
+                          <div className="space-y-3">
+                            <div>
+                              <Label htmlFor="extendDuration">Extension Duration</Label>
+                              <select
+                                id="extendDuration"
+                                value={extendDuration}
+                                onChange={(e) => setExtendDuration(Number(e.target.value))}
+                                className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-900"
+                                data-testid="extend-duration-select"
+                              >
+                                <option value={1}>1 Year</option>
+                                <option value={2}>2 Years</option>
+                                <option value={3}>3 Years</option>
+                                <option value={5}>5 Years</option>
+                              </select>
+                            </div>
+
+                            <div className="bg-trust-blue/10 p-3 rounded-md">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">Extension Cost</span>
+                                <span className="font-bold text-trust-blue" data-testid="extension-cost">
+                                  {calculateExtensionCost(extendDuration)} TRUST
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs mt-2 text-gray-500">
+                                <span>Price per year</span>
+                                <span>{calculateExtensionCost(1)} TRUST/year</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                              <p className="text-xs text-blue-800 dark:text-blue-300">
+                                New expiration date: {new Date(new Date(expirationDate).getTime() + extendDuration * 365.25 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                              </p>
+                            </div>
+
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => extendDomainMutation.mutate(extendDuration)}
+                                disabled={extendDomainMutation.isPending}
+                                className="trust-button flex-1"
+                                data-testid="confirm-extend-button"
+                              >
+                                {extendDomainMutation.isPending ? "Extending..." : `Extend for ${extendDuration} Year${extendDuration > 1 ? 's' : ''}`}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsExtending(false);
+                                  setExtendDuration(1);
+                                }}
+                                disabled={extendDomainMutation.isPending}
+                                data-testid="cancel-extend-button"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
                   </div>
 
                   <Separator />
