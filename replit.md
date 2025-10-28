@@ -50,6 +50,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Routing**: Wouter
 
 ## Recent Changes
+- **Migration Functions** (October 28, 2025): Added `adminMigrateDomain()` and `adminMigrateDomainBatch()` functions to whitelist contract for migrating existing domains. Created migration script at `scripts/migrate-domains.js` to automate export and migration process. See `docs/MIGRATION_GUIDE.md` and `scripts/README.md` for complete documentation.
 - **Whitelist Feature** (October 28, 2025): Added admin interface at `/admin` for managing free domain minting. Contract owner can whitelist addresses with configurable free mint quotas. New smart contract: `contracts/TNSRegistryERC721_Whitelist.sol`. See `docs/WHITELIST_GUIDE.md` for complete documentation.
 - **Documentation Pages**: Added Privacy Policy (`/privacy`), Terms of Service (`/terms`), and Support Center (`/support`) pages
 - **Comprehensive Documentation**: Created TNS Documentation page at `/docs` with detailed guides for all features
