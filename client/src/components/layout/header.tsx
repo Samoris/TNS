@@ -61,12 +61,17 @@ export function Header() {
     refetchInterval: 5000,
   });
 
+  // TODO: Replace with actual contract owner address
+  const CONTRACT_OWNER = "0xYourContractOwnerAddress";
+  const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
+
   const navigation = [
     { name: "Search", href: "/", active: location === "/" },
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
+    ...(isOwner ? [{ name: "Admin", href: "/admin", active: location === "/admin" }] : []),
   ];
 
   return (

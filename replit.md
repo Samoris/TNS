@@ -48,3 +48,9 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **UI Component Library**: shadcn/ui
 - **State Management**: TanStack Query
 - **Routing**: Wouter
+
+## Recent Changes
+- **Whitelist Feature** (October 28, 2025): Added admin interface at `/admin` for managing free domain minting. Contract owner can whitelist addresses with configurable free mint quotas. New smart contract: `contracts/TNSRegistryERC721_Whitelist.sol`. See `docs/WHITELIST_GUIDE.md` for complete documentation.
+- **Documentation Pages**: Added Privacy Policy (`/privacy`), Terms of Service (`/terms`), and Support Center (`/support`) pages
+- **Comprehensive Documentation**: Created TNS Documentation page at `/docs` with detailed guides for all features
+- **Domain Extension**: Fixed and tested domain renewal functionality - successfully extended domains with correct year-based duration

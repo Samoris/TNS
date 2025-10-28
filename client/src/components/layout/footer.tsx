@@ -86,12 +86,12 @@ export function Footer() {
                     </a>
                   ) : (
                     <Link href={link.href}>
-                      <a
+                      <span
                         className="hover:text-white transition-colors text-sm cursor-pointer"
                         data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         {link.name}
-                      </a>
+                      </span>
                     </Link>
                   )}
                 </li>
@@ -134,12 +134,12 @@ export function Footer() {
           <div className="flex space-x-6 text-sm text-gray-400">
             {footerLinks.legal.map((link) => (
               <Link key={link.name} href={link.href}>
-                <a
+                <span
                   className="hover:text-white transition-colors cursor-pointer"
                   data-testid={`footer-legal-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   {link.name}
-                </a>
+                </span>
               </Link>
             ))}
           </div>
