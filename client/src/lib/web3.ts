@@ -218,6 +218,43 @@ export class Web3Service {
     }
   }
 
+  public async switchWallet(): Promise<WalletState> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      // Request permissions - this will prompt MetaMask to show account selection
+      await window.ethereum.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
+
+      // Get the newly selected account
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+
+      if (accounts.length === 0) {
+        throw new Error("No accounts selected");
+      }
+
+      // Ensure we're on the correct network
+      await this.switchToIntuitionNetwork();
+      
+      // Get and return the new wallet state
+      const newState = await this.getWalletState();
+      
+      // Notify all listeners of the state change
+      this.notifyStateChange();
+      
+      return newState;
+    } catch (error) {
+      console.error("Failed to switch wallet:", error);
+      throw error;
+    }
+  }
+
   public async disconnectWallet(): Promise<void> {
     // Set manual disconnect flag to prevent auto-reconnection
     this.isManuallyDisconnected = true;

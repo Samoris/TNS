@@ -70,6 +70,21 @@ export function useWallet() {
     }
   };
 
+  const switchWallet = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const state = await web3Service.switchWallet();
+      setWalletState(state);
+    } catch (error: any) {
+      console.error("Failed to switch wallet:", error);
+      setError(error.message || "Failed to switch wallet");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const disconnectWallet = async () => {
     try {
       await web3Service.disconnectWallet();
@@ -100,6 +115,7 @@ export function useWallet() {
     isLoading,
     error,
     connectWallet,
+    switchWallet,
     disconnectWallet,
     switchNetwork,
     sendTransaction,

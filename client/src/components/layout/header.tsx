@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,7 @@ export function Header() {
     isLoading,
     error,
     connectWallet,
+    switchWallet,
     disconnectWallet,
     switchNetwork,
     formatAddress,
@@ -172,6 +173,10 @@ export function Header() {
                       )}
                     </div>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={switchWallet} data-testid="switch-wallet">
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Switch Wallet
+                    </DropdownMenuItem>
                     {!isCorrectNetwork && (
                       <DropdownMenuItem onClick={switchNetwork} data-testid="switch-network">
                         <Globe className="mr-2 h-4 w-4" />
