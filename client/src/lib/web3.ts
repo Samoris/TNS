@@ -601,15 +601,12 @@ export class Web3Service {
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       
-      // Convert years to seconds (1 year = 365.25 days)
-      const durationInSeconds = Math.floor(durationYears * 365.25 * 24 * 60 * 60);
-      
-      // Calculate cost for renewal
-      const cost = await contract.calculateCost(normalizedDomain, durationInSeconds);
+      // Calculate cost for renewal (contract expects duration in YEARS, not seconds)
+      const cost = await contract.calculateCost(normalizedDomain, durationYears);
       console.log("Renewal cost:", ethers.formatEther(cost), "TRUST");
       
-      // Call renew function with payment
-      const tx = await contract.renew(normalizedDomain, durationInSeconds, {
+      // Call renew function with payment (duration in years)
+      const tx = await contract.renew(normalizedDomain, durationYears, {
         value: cost,
         gasLimit: 200000
       });
