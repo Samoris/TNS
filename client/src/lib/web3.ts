@@ -39,6 +39,7 @@ declare global {
 export class Web3Service {
   private static instance: Web3Service;
   private listeners: Set<(state: WalletState) => void> = new Set();
+  private isManuallyDisconnected: boolean = false;
 
   static getInstance(): Web3Service {
     if (!Web3Service.instance) {
@@ -91,6 +92,9 @@ export class Web3Service {
     }
 
     try {
+      // Clear the manual disconnect flag
+      this.isManuallyDisconnected = false;
+      
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
@@ -145,7 +149,7 @@ export class Web3Service {
   }
 
   public async getWalletState(): Promise<WalletState> {
-    if (!window.ethereum) {
+    if (!window.ethereum || this.isManuallyDisconnected) {
       return {
         isConnected: false,
         address: null,
@@ -215,7 +219,9 @@ export class Web3Service {
   }
 
   public async disconnectWallet(): Promise<void> {
-    // MetaMask doesn't have a true disconnect method, but we can clear our app's state
+    // Set manual disconnect flag to prevent auto-reconnection
+    this.isManuallyDisconnected = true;
+    
     // Notify listeners with disconnected state
     const disconnectedState: WalletState = {
       isConnected: false,
@@ -226,9 +232,6 @@ export class Web3Service {
     };
     
     this.listeners.forEach(listener => listener(disconnectedState));
-    
-    // Optionally, you can reload the page to fully clear MetaMask connection
-    // window.location.reload();
   }
 
   public async sendTransaction(to: string, value: string, data?: string): Promise<string> {
