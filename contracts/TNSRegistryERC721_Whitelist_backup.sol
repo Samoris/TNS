@@ -7,9 +7,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
- * @title TNS Registry - Full ERC721 NFT Implementation with Whitelist & Migration
+ * @title TNS Registry - Full ERC721 NFT Implementation
  * @dev Domain registration contract that mints actual ERC-721 NFTs for .trust domains
- * @notice Includes whitelist functionality for free domain minting and migration from old contract
+ * @notice Each registered domain is a real NFT that can be transferred and traded
+ * @notice Includes reentrancy protection, front-running protection, and overflow checks
  */
 contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     
@@ -43,22 +44,6 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         address indexed resolver
     );
     
-    event WhitelistAdded(
-        address indexed user,
-        uint256 freeMintsAllowed
-    );
-    
-    event WhitelistRemoved(
-        address indexed user
-    );
-    
-    event DomainMigrated(
-        string indexed domain,
-        address indexed owner,
-        uint256 indexed tokenId,
-        uint256 expirationTime
-    );
-    
     // Domain data structure
     struct Domain {
         string name;
@@ -66,21 +51,13 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         bool exists;
     }
     
-    // Whitelist data structure
-    struct WhitelistEntry {
-        uint256 freeMintsAllowed;
-        uint256 freeMintsUsed;
-        bool isWhitelisted;
-    }
-    
     // Storage mappings
     mapping(string => Domain) public domains;
     mapping(string => uint256) public domainToTokenId;
     mapping(uint256 => string) public tokenIdToDomain;
     mapping(address => string[]) private ownerDomains;
-    mapping(address => string) public primaryDomain;
-    mapping(string => address) public resolvers;
-    mapping(address => WhitelistEntry) public whitelist;
+    mapping(address => string) public primaryDomain; // Primary domain for each address
+    mapping(string => address) public resolvers; // Domain => Resolver contract address
     
     // Front-running protection: commitment scheme
     mapping(bytes32 => uint256) private commitments;
@@ -109,185 +86,6 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     constructor() ERC721("Trust Name Service", "TNS") Ownable(msg.sender) {}
-    
-    /**
-     * @dev Helper function to convert uint to string
-     */
-    function _uint2str(uint256 _i) internal pure returns (string memory) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 length;
-        while (j != 0) {
-            length++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(length);
-        uint256 k = length;
-        j = _i;
-        while (j != 0) {
-            k = k - 1;
-            uint8 temp = (48 + uint8(j - j / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            j /= 10;
-        }
-        return string(bstr);
-    }
-    
-    /**
-     * @dev Generate on-chain JSON metadata for a domain
-     */
-    function _generateTokenURI(string memory domain, uint256 expirationTime) internal pure returns (string memory) {
-        return string(abi.encodePacked(
-            '{',
-                '"name":"', domain, '.trust",',
-                '"description":"Trust Name Service domain",',
-                '"domain":"', domain, '",',
-                '"expiration":', _uint2str(expirationTime), '}'
-        ));
-    }
-    
-    // ========== WHITELIST FUNCTIONS ==========
-    
-    /**
-     * @dev Add an address to the whitelist with free mint allowance
-     * @param user Address to whitelist
-     * @param freeMintsAllowed Number of free domain mints allowed
-     */
-    function addToWhitelist(address user, uint256 freeMintsAllowed) external onlyOwner {
-        require(user != address(0), "Invalid address");
-        require(freeMintsAllowed > 0, "Must allow at least 1 free mint");
-        
-        whitelist[user] = WhitelistEntry({
-            freeMintsAllowed: freeMintsAllowed,
-            freeMintsUsed: 0,
-            isWhitelisted: true
-        });
-        
-        emit WhitelistAdded(user, freeMintsAllowed);
-    }
-    
-    /**
-     * @dev Remove an address from the whitelist
-     */
-    function removeFromWhitelist(address user) external onlyOwner {
-        require(whitelist[user].isWhitelisted, "User not whitelisted");
-        delete whitelist[user];
-        emit WhitelistRemoved(user);
-    }
-    
-    /**
-     * @dev Check if an address has free mints remaining
-     */
-    function getWhitelistInfo(address user) external view returns (
-        bool isWhitelisted,
-        uint256 freeMintsAllowed,
-        uint256 freeMintsUsed,
-        uint256 freeMintsRemaining
-    ) {
-        WhitelistEntry memory entry = whitelist[user];
-        isWhitelisted = entry.isWhitelisted;
-        freeMintsAllowed = entry.freeMintsAllowed;
-        freeMintsUsed = entry.freeMintsUsed;
-        freeMintsRemaining = entry.isWhitelisted && entry.freeMintsUsed < entry.freeMintsAllowed 
-            ? entry.freeMintsAllowed - entry.freeMintsUsed 
-            : 0;
-    }
-    
-    // ========== MIGRATION FUNCTIONS ==========
-    
-    /**
-     * @dev Migrate a single domain from old contract (admin only)
-     * @param domainName The domain name to migrate
-     * @param owner The owner address
-     * @param expirationTime The expiration timestamp
-     */
-    function adminMigrateDomain(
-        string calldata domainName,
-        address owner,
-        uint256 expirationTime
-    ) external onlyOwner nonReentrant {
-        require(owner != address(0), "Invalid owner");
-        require(bytes(domainName).length >= 3 && bytes(domainName).length <= 63, "Invalid domain length");
-        require(!domains[domainName].exists, "Domain already exists");
-        require(expirationTime > block.timestamp, "Domain already expired");
-        
-        uint256 tokenId = _nextTokenId++;
-        
-        // Store domain data
-        domains[domainName] = Domain({
-            name: domainName,
-            expirationTime: expirationTime,
-            exists: true
-        });
-        
-        domainToTokenId[domainName] = tokenId;
-        tokenIdToDomain[tokenId] = domainName;
-        ownerDomains[owner].push(domainName);
-        
-        // Mint NFT to the owner
-        _safeMint(owner, tokenId);
-        
-        // Set token URI with metadata
-        _setTokenURI(tokenId, _generateTokenURI(domainName, expirationTime));
-        
-        emit DomainMigrated(domainName, owner, tokenId, expirationTime);
-    }
-    
-    /**
-     * @dev Migrate multiple domains in batch (admin only)
-     * @param domainNames Array of domain names
-     * @param owners Array of owner addresses
-     * @param expirationTimes Array of expiration timestamps
-     */
-    function adminMigrateDomainBatch(
-        string[] calldata domainNames,
-        address[] calldata owners,
-        uint256[] calldata expirationTimes
-    ) external onlyOwner nonReentrant {
-        require(
-            domainNames.length == owners.length && owners.length == expirationTimes.length,
-            "Array length mismatch"
-        );
-        require(domainNames.length > 0, "Empty arrays");
-        require(domainNames.length <= 100, "Batch too large");
-        
-        for (uint256 i = 0; i < domainNames.length; i++) {
-            string calldata domainName = domainNames[i];
-            address owner = owners[i];
-            uint256 expirationTime = expirationTimes[i];
-            
-            require(owner != address(0), "Invalid owner");
-            require(bytes(domainName).length >= 3 && bytes(domainName).length <= 63, "Invalid domain length");
-            require(!domains[domainName].exists, "Domain already exists");
-            require(expirationTime > block.timestamp, "Domain already expired");
-            
-            uint256 tokenId = _nextTokenId++;
-            
-            // Store domain data
-            domains[domainName] = Domain({
-                name: domainName,
-                expirationTime: expirationTime,
-                exists: true
-            });
-            
-            domainToTokenId[domainName] = tokenId;
-            tokenIdToDomain[tokenId] = domainName;
-            ownerDomains[owner].push(domainName);
-            
-            // Mint NFT to the owner
-            _safeMint(owner, tokenId);
-            
-            // Set token URI with metadata
-            _setTokenURI(tokenId, _generateTokenURI(domainName, expirationTime));
-            
-            emit DomainMigrated(domainName, owner, tokenId, expirationTime);
-        }
-    }
-    
-    // ========== CORE FUNCTIONS ==========
     
     /**
      * @dev ERC721 - Get total number of NFTs minted
@@ -337,7 +135,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     /**
-     * @dev Register a new domain (supports both paid and free whitelist mints)
+     * @dev Register a new domain and mint an ERC-721 NFT (with front-running protection)
      * @param domain The domain name to register
      * @param duration Duration in years (1-10)
      * @param secret Secret used in commitment (for front-running protection)
@@ -365,25 +163,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         require(isAvailable(domain), "Domain not available or in grace period");
         
         uint256 cost = calculateCost(domain, duration);
-        
-        // Check if user is whitelisted and has free mints
-        WhitelistEntry storage userWhitelist = whitelist[msg.sender];
-        bool useFreeMint = userWhitelist.isWhitelisted && 
-                          userWhitelist.freeMintsUsed < userWhitelist.freeMintsAllowed;
-        
-        if (useFreeMint) {
-            // Free mint for whitelisted users
-            userWhitelist.freeMintsUsed++;
-            
-            // Refund any payment sent
-            if (msg.value > 0) {
-                (bool success, ) = payable(msg.sender).call{value: msg.value}("");
-                require(success, "Refund failed");
-            }
-        } else {
-            // Regular paid registration
-            require(msg.value >= cost, "Insufficient payment");
-        }
+        require(msg.value >= cost, "Insufficient payment");
         
         uint256 tokenId = _nextTokenId++;
         uint256 expirationTime = block.timestamp + (duration * 365 days);
@@ -411,8 +191,8 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         
         emit DomainRegistered(domain, msg.sender, tokenId, expirationTime);
         
-        // Refund excess payment for paid registrations
-        if (!useFreeMint && msg.value > cost) {
+        // Refund excess payment (use call instead of transfer for better compatibility)
+        if (msg.value > cost) {
             (bool success, ) = payable(msg.sender).call{value: msg.value - cost}("");
             require(success, "Refund failed");
         }
