@@ -56,11 +56,8 @@ export default function WhitelistManagement() {
   // Add to whitelist mutation
   const addMutation = useMutation({
     mutationFn: async (data: { address: string; allowedMints: number; note: string }) => {
-      return await apiRequest("/api/whitelist", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await apiRequest("POST", "/api/whitelist", data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whitelist"] });
@@ -91,11 +88,8 @@ export default function WhitelistManagement() {
       address: string;
       updates: { allowedMints?: number; isActive?: boolean; note?: string };
     }) => {
-      return await apiRequest(`/api/whitelist/${address}`, {
-        method: "PUT",
-        body: JSON.stringify(updates),
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await apiRequest("PUT", `/api/whitelist/${address}`, updates);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whitelist"] });
@@ -118,9 +112,8 @@ export default function WhitelistManagement() {
   // Delete whitelist entry mutation
   const deleteMutation = useMutation({
     mutationFn: async (address: string) => {
-      return await apiRequest(`/api/whitelist/${address}`, {
-        method: "DELETE",
-      });
+      const response = await apiRequest("DELETE", `/api/whitelist/${address}`);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whitelist"] });
