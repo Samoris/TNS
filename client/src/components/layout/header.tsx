@@ -66,7 +66,7 @@ export function Header() {
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
-    { name: "Docs", href: "#", active: false },
+    { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 
   return (
