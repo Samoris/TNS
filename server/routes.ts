@@ -378,6 +378,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Whitelist management
+  app.get("/api/whitelist", async (req, res) => {
+    try {
+      const entries = await storage.getAllWhitelistEntries();
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch whitelist entries" });
+    }
+  });
+
+  app.get("/api/whitelist/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid Ethereum address" });
+      }
+      
+      const entry = await storage.getWhitelistEntry(address);
+      if (!entry) {
+        return res.status(404).json({ message: "Address not whitelisted" });
+      }
+      
+      res.json(entry);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch whitelist entry" });
+    }
+  });
+
+  app.post("/api/whitelist", async (req, res) => {
+    try {
+      const { address, allowedMints, note } = req.body;
+      
+      if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid Ethereum address" });
+      }
+      
+      if (!allowedMints || allowedMints < 1) {
+        return res.status(400).json({ message: "Allowed mints must be at least 1" });
+      }
+      
+      const existing = await storage.getWhitelistEntry(address);
+      if (existing) {
+        return res.status(400).json({ message: "Address already whitelisted" });
+      }
+      
+      const entry = await storage.createWhitelistEntry({
+        address,
+        allowedMints,
+        isActive: true,
+        note: note || null,
+      });
+      
+      res.json({ message: "Address added to whitelist", entry });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add to whitelist" });
+    }
+  });
+
+  app.put("/api/whitelist/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const { allowedMints, isActive, note } = req.body;
+      
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid Ethereum address" });
+      }
+      
+      const updates: Partial<any> = {};
+      if (allowedMints !== undefined) updates.allowedMints = allowedMints;
+      if (isActive !== undefined) updates.isActive = isActive;
+      if (note !== undefined) updates.note = note;
+      
+      const updatedEntry = await storage.updateWhitelistEntry(address, updates);
+      if (!updatedEntry) {
+        return res.status(404).json({ message: "Address not whitelisted" });
+      }
+      
+      res.json({ message: "Whitelist entry updated", entry: updatedEntry });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update whitelist entry" });
+    }
+  });
+
+  app.delete("/api/whitelist/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid Ethereum address" });
+      }
+      
+      const deleted = await storage.deleteWhitelistEntry(address);
+      if (!deleted) {
+        return res.status(404).json({ message: "Address not whitelisted" });
+      }
+      
+      res.json({ message: "Address removed from whitelist" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove from whitelist" });
+    }
+  });
+
+  app.get("/api/whitelist/check/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid Ethereum address" });
+      }
+      
+      const eligibility = await storage.checkWhitelistEligibility(address);
+      res.json(eligibility);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check eligibility" });
+    }
+  });
+
   // Network information
   app.get("/api/network", (req, res) => {
     res.json({
