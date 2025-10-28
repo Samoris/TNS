@@ -215,43 +215,54 @@ export default function AdminPage() {
         provider
       );
       
-      // Get all DomainRegistered events
-      const filter = oldContract.filters.DomainRegistered();
-      const events = await oldContract.queryFilter(filter);
+      // Get total number of NFTs minted
+      const totalSupply = await oldContract.totalSupply();
+      const totalCount = Number(totalSupply);
       
       toast({
         title: "Loading domains...",
-        description: `Found ${events.length} registration events. Verifying active domains...`,
+        description: `Scanning ${totalCount} tokens for active domains...`,
       });
       
-      const domainMap = new Map();
+      const activeDomains: Array<{domain: string; owner: string; expirationTime: string}> = [];
       const currentTime = Math.floor(Date.now() / 1000);
       
-      for (const event of events) {
-        const eventLog = event as ethers.EventLog;
-        const domainName = eventLog.args?.domain;
-        if (!domainName) continue;
-        
+      // Iterate through all token IDs (starting from 1)
+      for (let tokenId = 1; tokenId <= totalCount; tokenId++) {
         try {
-          const [owner, , expiration, exists] = await oldContract.getDomainInfo(domainName);
+          // Get the owner of this token
+          const owner = await oldContract.ownerOf(tokenId);
           
-          if (exists && Number(expiration) >= currentTime) {
-            domainMap.set(domainName, {
-              domain: domainName,
-              owner: owner,
-              expirationTime: expiration.toString()
-            });
+          // Get domains owned by this address
+          const ownerDomainsList = await oldContract.getOwnerDomains(owner);
+          
+          // Check each domain
+          for (const domainName of ownerDomainsList) {
+            // Avoid duplicates
+            if (activeDomains.some(d => d.domain === domainName)) {
+              continue;
+            }
+            
+            const [domainOwner, , expiration, exists] = await oldContract.getDomainInfo(domainName);
+            
+            if (exists && Number(expiration) >= currentTime) {
+              activeDomains.push({
+                domain: domainName,
+                owner: domainOwner,
+                expirationTime: expiration.toString()
+              });
+            }
           }
         } catch (error) {
-          console.error(`Error checking domain ${domainName}:`, error);
+          // Token might be burned or invalid, skip it
+          console.error(`Error checking token ${tokenId}:`, error);
         }
       }
       
-      const activeDomains = Array.from(domainMap.values());
       setDomains(activeDomains);
       
       toast({
-        title: "Domains loaded",
+        title: "Domains loaded!",
         description: `Found ${activeDomains.length} active domains ready for migration`,
       });
     } catch (error: any) {
