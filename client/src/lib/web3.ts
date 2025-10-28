@@ -577,6 +577,68 @@ export class Web3Service {
     }
   }
 
+  /**
+   * Renew/extend a domain for additional years
+   */
+  public async renewDomain(contractAddress: string, abi: any[], domainName: string, durationYears: number): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      // Normalize domain name to lowercase and remove .trust extension
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      console.log("Renewing domain:", normalizedDomain, "for", durationYears, "years");
+      
+      // Create ethers provider and contract instance
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+      
+      // Convert years to seconds (1 year = 365.25 days)
+      const durationInSeconds = Math.floor(durationYears * 365.25 * 24 * 60 * 60);
+      
+      // Calculate cost for renewal
+      const cost = await contract.calculateCost(normalizedDomain, durationInSeconds);
+      console.log("Renewal cost:", ethers.formatEther(cost), "TRUST");
+      
+      // Call renew function with payment
+      const tx = await contract.renew(normalizedDomain, durationInSeconds, {
+        value: cost,
+        gasLimit: 200000
+      });
+      
+      console.log("Renew transaction sent:", tx.hash);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Transaction receipt not received");
+      }
+      
+      console.log("Domain renewed successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Renew domain error:", error);
+      
+      if (error.message?.includes('Domain does not exist')) {
+        throw new Error("Domain does not exist");
+      } else if (error.message?.includes('Not domain owner')) {
+        throw new Error("You don't own this domain");
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error("Insufficient TRUST tokens for renewal");
+      }
+      
+      throw new Error(error.message || "Failed to renew domain");
+    }
+  }
+
   public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
