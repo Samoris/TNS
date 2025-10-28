@@ -16,6 +16,7 @@ interface ITNSRegistry {
  * @dev Stores and resolves domain data (addresses, content hashes, text records)
  * @notice This contract handles all resolution queries for .trust domains
  * @notice Only domain owners can update their domain's records
+ * @notice Works with TNSRegistryERC721 which supports whitelist-based free minting for 5+ character domains
  */
 contract TNSResolver is ReentrancyGuard {
     
@@ -27,6 +28,16 @@ contract TNSResolver is ReentrancyGuard {
     
     // Reference to the registry contract
     ITNSRegistry public registry;
+    
+    /**
+     * @notice TNS Domain Pricing Structure:
+     * - 3 character domains: 100 TRUST/year (premium, no whitelist discount)
+     * - 4 character domains: 70 TRUST/year (premium, no whitelist discount)
+     * - 5+ character domains: 30 TRUST/year (FREE for whitelisted users via TNSWhitelistManager)
+     * 
+     * Whitelisted users automatically receive free registrations for 5+ character domains.
+     * All registered domains (paid or free) can use this resolver equally.
+     */
     
     // Storage mappings
     mapping(string => address) private addresses;           // domain => ETH address
@@ -61,6 +72,9 @@ contract TNSResolver is ReentrancyGuard {
     /**
      * @dev Constructor - sets the registry contract address
      * @param registryAddress Address of the TNSRegistryERC721 contract
+     * @notice The registry contract supports whitelist integration via TNSWhitelistManager
+     * @notice Whitelisted users can register 5+ character domains for free (normally 30 TRUST/year)
+     * @notice Premium 3-4 character domains always require payment (100 TRUST and 70 TRUST respectively)
      */
     constructor(address registryAddress) {
         require(registryAddress != address(0), "Invalid registry address");
