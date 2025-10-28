@@ -215,9 +215,20 @@ export class Web3Service {
   }
 
   public async disconnectWallet(): Promise<void> {
-    // MetaMask doesn't have a disconnect method, but we can clear the connection
-    // by requesting a switch to a different account or network
-    this.notifyStateChange();
+    // MetaMask doesn't have a true disconnect method, but we can clear our app's state
+    // Notify listeners with disconnected state
+    const disconnectedState: WalletState = {
+      isConnected: false,
+      address: null,
+      balance: null,
+      chainId: null,
+      isCorrectNetwork: false,
+    };
+    
+    this.listeners.forEach(listener => listener(disconnectedState));
+    
+    // Optionally, you can reload the page to fully clear MetaMask connection
+    // window.location.reload();
   }
 
   public async sendTransaction(to: string, value: string, data?: string): Promise<string> {
