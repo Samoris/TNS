@@ -1,6 +1,12 @@
 // TNS Contract Configuration - ERC721 NFT Contract (UPDATE THIS ADDRESS AFTER DEPLOYMENT)
 export const TNS_REGISTRY_ADDRESS = "0xdfe1aB8532925de628C419B65B41f23997c34B4a";
 
+// Old TNS Contract (for migration)
+export const OLD_TNS_REGISTRY_ADDRESS = "0xdfe1aB8532925de628C419B65B41f23997c34B4a";
+
+// New Whitelist Contract (UPDATE THIS AFTER DEPLOYING WHITELIST CONTRACT)
+export const NEW_TNS_REGISTRY_ADDRESS = "YOUR_NEW_CONTRACT_ADDRESS";
+
 // TNS Registry ABI - ERC721 NFT contract with security features
 export const TNS_REGISTRY_ABI = [
   {
@@ -288,6 +294,73 @@ export const TNS_REGISTRY_ABI = [
     ],
     "name": "ResolverChanged",
     "type": "event"
+  }
+];
+
+// New Whitelist Contract ABI - Includes migration functions
+export const NEW_TNS_REGISTRY_ABI = [
+  ...TNS_REGISTRY_ABI,
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" },
+      { "internalType": "uint256", "name": "freeMints", "type": "uint256" }
+    ],
+    "name": "addToWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address[]", "name": "accounts", "type": "address[]" },
+      { "internalType": "uint256", "name": "freeMints", "type": "uint256" }
+    ],
+    "name": "addToWhitelistBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "name": "removeFromWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "name": "getWhitelistStatus",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "domain", "type": "string" },
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "uint256", "name": "expirationTime", "type": "uint256" }
+    ],
+    "name": "adminMigrateDomain",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string[]", "name": "domains", "type": "string[]" },
+      { "internalType": "address[]", "name": "owners", "type": "address[]" },
+      { "internalType": "uint256[]", "name": "expirationTimes", "type": "uint256[]" }
+    ],
+    "name": "adminMigrateDomainBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ];
 

@@ -13,9 +13,19 @@ import {
   Trash2, 
   Search,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ArrowRight,
+  Database,
+  Loader2
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { ethers } from "ethers";
+import { 
+  OLD_TNS_REGISTRY_ADDRESS, 
+  NEW_TNS_REGISTRY_ADDRESS,
+  TNS_REGISTRY_ABI,
+  NEW_TNS_REGISTRY_ABI
+} from "@/lib/contracts";
 
 export default function AdminPage() {
   const { address, isConnected } = useWallet();
@@ -41,6 +51,12 @@ export default function AdminPage() {
   const [isAddingBatch, setIsAddingBatch] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  
+  // Migration states
+  const [isLoadingDomains, setIsLoadingDomains] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [domains, setDomains] = useState<Array<{domain: string; owner: string; expirationTime: string}>>([]);
+  const [migrationComplete, setMigrationComplete] = useState(false);
 
   const CONTRACT_OWNER = "0xE9bFe128b7F0F7486c206Aa87a2C2E796fc77BcD";
   const isOwner = address?.toLowerCase() === CONTRACT_OWNER.toLowerCase();
@@ -182,6 +198,155 @@ export default function AdminPage() {
       });
     } finally {
       setIsRemoving(false);
+    }
+  };
+  
+  const loadDomainsFromOldContract = async () => {
+    setIsLoadingDomains(true);
+    try {
+      if (!window.ethereum) {
+        throw new Error("Please install MetaMask");
+      }
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const oldContract = new ethers.Contract(
+        OLD_TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        provider
+      );
+      
+      // Get all DomainRegistered events
+      const filter = oldContract.filters.DomainRegistered();
+      const events = await oldContract.queryFilter(filter);
+      
+      toast({
+        title: "Loading domains...",
+        description: `Found ${events.length} registration events. Verifying active domains...`,
+      });
+      
+      const domainMap = new Map();
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      for (const event of events) {
+        const eventLog = event as ethers.EventLog;
+        const domainName = eventLog.args?.domain;
+        if (!domainName) continue;
+        
+        try {
+          const [owner, , expiration, exists] = await oldContract.getDomainInfo(domainName);
+          
+          if (exists && Number(expiration) >= currentTime) {
+            domainMap.set(domainName, {
+              domain: domainName,
+              owner: owner,
+              expirationTime: expiration.toString()
+            });
+          }
+        } catch (error) {
+          console.error(`Error checking domain ${domainName}:`, error);
+        }
+      }
+      
+      const activeDomains = Array.from(domainMap.values());
+      setDomains(activeDomains);
+      
+      toast({
+        title: "Domains loaded",
+        description: `Found ${activeDomains.length} active domains ready for migration`,
+      });
+    } catch (error: any) {
+      console.error("Error loading domains:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load domains from old contract",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDomains(false);
+    }
+  };
+  
+  const handleMigration = async () => {
+    if (domains.length === 0) {
+      toast({
+        title: "No domains to migrate",
+        description: "Load domains first by clicking 'Load Domains'",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (NEW_TNS_REGISTRY_ADDRESS === "YOUR_NEW_CONTRACT_ADDRESS") {
+      toast({
+        title: "Configuration Error",
+        description: "Please update NEW_TNS_REGISTRY_ADDRESS in contracts.ts with your deployed whitelist contract address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsMigrating(true);
+    try {
+      if (!window.ethereum) {
+        throw new Error("Please install MetaMask");
+      }
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const newContract = new ethers.Contract(
+        NEW_TNS_REGISTRY_ADDRESS,
+        NEW_TNS_REGISTRY_ABI,
+        signer
+      );
+      
+      // Prepare batch arrays
+      const domainNames = domains.map(d => d.domain);
+      const owners = domains.map(d => d.owner);
+      const expirationTimes = domains.map(d => d.expirationTime);
+      
+      toast({
+        title: "Preparing migration...",
+        description: `Migrating ${domains.length} domains to new contract`,
+      });
+      
+      // Estimate gas
+      const gasEstimate = await newContract.adminMigrateDomainBatch.estimateGas(
+        domainNames,
+        owners,
+        expirationTimes
+      );
+      
+      // Execute migration
+      const tx = await newContract.adminMigrateDomainBatch(
+        domainNames,
+        owners,
+        expirationTimes,
+        {
+          gasLimit: gasEstimate + BigInt(100000) // Add buffer
+        }
+      );
+      
+      toast({
+        title: "Transaction submitted",
+        description: "Waiting for confirmation...",
+      });
+      
+      await tx.wait();
+      
+      setMigrationComplete(true);
+      toast({
+        title: "Migration successful! 🎉",
+        description: `Successfully migrated ${domains.length} domains to the new contract`,
+      });
+    } catch (error: any) {
+      console.error("Migration error:", error);
+      toast({
+        title: "Migration failed",
+        description: error.message || "Failed to migrate domains",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -432,6 +597,124 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Migration Section */}
+        <Card className="mt-8 trust-card border-purple-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+              <Database className="h-6 w-6" />
+              Migrate Domains to New Contract
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                <strong>Migration Process:</strong>
+              </p>
+              <ol className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-decimal list-inside">
+                <li>Deploy the new whitelist contract</li>
+                <li>Update NEW_TNS_REGISTRY_ADDRESS in contracts.ts</li>
+                <li>Click "Load Domains" to fetch all active domains from old contract</li>
+                <li>Review the domains and click "Migrate All Domains" to execute</li>
+              </ol>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={loadDomainsFromOldContract}
+                disabled={isLoadingDomains || isMigrating}
+                variant="outline"
+                className="flex-1"
+                data-testid="button-load-domains"
+              >
+                {isLoadingDomains ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading Domains...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4 mr-2" />
+                    Load Domains from Old Contract
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={handleMigration}
+                disabled={domains.length === 0 || isLoadingDomains || isMigrating || migrationComplete}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                data-testid="button-migrate-all"
+              >
+                {isMigrating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Migrating...
+                  </>
+                ) : migrationComplete ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Migration Complete!
+                  </>
+                ) : (
+                  <>
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Migrate All Domains ({domains.length})
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {domains.length > 0 && !migrationComplete && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 max-h-96 overflow-y-auto">
+                <h4 className="font-semibold mb-3 text-sm text-gray-700 dark:text-gray-300">
+                  Domains Ready for Migration ({domains.length}):
+                </h4>
+                <div className="space-y-2">
+                  {domains.map((d, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-md text-xs"
+                    >
+                      <div className="flex-1">
+                        <span className="font-semibold text-trust-blue">
+                          {d.domain}.trust
+                        </span>
+                      </div>
+                      <div className="flex-1 font-mono text-gray-600 dark:text-gray-400 truncate mx-2">
+                        {d.owner.slice(0, 10)}...{d.owner.slice(-8)}
+                      </div>
+                      <div className="text-gray-500 dark:text-gray-400">
+                        Expires: {new Date(Number(d.expirationTime) * 1000).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {migrationComplete && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-semibold">Migration Complete!</span>
+                </div>
+                <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                  Successfully migrated {domains.length} domains to the new whitelist contract.
+                  You can now update your frontend to use the new contract address.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <div>Old Contract: {OLD_TNS_REGISTRY_ADDRESS.slice(0, 10)}...</div>
+                <div>New Contract: {NEW_TNS_REGISTRY_ADDRESS === "YOUR_NEW_CONTRACT_ADDRESS" ? "Not configured" : `${NEW_TNS_REGISTRY_ADDRESS.slice(0, 10)}...`}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Info Section */}
         <Card className="mt-8 trust-card bg-trust-blue/5 dark:bg-trust-blue/10 border-trust-blue/20">
