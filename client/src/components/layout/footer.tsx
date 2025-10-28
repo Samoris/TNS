@@ -23,9 +23,9 @@ export function Footer() {
       { name: "Add to MetaMask", href: "#" },
     ],
     legal: [
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
-      { name: "Support", href: "#" },
+      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Terms of Service", href: "/terms" },
+      { name: "Support", href: "/support" },
     ],
   };
 
@@ -133,14 +133,14 @@ export function Footer() {
           </div>
           <div className="flex space-x-6 text-sm text-gray-400">
             {footerLinks.legal.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="hover:text-white transition-colors"
-                data-testid={`footer-legal-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
-              >
-                {link.name}
-              </a>
+              <Link key={link.name} href={link.href}>
+                <a
+                  className="hover:text-white transition-colors cursor-pointer"
+                  data-testid={`footer-legal-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  {link.name}
+                </a>
+              </Link>
             ))}
           </div>
         </div>

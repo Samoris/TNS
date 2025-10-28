@@ -11,6 +11,9 @@ import Register from "@/pages/register";
 import Manage from "@/pages/manage";
 import SendPayment from "@/pages/send-payment";
 import Docs from "@/pages/docs";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
+import Support from "@/pages/support";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -26,6 +29,9 @@ function Router() {
           <Route path="/manage" component={Manage} />
           <Route path="/send-payment" component={SendPayment} />
           <Route path="/docs" component={Docs} />
+          <Route path="/privacy" component={Privacy} />
+          <Route path="/terms" component={Terms} />
+          <Route path="/support" component={Support} />
           <Route component={NotFound} />
         </Switch>
       </main>
