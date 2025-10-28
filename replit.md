@@ -34,8 +34,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 
 ### System Design Choices
 - **Smart Contracts**:
-    - **TNSRegistryERC721**: Main registry, handles domain registration (minting ERC-721 NFTs), renewal, and ownership. Inherits OpenZeppelin ERC721, Ownable, and ReentrancyGuard. Manages per-domain resolver assignment. Integrates with TNSWhitelistManager for free domain minting.
-    - **TNSWhitelistManager**: Separate contract for managing whitelist entries and free mint quotas. Allows admin to grant free domain registrations to specific addresses. Tracks usage and enforces quota limits.
+    - **TNSRegistryERC721**: Main registry, handles domain registration (minting ERC-721 NFTs), renewal, and ownership. Inherits OpenZeppelin ERC721, Ownable, and ReentrancyGuard. Manages per-domain resolver assignment.
     - **TNSResolver**: Stores resolution data (ETH addresses, IPFS hashes, text records) for domains. Authorization enforced by the Registry contract. Returns zero values for expired domains. Includes ReentrancyGuard.
     - **TNSPaymentForwarder**: Enables on-chain payments to `.trust` domains, resolving addresses via the TNSResolver. Includes reentrancy protection and domain validation.
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS + shadcn/ui, TanStack Query, Wouter.
@@ -49,10 +48,3 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **UI Component Library**: shadcn/ui
 - **State Management**: TanStack Query
 - **Routing**: Wouter
-
-## Recent Changes
-- **Whitelist System Architecture** (October 28, 2025): Implemented modular whitelist system with separate contracts for clean separation of concerns. Created `TNSWhitelistManager` contract for managing free mint quotas. Modified `TNSRegistryERC721` to integrate with whitelist manager, checking eligibility before charging for registrations. Whitelisted users automatically receive free mints for **5+ character domains only** (normally 30 TRUST/year) with automatic payment refunds. Premium 3-4 character domains still require payment. See `docs/WHITELIST_SYSTEM.md` for complete documentation.
-- **Registry Contract Enhancement** (October 28, 2025): Updated current registry contract (`TNSRegistryERC721.sol`) to support external whitelist integration without requiring redeployment. Added `IWhitelistManager` interface and `setWhitelistManager()` function for linking contracts. Registration logic now checks whitelist eligibility and processes free mints automatically.
-- **Documentation Pages**: Added Privacy Policy (`/privacy`), Terms of Service (`/terms`), and Support Center (`/support`) pages
-- **Comprehensive Documentation**: Created TNS Documentation page at `/docs` with detailed guides for all features
-- **Domain Extension**: Fixed and tested domain renewal functionality - successfully extended domains with correct year-based duration

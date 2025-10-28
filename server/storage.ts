@@ -10,8 +10,6 @@ import {
   type Subdomain,
   type InsertSubdomain,
   type DomainWithRecords,
-  type WhitelistEntry,
-  type InsertWhitelistEntry,
   PRICING_TIERS
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -50,15 +48,6 @@ export interface IStorage {
   // Primary domain
   setPrimaryDomain(owner: string, domainName: string): Promise<void>;
 
-  // Whitelist
-  getWhitelistEntry(address: string): Promise<WhitelistEntry | undefined>;
-  getAllWhitelistEntries(): Promise<WhitelistEntry[]>;
-  createWhitelistEntry(entry: InsertWhitelistEntry): Promise<WhitelistEntry>;
-  updateWhitelistEntry(address: string, updates: Partial<WhitelistEntry>): Promise<WhitelistEntry | undefined>;
-  deleteWhitelistEntry(address: string): Promise<boolean>;
-  recordWhitelistMint(address: string): Promise<WhitelistEntry | undefined>;
-  checkWhitelistEligibility(address: string): Promise<{ eligible: boolean; remainingMints: number }>;
-
   // Utility methods
   isDomainAvailable(name: string): Promise<boolean>;
   calculateDomainPrice(name: string): { pricePerYear: string; tier: string };
@@ -70,7 +59,6 @@ export class MemStorage implements IStorage {
   private domainRecords: Map<string, DomainRecord>;
   private domainCommits: Map<string, DomainCommit>;
   private subdomains: Map<string, Subdomain>;
-  private whitelistEntries: Map<string, WhitelistEntry>;
 
   constructor() {
     this.users = new Map();
@@ -78,7 +66,6 @@ export class MemStorage implements IStorage {
     this.domainRecords = new Map();
     this.domainCommits = new Map();
     this.subdomains = new Map();
-    this.whitelistEntries = new Map();
   }
 
   // Users
@@ -282,80 +269,6 @@ export class MemStorage implements IStorage {
     if (domain) {
       await this.updateDomain(domain.id, { isPrimary: true });
     }
-  }
-
-  // Whitelist methods
-  async getWhitelistEntry(address: string): Promise<WhitelistEntry | undefined> {
-    const normalized = address.toLowerCase();
-    return this.whitelistEntries.get(normalized);
-  }
-
-  async getAllWhitelistEntries(): Promise<WhitelistEntry[]> {
-    return Array.from(this.whitelistEntries.values());
-  }
-
-  async createWhitelistEntry(insertEntry: InsertWhitelistEntry): Promise<WhitelistEntry> {
-    const id = randomUUID();
-    const normalized = insertEntry.address.toLowerCase();
-    const entry: WhitelistEntry = {
-      ...insertEntry,
-      id,
-      address: normalized,
-      usedMints: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      note: insertEntry.note ?? null,
-    };
-    this.whitelistEntries.set(normalized, entry);
-    return entry;
-  }
-
-  async updateWhitelistEntry(address: string, updates: Partial<WhitelistEntry>): Promise<WhitelistEntry | undefined> {
-    const normalized = address.toLowerCase();
-    const entry = this.whitelistEntries.get(normalized);
-    if (!entry) return undefined;
-
-    const updatedEntry = { ...entry, ...updates, updatedAt: new Date() };
-    this.whitelistEntries.set(normalized, updatedEntry);
-    return updatedEntry;
-  }
-
-  async deleteWhitelistEntry(address: string): Promise<boolean> {
-    const normalized = address.toLowerCase();
-    return this.whitelistEntries.delete(normalized);
-  }
-
-  async recordWhitelistMint(address: string): Promise<WhitelistEntry | undefined> {
-    const normalized = address.toLowerCase();
-    const entry = this.whitelistEntries.get(normalized);
-    if (!entry) return undefined;
-
-    if (!entry.isActive || entry.usedMints >= entry.allowedMints) {
-      return undefined;
-    }
-
-    const updatedEntry = {
-      ...entry,
-      usedMints: entry.usedMints + 1,
-      updatedAt: new Date(),
-    };
-    this.whitelistEntries.set(normalized, updatedEntry);
-    return updatedEntry;
-  }
-
-  async checkWhitelistEligibility(address: string): Promise<{ eligible: boolean; remainingMints: number }> {
-    const normalized = address.toLowerCase();
-    const entry = this.whitelistEntries.get(normalized);
-    
-    if (!entry || !entry.isActive) {
-      return { eligible: false, remainingMints: 0 };
-    }
-
-    const remainingMints = entry.allowedMints - entry.usedMints;
-    return {
-      eligible: remainingMints > 0,
-      remainingMints: Math.max(0, remainingMints),
-    };
   }
 
   calculateDomainPrice(name: string): { pricePerYear: string; tier: string } {

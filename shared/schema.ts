@@ -116,37 +116,15 @@ export type Subdomain = typeof subdomains.$inferSelect;
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;
 
-// Whitelist entries
-export const whitelistEntries = pgTable("whitelist_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  address: text("address").notNull().unique(),
-  allowedMints: integer("allowed_mints").notNull().default(5),
-  usedMints: integer("used_mints").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  note: text("note"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertWhitelistEntrySchema = createInsertSchema(whitelistEntries).omit({
-  id: true,
-  usedMints: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type InsertWhitelistEntry = z.infer<typeof insertWhitelistEntrySchema>;
-export type WhitelistEntry = typeof whitelistEntries.$inferSelect;
-
 // Domain with records
 export type DomainWithRecords = Domain & {
   records: DomainRecord[];
   subdomains: Subdomain[];
 };
 
-// Pricing tiers - Fixed TRUST pricing (Whitelist applies to 5+ chars only)
+// Pricing tiers - Fixed TRUST pricing
 export const PRICING_TIERS = {
-  THREE_CHAR: { minLength: 3, maxLength: 3, pricePerYear: "100", whitelistEligible: false },
-  FOUR_CHAR: { minLength: 4, maxLength: 4, pricePerYear: "70", whitelistEligible: false },
-  FIVE_PLUS_CHAR: { minLength: 5, maxLength: Infinity, pricePerYear: "30", whitelistEligible: true },
+  THREE_CHAR: { minLength: 3, maxLength: 3, pricePerYear: "100" },
+  FOUR_CHAR: { minLength: 4, maxLength: 4, pricePerYear: "70" },
+  FIVE_PLUS_CHAR: { minLength: 5, maxLength: Infinity, pricePerYear: "30" },
 } as const;

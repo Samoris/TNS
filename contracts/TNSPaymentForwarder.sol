@@ -23,8 +23,6 @@ interface ITNSResolver {
  * @title TNS Payment Forwarder
  * @dev Allows sending payments directly to .trust domain names
  * @notice This contract resolves domain names to addresses and forwards payments
- * @notice Works with TNSRegistryERC721 which supports whitelist-based free minting for 5+ character domains
- * @notice Domain pricing: 3 chars (100 TRUST/year), 4 chars (70 TRUST/year), 5+ chars (30 TRUST/year or FREE for whitelisted)
  */
 contract TNSPaymentForwarder is ReentrancyGuard {
     
@@ -47,22 +45,8 @@ contract TNSPaymentForwarder is ReentrancyGuard {
     ITNSRegistry public registry;
     
     /**
-     * @notice TNS Domain Pricing Structure:
-     * - 3 character domains: 100 TRUST/year (premium, no whitelist discount)
-     * - 4 character domains: 70 TRUST/year (premium, no whitelist discount)
-     * - 5+ character domains: 30 TRUST/year (FREE for whitelisted users via TNSWhitelistManager)
-     * 
-     * Whitelisted users automatically receive free registrations for 5+ character domains.
-     * All registered domains (paid or free) work identically with this payment forwarder.
-     */
-    
-    /**
      * @dev Constructor - sets the registry contract address
      * @param registryAddress Address of the TNSRegistryERC721 contract
-     * @notice The registry contract supports whitelist integration via TNSWhitelistManager
-     * @notice Whitelisted users can register 5+ character domains for free (normally 30 TRUST/year)
-     * @notice Premium 3-4 character domains always require payment (100 TRUST and 70 TRUST respectively)
-     * @notice This payment forwarder works with all domains regardless of how they were registered
      */
     constructor(address registryAddress) {
         require(registryAddress != address(0), "Invalid registry address");
