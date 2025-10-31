@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, ShieldCheck } from "lucide-react";
-import { ethers } from "ethers";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,28 +39,6 @@ export function Header() {
     formatAddress,
   } = useWallet();
 
-  const [isContractOwner, setIsContractOwner] = useState(false);
-
-  useEffect(() => {
-    const checkOwnership = async () => {
-      if (!isConnected || !address || !window.ethereum) {
-        setIsContractOwner(false);
-        return;
-      }
-
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, provider);
-        const owner = await contract.owner();
-        setIsContractOwner(address.toLowerCase() === owner.toLowerCase());
-      } catch (err) {
-        setIsContractOwner(false);
-      }
-    };
-
-    checkOwnership();
-  }, [isConnected, address]);
-
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
@@ -85,26 +62,13 @@ export function Header() {
     refetchInterval: 5000,
   });
 
-  type NavItem = {
-    name: string;
-    href: string;
-    active: boolean;
-    icon?: typeof ShieldCheck;
-  };
-
-  const baseNavigation: NavItem[] = [
+  const navigation = [
     { name: "Search", href: "/", active: location === "/" },
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
-
-  const adminNavigation: NavItem[] = isContractOwner
-    ? [{ name: "Admin", href: "/admin/migrate", active: location === "/admin/migrate", icon: ShieldCheck }]
-    : [];
-
-  const navigation: NavItem[] = [...baseNavigation, ...adminNavigation];
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
@@ -129,14 +93,13 @@ export function Header() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1 ${
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
                     item.active
                       ? "text-trust-blue border-b-2 border-trust-blue"
                       : "text-gray-500 dark:text-gray-400 hover:text-trust-blue"
                   }`}
                   data-testid={`nav-${item.name.toLowerCase().replace(" ", "-")}`}
                 >
-                  {item.icon && <item.icon className="h-4 w-4" />}
                   {item.name}
                 </Link>
               ))}
