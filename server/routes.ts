@@ -411,8 +411,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid token ID" });
       }
 
-      // Get domain info from storage
-      const domain = await storage.getDomainByTokenId(tokenId);
+      // Get domain info from blockchain (not storage)
+      const { blockchainService } = await import("./blockchain");
+      const domain = await blockchainService.getDomainByTokenId(tokenId);
       
       if (!domain) {
         return res.status(404).json({ message: "Token not found" });
@@ -467,14 +468,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             value: pricePerYear
           },
           {
-            trait_type: "Registration Date",
-            display_type: "date",
-            value: Math.floor(domain.registrationDate.getTime() / 1000)
-          },
-          {
             trait_type: "Expiration Date",
             display_type: "date",
-            value: Math.floor(domain.expirationDate.getTime() / 1000)
+            value: Math.floor(domain.expirationTime.getTime() / 1000)
+          },
+          {
+            trait_type: "Token ID",
+            display_type: "number",
+            value: tokenId
           }
         ]
       };
@@ -495,7 +496,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid token ID" });
       }
 
-      const domain = await storage.getDomainByTokenId(tokenId);
+      // Get domain info from blockchain (not storage)
+      const { blockchainService } = await import("./blockchain");
+      const domain = await blockchainService.getDomainByTokenId(tokenId);
       
       if (!domain) {
         return res.status(404).json({ message: "Token not found" });
