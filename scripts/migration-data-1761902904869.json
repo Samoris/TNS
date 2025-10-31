@@ -1,0 +1,240 @@
+{
+  "timestamp": "2025-10-31T09:28:24.869Z",
+  "oldContract": "0xdfe1aB8532925de628C419B65B41f23997c34B4a",
+  "newContract": "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7",
+  "totalDomains": 29,
+  "domains": [
+    {
+      "name": "samoris",
+      "owner": "0xE9bFe128b7F0F7486c206Aa87a2C2E796fc77BcD",
+      "tokenId": 1,
+      "expirationTime": 1792020220,
+      "expirationDate": "2026-10-14T23:23:40.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "intuition",
+      "owner": "0xE9bFe128b7F0F7486c206Aa87a2C2E796fc77BcD",
+      "tokenId": 2,
+      "expirationTime": 1824397921,
+      "expirationDate": "2027-10-24T17:12:01.000Z",
+      "isPrimary": true
+    },
+    {
+      "name": "dsfdfsgfg",
+      "owner": "0xDbDAfbfcD1fDb92B077e7d0a1c802427D60EA1c6",
+      "tokenId": 3,
+      "expirationTime": 1793009962,
+      "expirationDate": "2026-10-26T10:19:22.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "dfhdsgd",
+      "owner": "0xa07dB3aF70c18b71C446320A6Fa3a84b417CE0E7",
+      "tokenId": 4,
+      "expirationTime": 1793015131,
+      "expirationDate": "2026-10-26T11:45:31.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "grdgrgdggdv",
+      "owner": "0x1a5b554F61E2a38d06F31518D87C50d1abb01fC9",
+      "tokenId": 5,
+      "expirationTime": 1793015809,
+      "expirationDate": "2026-10-26T11:56:49.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "grdgrgdggfdgdv",
+      "owner": "0xb2b2c484202cA34C031F9b2aC0527bFdF855a566",
+      "tokenId": 6,
+      "expirationTime": 1793015809,
+      "expirationDate": "2026-10-26T11:56:49.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "gfybhkgb",
+      "owner": "0x046F04F0db4FCDF4BCb20E242C49bD0683688781",
+      "tokenId": 7,
+      "expirationTime": 1793018529,
+      "expirationDate": "2026-10-26T12:42:09.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "jhgjfgfgdjgf",
+      "owner": "0xcc753c13a7e48485CC27DA025005c00a57d03BCA",
+      "tokenId": 8,
+      "expirationTime": 1793019961,
+      "expirationDate": "2026-10-26T13:06:01.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "ygytfyuhu",
+      "owner": "0x2BdADa1c583B2C18a50ccC006293F325A2152881",
+      "tokenId": 9,
+      "expirationTime": 1793020508,
+      "expirationDate": "2026-10-26T13:15:08.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "gmjgfc",
+      "owner": "0xA9Aa904604400b2B6Bf59B53F337C3140ac47969",
+      "tokenId": 10,
+      "expirationTime": 1793020542,
+      "expirationDate": "2026-10-26T13:15:42.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "sgsfgf",
+      "owner": "0x8c2E92254d47851b225DfACb6B528A4172e09aBe",
+      "tokenId": 11,
+      "expirationTime": 1793020549,
+      "expirationDate": "2026-10-26T13:15:49.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "sgsfgfa",
+      "owner": "0xea4EA19E9280531C7C58625B35a173298b27fDE8",
+      "tokenId": 12,
+      "expirationTime": 1793020549,
+      "expirationDate": "2026-10-26T13:15:49.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "gmjjjkfdhfj",
+      "owner": "0x56EBf910eE4e2Fb66AD7AD1d37A4212214FDe982",
+      "tokenId": 13,
+      "expirationTime": 1793022257,
+      "expirationDate": "2026-10-26T13:44:17.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "gmjjjkfdhfjfgjs",
+      "owner": "0x09B52667BfA4D3f5d6227C7966b02c1765929d46",
+      "tokenId": 14,
+      "expirationTime": 1793022257,
+      "expirationDate": "2026-10-26T13:44:17.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "ftvhgjdc",
+      "owner": "0x25899FEf371021fa108622B5A1cbba6001CCF6Bf",
+      "tokenId": 15,
+      "expirationTime": 1793022280,
+      "expirationDate": "2026-10-26T13:44:40.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "hoiunljk",
+      "owner": "0x990A018627C28E2017F18a32ea83aF84bD6F88ec",
+      "tokenId": 16,
+      "expirationTime": 1793025064,
+      "expirationDate": "2026-10-26T14:31:04.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "dwadsadw",
+      "owner": "0xA5d2F762B196a91C8513bf52FffC1F81C47a3c0b",
+      "tokenId": 17,
+      "expirationTime": 1793025096,
+      "expirationDate": "2026-10-26T14:31:36.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "fsdfdesrsr",
+      "owner": "0xdE7C019f391b9Ea8F86b7c7b185E2a12d47a1908",
+      "tokenId": 18,
+      "expirationTime": 1793026362,
+      "expirationDate": "2026-10-26T14:52:42.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "gdfgdfgdh",
+      "owner": "0x0e68258f66679e008e473F76b926B7ec60FBd4A3",
+      "tokenId": 19,
+      "expirationTime": 1793043371,
+      "expirationDate": "2026-10-26T19:36:11.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "gdfgdfgdhgf",
+      "owner": "0x27EC818De1BAA8a8e459b2F5f6b7501bD395fbEF",
+      "tokenId": 20,
+      "expirationTime": 1793043374,
+      "expirationDate": "2026-10-26T19:36:14.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "fghkdfhdf",
+      "owner": "0x0338a8a426E6310C26F1aDb28e7152ccFeDf0446",
+      "tokenId": 21,
+      "expirationTime": 1793095447,
+      "expirationDate": "2026-10-27T10:04:07.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "ufmjfgjhf",
+      "owner": "0x096E626833A93365d31d145E2d9B033ee2196Be8",
+      "tokenId": 22,
+      "expirationTime": 1793097015,
+      "expirationDate": "2026-10-27T10:30:15.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "dgjdfjffgkghdgdj",
+      "owner": "0x0ca6074eF2a3d919B28e84612A69c29f135d3502",
+      "tokenId": 23,
+      "expirationTime": 1793097157,
+      "expirationDate": "2026-10-27T10:32:37.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "xcxkj",
+      "owner": "0xb53A7C906C84FC9598F84A64C892c5F7c5CC36c2",
+      "tokenId": 24,
+      "expirationTime": 1793102747,
+      "expirationDate": "2026-10-27T12:05:47.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "xcxjgkj",
+      "owner": "0x9bfD5630e0f6A683d26f0232A244c131ded36972",
+      "tokenId": 25,
+      "expirationTime": 1793102747,
+      "expirationDate": "2026-10-27T12:05:47.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "ghjgkkj",
+      "owner": "0xDe4FdE543d59Ca44877564ebf7f7E511e9f011A9",
+      "tokenId": 26,
+      "expirationTime": 1793102747,
+      "expirationDate": "2026-10-27T12:05:47.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "tfjfthfg",
+      "owner": "0x990A018627C28E2017F18a32ea83aF84bD6F88ec",
+      "tokenId": 27,
+      "expirationTime": 1793102814,
+      "expirationDate": "2026-10-27T12:06:54.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "dsadsadcc",
+      "owner": "0xC3C82029f5332E8808e1f9565EC80C64f2654273",
+      "tokenId": 28,
+      "expirationTime": 1793111950,
+      "expirationDate": "2026-10-27T14:39:10.000Z",
+      "isPrimary": false
+    },
+    {
+      "name": "dsadsadccx",
+      "owner": "0xcF962Ffd88A092c37cfE966A1e97fBb9fd3600dB",
+      "tokenId": 29,
+      "expirationTime": 1793111950,
+      "expirationDate": "2026-10-27T14:39:10.000Z",
+      "isPrimary": false
+    }
+  ]
+}
