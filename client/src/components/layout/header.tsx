@@ -85,7 +85,14 @@ export function Header() {
     refetchInterval: 5000,
   });
 
-  const baseNavigation = [
+  type NavItem = {
+    name: string;
+    href: string;
+    active: boolean;
+    icon?: typeof ShieldCheck;
+  };
+
+  const baseNavigation: NavItem[] = [
     { name: "Search", href: "/", active: location === "/" },
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
@@ -93,11 +100,11 @@ export function Header() {
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 
-  const adminNavigation = isContractOwner
+  const adminNavigation: NavItem[] = isContractOwner
     ? [{ name: "Admin", href: "/admin/migrate", active: location === "/admin/migrate", icon: ShieldCheck }]
     : [];
 
-  const navigation = [...baseNavigation, ...adminNavigation];
+  const navigation: NavItem[] = [...baseNavigation, ...adminNavigation];
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
@@ -129,7 +136,7 @@ export function Header() {
                   }`}
                   data-testid={`nav-${item.name.toLowerCase().replace(" ", "-")}`}
                 >
-                  {'icon' in item && <item.icon className="h-4 w-4" />}
+                  {item.icon && <item.icon className="h-4 w-4" />}
                   {item.name}
                 </Link>
               ))}

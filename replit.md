@@ -38,6 +38,13 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
   - Attributes: Domain Length, Character Set, Pricing Tier, Price Per Year, Registration Date, Expiration Date
   - Base URI configured in contract: `https://tns.replit.app/api/metadata/`
   - Full marketplace compatibility (OpenSea, Rarible, etc.)
+- **Admin Migration Interface**: Web-based admin panel (`/admin/migrate`) for contract owners to migrate domains from old contract:
+  - Fetch all domains from old contract (0xdfe1aB8532925de628C419B65B41f23997c34B4a)
+  - Review domain data (owners, expiration dates, primary domains)
+  - Export migration data as JSON
+  - Execute batch migration with automatic commit-reveal process
+  - Progress tracking with real-time updates
+  - Only accessible to the contract owner
 
 ### System Design Choices
 - **Smart Contracts**:
