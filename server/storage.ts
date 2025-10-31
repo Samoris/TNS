@@ -101,7 +101,7 @@ export class MemStorage implements IStorage {
 
   async getDomainByTokenId(tokenId: number): Promise<Domain | undefined> {
     return Array.from(this.domains.values()).find(
-      (domain) => domain.tokenId === tokenId
+      (domain) => domain.tokenId === tokenId.toString()
     );
   }
 

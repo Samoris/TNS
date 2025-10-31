@@ -31,6 +31,13 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Reverse Resolution**: Enables users to set a primary domain that is displayed across the platform instead of their wallet address.
 - **Domain Management**: Owners can set resolver records (ETH address, IPFS hash, text records) and manage primary domain status.
 - **Domain Renewal**: Users can extend domain registrations with real-time cost calculation and grace period handling.
+- **NFT Metadata**: ERC-721 compliant metadata system for domain NFTs with:
+  - Dynamic SVG image generation with tier-based color gradients (Gold for 3-char, Blue for 4-char, Purple for 5+ char)
+  - Metadata endpoint: `/api/metadata/{tokenId}` returns JSON with name, description, image, external_url, and attributes
+  - Image endpoint: `/api/metadata/{tokenId}/image` returns dynamically generated SVG
+  - Attributes: Domain Length, Character Set, Pricing Tier, Price Per Year, Registration Date, Expiration Date
+  - Base URI configured in contract: `https://tns.replit.app/api/metadata/`
+  - Full marketplace compatibility (OpenSea, Rarible, etc.)
 
 ### System Design Choices
 - **Smart Contracts**:
