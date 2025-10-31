@@ -402,6 +402,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // NFT Metadata endpoint - ERC-721 compliant
+  app.get("/api/metadata/:tokenId", async (req, res) => {
+    try {
+      const tokenId = parseInt(req.params.tokenId);
+      
+      if (isNaN(tokenId) || tokenId < 1) {
+        return res.status(400).json({ message: "Invalid token ID" });
+      }
+
+      // Get domain info from storage
+      const domain = await storage.getDomainByTokenId(tokenId);
+      
+      if (!domain) {
+        return res.status(404).json({ message: "Token not found" });
+      }
+
+      const domainName = `${domain.name}.trust`;
+      const length = domain.name.length;
+      
+      // Determine pricing tier
+      let pricingTier: string;
+      let pricePerYear: string;
+      if (length === 3) {
+        pricingTier = "Premium (3 characters)";
+        pricePerYear = "100 TRUST/year";
+      } else if (length === 4) {
+        pricingTier = "Standard (4 characters)";
+        pricePerYear = "70 TRUST/year";
+      } else {
+        pricingTier = "Basic (5+ characters)";
+        pricePerYear = "30 TRUST/year";
+      }
+
+      // Determine character set
+      const characterSet = /^[a-zA-Z]+$/.test(domain.name) 
+        ? "letters" 
+        : /^[0-9]+$/.test(domain.name)
+        ? "numbers"
+        : "mixed";
+
+      // Build ERC-721 compliant metadata
+      const metadata = {
+        name: domainName,
+        description: `${domainName}, a Trust Name Service domain on Intuition testnet. This NFT represents ownership of the domain name.`,
+        image: `${req.protocol}://${req.get("host")}/api/metadata/${tokenId}/image`,
+        external_url: `${req.protocol}://${req.get("host")}/manage/${domain.name}`,
+        attributes: [
+          {
+            trait_type: "Domain Length",
+            display_type: "number",
+            value: length
+          },
+          {
+            trait_type: "Character Set",
+            value: characterSet
+          },
+          {
+            trait_type: "Pricing Tier",
+            value: pricingTier
+          },
+          {
+            trait_type: "Price Per Year",
+            value: pricePerYear
+          },
+          {
+            trait_type: "Registration Date",
+            display_type: "date",
+            value: Math.floor(domain.registrationDate.getTime() / 1000)
+          },
+          {
+            trait_type: "Expiration Date",
+            display_type: "date",
+            value: Math.floor(domain.expirationDate.getTime() / 1000)
+          }
+        ]
+      };
+
+      res.json(metadata);
+    } catch (error) {
+      console.error("Metadata error:", error);
+      res.status(500).json({ message: "Failed to generate metadata" });
+    }
+  });
+
+  // NFT Image endpoint - Dynamic SVG generation
+  app.get("/api/metadata/:tokenId/image", async (req, res) => {
+    try {
+      const tokenId = parseInt(req.params.tokenId);
+      
+      if (isNaN(tokenId) || tokenId < 1) {
+        return res.status(400).json({ message: "Invalid token ID" });
+      }
+
+      const domain = await storage.getDomainByTokenId(tokenId);
+      
+      if (!domain) {
+        return res.status(404).json({ message: "Token not found" });
+      }
+
+      const domainName = `${domain.name}.trust`;
+      const length = domain.name.length;
+      
+      // Determine color based on pricing tier
+      let gradientColors: { start: string; end: string };
+      if (length === 3) {
+        // Premium - Gold gradient
+        gradientColors = { start: "#FFD700", end: "#FFA500" };
+      } else if (length === 4) {
+        // Standard - Blue gradient
+        gradientColors = { start: "#4A90E2", end: "#357ABD" };
+      } else {
+        // Basic - Purple gradient
+        gradientColors = { start: "#9B59B6", end: "#8E44AD" };
+      }
+
+      // Generate SVG
+      const svg = generateDomainSVG(domainName, gradientColors, tokenId);
+
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.send(svg);
+    } catch (error) {
+      console.error("Image generation error:", error);
+      res.status(500).send("Failed to generate image");
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -426,4 +552,67 @@ async function generateSuggestions(name: string): Promise<string[]> {
   }
   
   return available.slice(0, 3);
+}
+
+// Helper function to generate SVG image for domain NFT
+function generateDomainSVG(
+  domainName: string, 
+  gradientColors: { start: string; end: string },
+  tokenId: number
+): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:${gradientColors.start};stop-opacity:1" />
+      <stop offset="100%" style="stop-color:${gradientColors.end};stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="500" fill="url(#bgGradient)"/>
+  
+  <!-- Decorative circles -->
+  <circle cx="50" cy="50" r="30" fill="white" opacity="0.1"/>
+  <circle cx="450" cy="450" r="40" fill="white" opacity="0.1"/>
+  <circle cx="100" cy="400" r="20" fill="white" opacity="0.1"/>
+  <circle cx="400" cy="100" r="25" fill="white" opacity="0.1"/>
+  
+  <!-- Main content card -->
+  <rect x="40" y="150" width="420" height="200" rx="20" fill="white" opacity="0.95" filter="url(#shadow)"/>
+  
+  <!-- TNS Logo/Brand -->
+  <text x="250" y="120" font-family="Arial, sans-serif" font-size="32" font-weight="bold" 
+        fill="white" text-anchor="middle" opacity="0.9">
+    TNS
+  </text>
+  
+  <!-- Domain name - centered and prominent -->
+  <text x="250" y="240" font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
+        fill="#2C3E50" text-anchor="middle">
+    ${domainName}
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="250" y="280" font-family="Arial, sans-serif" font-size="16" 
+        fill="#7F8C8D" text-anchor="middle">
+    Trust Name Service Domain
+  </text>
+  
+  <!-- Token ID badge -->
+  <rect x="190" y="300" width="120" height="30" rx="15" fill="${gradientColors.start}" opacity="0.2"/>
+  <text x="250" y="320" font-family="Arial, sans-serif" font-size="14" 
+        fill="#2C3E50" text-anchor="middle">
+    Token #${tokenId}
+  </text>
+  
+  <!-- Bottom text -->
+  <text x="250" y="430" font-family="Arial, sans-serif" font-size="14" 
+        fill="white" text-anchor="middle" opacity="0.8">
+    Intuition Testnet
+  </text>
+</svg>`;
 }

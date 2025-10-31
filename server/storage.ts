@@ -23,6 +23,7 @@ export interface IStorage {
   // Domains
   getDomain(id: string): Promise<Domain | undefined>;
   getDomainByName(name: string): Promise<Domain | undefined>;
+  getDomainByTokenId(tokenId: number): Promise<Domain | undefined>;
   getDomainWithRecords(name: string): Promise<DomainWithRecords | undefined>;
   createDomain(domain: InsertDomain): Promise<Domain>;
   updateDomain(id: string, updates: Partial<Domain>): Promise<Domain | undefined>;
@@ -95,6 +96,12 @@ export class MemStorage implements IStorage {
     const fullName = name.endsWith('.trust') ? name : `${name}.trust`;
     return Array.from(this.domains.values()).find(
       (domain) => domain.name === fullName
+    );
+  }
+
+  async getDomainByTokenId(tokenId: number): Promise<Domain | undefined> {
+    return Array.from(this.domains.values()).find(
+      (domain) => domain.tokenId === tokenId
     );
   }
 
