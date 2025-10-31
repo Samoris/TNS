@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       rpcUrl: "https://testnet.rpc.intuition.systems",
       currencySymbol: "TRUST",
       explorerUrl: "https://testnet.explorer.intuition.systems",
-      contractAddress: "0xd89c8BD57dDFD24B9A72b2E2593D08d8f6A67edb",
+      contractAddress: "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7",
     });
   });
 
