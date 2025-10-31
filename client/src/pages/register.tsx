@@ -543,7 +543,7 @@ export default function RegisterPage() {
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Transaction
                     </Button>
-                    <Button variant="outline" onClick={() => window.open(`https://testnet.explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, "_blank")}>
+                    <Button variant="outline" onClick={() => window.open(`https://explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, "_blank")}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Contract
                     </Button>

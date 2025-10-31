@@ -215,13 +215,13 @@ export default function Home() {
                 <div className="text-center">
                   <div className="text-trust-blue font-semibold mb-1">Chain ID</div>
                   <div className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="chain-id">
-                    13579
+                    1155
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-trust-blue font-semibold mb-1">Network</div>
                   <div className="text-lg font-bold text-gray-900 dark:text-white">
-                    Intuition Testnet
+                    Intuition Mainnet
                   </div>
                 </div>
                 <div className="text-center">
@@ -233,7 +233,7 @@ export default function Home() {
                 <div className="text-center">
                   <div className="text-trust-blue font-semibold mb-1">RPC URL</div>
                   <div className="text-sm font-mono text-gray-600 dark:text-gray-400 break-all">
-                    testnet.rpc.intuition.systems
+                    intuition.calderachain.xyz
                   </div>
                 </div>
               </div>

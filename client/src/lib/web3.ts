@@ -9,11 +9,11 @@ export interface NetworkConfig {
 }
 
 export const INTUITION_TESTNET: NetworkConfig = {
-  chainId: 13579,
-  networkName: "Intuition testnet",
-  rpcUrl: "https://testnet.rpc.intuition.systems",
+  chainId: 1155,
+  networkName: "Intuition mainnet",
+  rpcUrl: "https://intuition.calderachain.xyz",
   currencySymbol: "TRUST",
-  explorerUrl: "https://testnet.explorer.intuition.systems",
+  explorerUrl: "https://explorer.intuition.systems",
 };
 
 export interface WalletState {

@@ -113,7 +113,7 @@ export function Header() {
                 {isCorrectNetwork ? (
                   <Badge variant="default" className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 text-xs">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                    Intuition Testnet
+                    Intuition Mainnet
                   </Badge>
                 ) : (
                   <Badge variant="destructive" className="cursor-pointer" onClick={switchNetwork}>
@@ -180,7 +180,7 @@ export function Header() {
                     {!isCorrectNetwork && (
                       <DropdownMenuItem onClick={switchNetwork} data-testid="switch-network">
                         <Globe className="mr-2 h-4 w-4" />
-                        Switch to Intuition Testnet
+                        Switch to Intuition Mainnet
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet-dropdown">

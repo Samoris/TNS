@@ -12,14 +12,14 @@ export function Footer() {
     resources: [
       { name: "Documentation", href: "/docs" },
       { name: "API Reference", href: "/docs#technical" },
-      { name: "Smart Contracts", href: `https://testnet.explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, external: true },
+      { name: "Smart Contracts", href: `https://explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, external: true },
       { name: "Integration Guide", href: "/docs#registration" },
     ],
     network: [
-      { name: "Chain ID: 13579", href: "#" },
+      { name: "Chain ID: 1155", href: "#" },
       { name: "Currency: TRUST", href: "#" },
-      { name: `Contract: ${shortAddress}`, href: `https://testnet.explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, external: true },
-      { name: "Block Explorer ↗", href: "https://testnet.explorer.intuition.systems", external: true },
+      { name: `Contract: ${shortAddress}`, href: `https://explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, external: true },
+      { name: "Block Explorer ↗", href: "https://explorer.intuition.systems", external: true },
       { name: "Add to MetaMask", href: "#" },
     ],
     legal: [

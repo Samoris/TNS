@@ -79,10 +79,10 @@ export function WalletConnection({ onConnected, showNetworkInfo = true }: Wallet
                 Network Requirements
               </h3>
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <div>Chain ID: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">13579</code></div>
-                <div>Network: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Intuition testnet</code></div>
+                <div>Chain ID: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">1155</code></div>
+                <div>Network: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Intuition mainnet</code></div>
                 <div>Currency: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">TRUST</code></div>
-                <div>RPC URL: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">https://testnet.rpc.intuition.systems</code></div>
+                <div>RPC URL: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">https://intuition.calderachain.xyz</code></div>
               </div>
             </div>
           )}
@@ -115,7 +115,7 @@ export function WalletConnection({ onConnected, showNetworkInfo = true }: Wallet
             {isCorrectNetwork ? (
               <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Intuition Testnet
+                Intuition Mainnet
               </Badge>
             ) : (
               <div className="space-y-2">
@@ -138,7 +138,7 @@ export function WalletConnection({ onConnected, showNetworkInfo = true }: Wallet
           <Alert className="mt-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Please switch to Intuition testnet to use TNS features. We'll automatically add the network to your wallet.
+              Please switch to Intuition mainnet to use TNS features. We'll automatically add the network to your wallet.
             </AlertDescription>
           </Alert>
         )}

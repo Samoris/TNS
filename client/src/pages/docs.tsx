@@ -26,7 +26,7 @@ export default function DocsPage() {
       content: [
         {
           heading: "What is TNS?",
-          text: "Trust Name Service (TNS) is a decentralized naming service for the Intuition testnet, similar to ENS. It enables you to register human-readable .trust domain names that map to blockchain addresses and other resources."
+          text: "Trust Name Service (TNS) is a decentralized naming service for the Intuition mainnet, similar to ENS. It enables you to register human-readable .trust domain names that map to blockchain addresses and other resources."
         },
         {
           heading: "Key Features",
@@ -295,10 +295,10 @@ export default function DocsPage() {
         {
           heading: "Network Information",
           items: [
-            "Chain ID: 13579",
-            "Network: Intuition testnet",
-            "RPC URL: https://testnet.rpc.intuition.systems",
-            "Explorer: https://testnet.explorer.intuition.systems",
+            "Chain ID: 1155",
+            "Network: Intuition mainnet",
+            "RPC URL: https://intuition.calderachain.xyz",
+            "Explorer: https://explorer.intuition.systems",
             "Currency: TRUST"
           ]
         },
@@ -337,7 +337,7 @@ export default function DocsPage() {
             </h1>
           </div>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl">
-            Complete guide to using Trust Name Service on the Intuition testnet
+            Complete guide to using Trust Name Service on the Intuition mainnet
           </p>
         </div>
 
@@ -418,7 +418,7 @@ export default function DocsPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Badge variant="secondary" className="text-sm">
-                Intuition Testnet
+                Intuition Mainnet
               </Badge>
               <Badge variant="secondary" className="text-sm">
                 ERC-721 NFTs

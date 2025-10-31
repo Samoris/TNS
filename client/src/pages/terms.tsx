@@ -25,7 +25,7 @@ export default function TermsPage() {
               Welcome to Trust Name Service (TNS). By using our platform, you agree to these Terms of Service. Please read them carefully.
             </p>
             <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-              TNS is a decentralized naming service on the Intuition blockchain testnet. These terms govern your use of the TNS platform, including domain registration, management, and all related services.
+              TNS is a decentralized naming service on the Intuition blockchain mainnet. These terms govern your use of the TNS platform, including domain registration, management, and all related services.
             </p>
           </CardContent>
         </Card>
@@ -194,9 +194,9 @@ export default function TermsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Testnet Environment</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Mainnet Environment</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              TNS operates on the Intuition testnet. Testnet tokens have no real-world value, and the service may be unstable or subject to resets.
+              TNS operates on the Intuition mainnet. All transactions involve real TRUST tokens with real-world value. Use the service responsibly.
             </p>
 
             <h3 className="font-semibold text-gray-900 dark:text-white mt-6">No Warranties</h3>

@@ -381,11 +381,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Network information
   app.get("/api/network", (req, res) => {
     res.json({
-      chainId: 13579,
-      networkName: "Intuition testnet",
-      rpcUrl: "https://testnet.rpc.intuition.systems",
+      chainId: 1155,
+      networkName: "Intuition mainnet",
+      rpcUrl: "https://intuition.calderachain.xyz",
       currencySymbol: "TRUST",
-      explorerUrl: "https://testnet.explorer.intuition.systems",
+      explorerUrl: "https://explorer.intuition.systems",
       contractAddress: "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7",
     });
   });
@@ -446,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Build ERC-721 compliant metadata
       const metadata = {
         name: domainName,
-        description: `${domainName}, a Trust Name Service domain on Intuition testnet. This NFT represents ownership of the domain name.`,
+        description: `${domainName}, a Trust Name Service domain on Intuition mainnet. This NFT represents ownership of the domain name.`,
         image: `${req.protocol}://${req.get("host")}/api/metadata/${tokenId}/image`,
         external_url: `${req.protocol}://${req.get("host")}/manage/${domain.name}`,
         attributes: [
@@ -615,7 +615,7 @@ function generateDomainSVG(
   <!-- Bottom text -->
   <text x="250" y="430" font-family="Arial, sans-serif" font-size="14" 
         fill="white" text-anchor="middle" opacity="0.8">
-    Intuition Testnet
+    Intuition Mainnet
   </text>
 </svg>`;
 }

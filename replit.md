@@ -1,7 +1,7 @@
 # Trust Name Service (TNS)
 
 ## Overview
-The Trust Name Service (TNS) is a decentralized naming service for the Intuition testnet, akin to ENS. It enables users to register human-readable `.trust` domain names that map to blockchain addresses and other resources. Key capabilities include domain registration, address resolution, payment forwarding, reverse resolution, domain renewal, hierarchical domains, and NFT ownership of domains. The project aims to provide a robust and user-friendly naming solution for the Intuition ecosystem.
+The Trust Name Service (TNS) is a decentralized naming service for the Intuition mainnet, akin to ENS. It enables users to register human-readable `.trust` domain names that map to blockchain addresses and other resources. Key capabilities include domain registration, address resolution, payment forwarding, reverse resolution, domain renewal, hierarchical domains, and NFT ownership of domains. The project aims to provide a robust and user-friendly naming solution for the Intuition ecosystem.
 
 ## User Preferences
 - Focus on clean, intuitive UI similar to ENS
@@ -37,7 +37,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
   - Metadata endpoint: `/api/metadata/{tokenId}` returns JSON with name, description, image, external_url, and attributes
   - Image endpoint: `/api/metadata/{tokenId}/image` returns dynamically generated SVG
   - Attributes: Domain Length, Character Set, Pricing Tier, Price Per Year, Registration Date, Expiration Date
-  - Base URI configured in contract: `https://tns.replit.app/api/metadata/`
+  - Base URI configured in contract: `https://tns.intuition.box/api/metadata/`
   - Full marketplace compatibility (OpenSea, Rarible, etc.)
 
 ### System Design Choices
@@ -49,7 +49,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Backend**: Express.js, TypeScript, In-memory storage (MemStorage). Provides API for domain availability, registration processing, and user account management.
 
 ## External Dependencies
-- **Blockchain Network**: Intuition testnet (Chain ID: 13579, RPC URL: `https://testnet.rpc.intuition.systems`, Explorer URL: `https://testnet.explorer.intuition.systems`)
+- **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
 - **Smart Contract Addresses**: 
   - TNS Registry: `0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7` (ERC-721 with NFT metadata support)
   - TNS Resolver: `0x84647A645e4FFD0A104E09eA781f1FEF306FACd9`

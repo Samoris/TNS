@@ -1,8 +1,8 @@
 import { ethers } from "ethers";
 
-// Intuition testnet configuration
-const CHAIN_ID = 13579;
-const RPC_URL = "https://testnet.rpc.intuition.systems";
+// Intuition mainnet configuration
+const CHAIN_ID = 1155;
+const RPC_URL = "https://intuition.calderachain.xyz";
 const TNS_REGISTRY_ADDRESS = "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7";
 
 // Minimal ABI for reading domain data
