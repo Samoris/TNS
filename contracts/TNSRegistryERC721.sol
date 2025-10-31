@@ -66,6 +66,9 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     // Token ID counter
     uint256 private _nextTokenId = 1;
     
+    // Metadata base URI
+    string private _baseTokenURI;
+    
     // Pricing constants (in wei) - Fixed TRUST pricing
     uint256 public constant PRICE_3_CHARS = 100 ether;  // 100 TRUST/year
     uint256 public constant PRICE_4_CHARS = 70 ether;   // 70 TRUST/year  
@@ -85,7 +88,10 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         _;
     }
     
-    constructor() ERC721("Trust Name Service", "TNS") Ownable(msg.sender) {}
+    constructor() ERC721("Trust Name Service", "TNS") Ownable(msg.sender) {
+        // Set default base URI - can be updated later
+        _baseTokenURI = "https://tns.replit.app/api/metadata/";
+    }
     
     /**
      * @dev ERC721 - Get total number of NFTs minted
@@ -185,9 +191,6 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         
         // MINT THE ACTUAL ERC-721 NFT
         _safeMint(msg.sender, tokenId);
-        
-        // Set token URI to the domain name
-        _setTokenURI(tokenId, string(abi.encodePacked(domain, ".trust")));
         
         emit DomainRegistered(domain, msg.sender, tokenId, expirationTime);
         
@@ -389,7 +392,8 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
     }
     
     /**
-     * @dev Override tokenURI to support both ERC721URIStorage and our implementation
+     * @dev Override tokenURI to return metadata URL
+     * @notice Returns URL to metadata JSON for this token
      */
     function tokenURI(uint256 tokenId)
         public
@@ -397,7 +401,49 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         override(ERC721, ERC721URIStorage)
         returns (string memory)
     {
-        return super.tokenURI(tokenId);
+        _requireOwned(tokenId);
+        
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0
+            ? string(abi.encodePacked(baseURI, _toString(tokenId)))
+            : "";
+    }
+    
+    /**
+     * @dev Base URI for computing {tokenURI}
+     */
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
+    }
+    
+    /**
+     * @dev Set the base URI for metadata
+     * @param baseURI The base URI (e.g., "https://tns.replit.app/api/metadata/")
+     */
+    function setBaseURI(string memory baseURI) external onlyOwner {
+        _baseTokenURI = baseURI;
+    }
+    
+    /**
+     * @dev Convert uint256 to string
+     */
+    function _toString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
     
     /**
