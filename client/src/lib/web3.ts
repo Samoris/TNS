@@ -768,7 +768,13 @@ export class Web3Service {
         for (let lookback = 0; lookback < maxLookback; lookback += blockRange) {
           try {
             const fromBlock = Math.max(0, currentBlock - lookback - blockRange);
-            const toBlock = currentBlock - lookback;
+            const toBlock = Math.max(0, currentBlock - lookback);
+            
+            // Stop if we've already covered block 0
+            if (toBlock <= 0 && fromBlock === 0) {
+              console.log(`Reached block 0, stopping search. Total events found: ${allEvents.length}`);
+              break;
+            }
             
             console.log(`Querying blocks ${fromBlock} to ${toBlock} for domain events...`);
             const events = await contract.queryFilter(filter, fromBlock, toBlock);

@@ -2,9 +2,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Global unhandled rejection handler - must be added early to catch all rejections
-window.addEventListener("unhandledrejection", (event) => {
-  // Handle cases where event.reason might not be an error object
+// Aggressive early handler to catch unhandled rejections before any plugins
+// This runs in capture phase with highest priority
+const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
   const reason = event.reason;
   const reasonString = typeof reason === 'string' ? reason : reason?.message || String(reason);
   
@@ -14,24 +14,28 @@ window.addEventListener("unhandledrejection", (event) => {
     reason?.code === "ACTION_REJECTED" ||
     reasonString?.toLowerCase().includes("user rejected") ||
     reasonString?.toLowerCase().includes("user denied") ||
+    reasonString?.toLowerCase().includes("user cancelled") ||
     reasonString?.toLowerCase().includes("cancelled");
   
   if (isUserRejection) {
     // User rejected the transaction - this is normal, just log it
     console.log("User cancelled the transaction");
-    event.preventDefault(); // Prevent error overlay for user rejections
-    event.stopPropagation(); // Stop the event from bubbling
-    event.stopImmediatePropagation(); // Prevent other listeners from firing
+    // Aggressively prevent error display
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
     return;
   }
   
-  // For other errors, log them but still prevent the overlay
-  if (reason) {
-    console.error("Unhandled promise rejection:", reason);
-  }
-  event.preventDefault();
-  event.stopPropagation();
-}, true); // Use capture phase to run before other listeners
+  // For non-user-rejection errors, log them
+  console.error("Unhandled promise rejection:", reason);
+};
+
+// Add the listener as early as possible in capture phase
+window.addEventListener("unhandledrejection", handleUnhandledRejection, true);
+
+// Also add in bubble phase as a backup
+window.addEventListener("unhandledrejection", handleUnhandledRejection, false);
 
 // Global error handler
 window.addEventListener("error", (event) => {
