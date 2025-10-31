@@ -623,7 +623,7 @@ export const TNS_RESOLVER_ABI = [
 ];
 
 // TNS Payment Forwarder Contract
-export const TNS_PAYMENT_FORWARDER_ADDRESS = "0x8BdD1Edf6C8531a2C9e6cBa73957626f1287443D";
+export const TNS_PAYMENT_FORWARDER_ADDRESS = "0xe9CCcEBed8937e707FeeaE35107d0C2a4748bB57";
 
 // TNS Payment Forwarder ABI - Handles payments to .trust domains
 export const TNS_PAYMENT_FORWARDER_ABI = [

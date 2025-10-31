@@ -289,7 +289,7 @@ export default function DocsPage() {
           items: [
             "TNS Registry: 0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7",
             "TNS Resolver: 0x84647A645e4FFD0A104E09eA781f1FEF306FACd9",
-            "Payment Forwarder: 0x8BdD1Edf6C8531a2C9e6cBa73957626f1287443D"
+            "Payment Forwarder: 0xe9CCcEBed8937e707FeeaE35107d0C2a4748bB57"
           ]
         },
         {

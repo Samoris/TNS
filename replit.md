@@ -52,6 +52,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Smart Contract Addresses**: 
   - TNS Registry: `0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7` (ERC-721 with NFT metadata support)
   - TNS Resolver: `0x84647A645e4FFD0A104E09eA781f1FEF306FACd9`
+  - Payment Forwarder: `0xe9CCcEBed8937e707FeeaE35107d0C2a4748bB57`
 - **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin (for ERC-721, Ownable, ReentrancyGuard)
 - **Styling Framework**: Tailwind CSS
