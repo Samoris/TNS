@@ -287,8 +287,8 @@ export default function DocsPage() {
         {
           heading: "Smart Contracts",
           items: [
-            "TNS Registry: 0xdfe1aB8532925de628C419B65B41f23997c34B4a",
-            "TNS Resolver: 0x259037FCc807Ca46549e8a15F6F4994e96D88035",
+            "TNS Registry: 0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7",
+            "TNS Resolver: 0x84647A645e4FFD0A104E09eA781f1FEF306FACd9",
             "Payment Forwarder: 0x8BdD1Edf6C8531a2C9e6cBa73957626f1287443D"
           ]
         },

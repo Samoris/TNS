@@ -292,7 +292,7 @@ export const TNS_REGISTRY_ABI = [
 ];
 
 // TNS Resolver Contract (UPDATE THIS ADDRESS AFTER DEPLOYMENT)
-export const TNS_RESOLVER_ADDRESS = "0x259037FCc807Ca46549e8a15F6F4994e96D88035";
+export const TNS_RESOLVER_ADDRESS = "0x84647A645e4FFD0A104E09eA781f1FEF306FACd9";
 
 // TNS Resolver ABI - Handles domain resolution (addresses, content hashes, text records)
 export const TNS_RESOLVER_ABI = [

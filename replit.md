@@ -49,7 +49,9 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 
 ## External Dependencies
 - **Blockchain Network**: Intuition testnet (Chain ID: 13579, RPC URL: `https://testnet.rpc.intuition.systems`, Explorer URL: `https://testnet.explorer.intuition.systems`)
-- **Smart Contract Address**: `0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7` (TNSRegistryERC721 with NFT metadata support)
+- **Smart Contract Addresses**: 
+  - TNS Registry: `0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7` (ERC-721 with NFT metadata support)
+  - TNS Resolver: `0x84647A645e4FFD0A104E09eA781f1FEF306FACd9`
 - **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin (for ERC-721, Ownable, ReentrancyGuard)
 - **Styling Framework**: Tailwind CSS
