@@ -300,7 +300,7 @@ export default function RegisterPage() {
     setRegisteredDomain(null);
   };
 
-  const handleCommitment = () => {
+  const handleCommitment = async () => {
     if (!isConnected) {
       connectWallet();
       return;
@@ -309,10 +309,14 @@ export default function RegisterPage() {
       switchNetwork();
       return;
     }
-    commitmentMutation.mutate();
+    try {
+      commitmentMutation.mutate();
+    } catch (error) {
+      // Error handled by mutation's onError
+    }
   };
 
-  const handleRegistration = () => {
+  const handleRegistration = async () => {
     if (!isConnected) {
       connectWallet();
       return;
@@ -329,7 +333,11 @@ export default function RegisterPage() {
       });
       return;
     }
-    registrationMutation.mutate();
+    try {
+      registrationMutation.mutate();
+    } catch (error) {
+      // Error handled by mutation's onError
+    }
   };
 
   return (

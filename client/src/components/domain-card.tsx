@@ -494,7 +494,13 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                     {!domain.isPrimary && (
                       <div className="mt-4">
                         <Button
-                          onClick={() => setPrimaryMutation.mutate()}
+                          onClick={() => {
+                            try {
+                              setPrimaryMutation.mutate();
+                            } catch (error) {
+                              // Error handled by mutation's onError
+                            }
+                          }}
                           disabled={setPrimaryMutation.isPending || isExpired}
                           className="trust-button w-full"
                           data-testid="set-primary-button"
@@ -583,7 +589,13 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
                             <div className="flex space-x-2">
                               <Button
-                                onClick={() => extendDomainMutation.mutate(extendDuration)}
+                                onClick={() => {
+                                  try {
+                                    extendDomainMutation.mutate(extendDuration);
+                                  } catch (error) {
+                                    // Error handled by mutation's onError
+                                  }
+                                }}
                                 disabled={extendDomainMutation.isPending}
                                 className="trust-button flex-1"
                                 data-testid="confirm-extend-button"
@@ -1109,7 +1121,13 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
             <Button 
               variant="outline" 
               className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
-              onClick={() => burnDomainMutation.mutate()}
+              onClick={() => {
+                try {
+                  burnDomainMutation.mutate();
+                } catch (error) {
+                  // Error handled by mutation's onError
+                }
+              }}
               disabled={burnDomainMutation.isPending}
               data-testid={`burn-${domain.name}`}
             >

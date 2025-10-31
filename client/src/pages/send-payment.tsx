@@ -122,7 +122,11 @@ export default function SendPayment() {
       return;
     }
 
-    sendPaymentMutation.mutate();
+    try {
+      sendPaymentMutation.mutate();
+    } catch (error) {
+      // Error handled by mutation's onError
+    }
   };
 
   return (

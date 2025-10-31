@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Global unhandled rejection handler
+// Global unhandled rejection handler - must be added early to catch all rejections
 window.addEventListener("unhandledrejection", (event) => {
   // Handle cases where event.reason might not be an error object
   const reason = event.reason;
@@ -20,6 +20,8 @@ window.addEventListener("unhandledrejection", (event) => {
     // User rejected the transaction - this is normal, just log it
     console.log("User cancelled the transaction");
     event.preventDefault(); // Prevent error overlay for user rejections
+    event.stopPropagation(); // Stop the event from bubbling
+    event.stopImmediatePropagation(); // Prevent other listeners from firing
     return;
   }
   
@@ -28,7 +30,8 @@ window.addEventListener("unhandledrejection", (event) => {
     console.error("Unhandled promise rejection:", reason);
   }
   event.preventDefault();
-});
+  event.stopPropagation();
+}, true); // Use capture phase to run before other listeners
 
 // Global error handler
 window.addEventListener("error", (event) => {
