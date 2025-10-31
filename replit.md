@@ -24,6 +24,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Core Features**: Domain registration with a 2-step commit-reveal process (60-second minimum wait, 24-hour window), address resolution, payment forwarding, reverse resolution, domain extension/renewal with flexible duration options, subdomain support, and NFT ownership (ERC-721).
 - **Security Features**: Front-running protection via commit-reveal, reentrancy protection on critical contract functions, 30-day grace period for expired domains (owner-only renewal), permissionless burn function for expired domain NFTs (after grace period), and on-chain primary domain storage with ownership verification.
 - **Pricing**: Tiered pricing based on domain character length (3 chars: 100 TRUST/year, 4 chars: 70 TRUST/year, 5+ chars: 30 TRUST/year).
+- **Metadata System**: Backend queries blockchain directly via ethers.js JsonRpcProvider to serve NFT metadata, ensuring accuracy and persistence across server restarts. No reliance on in-memory storage for NFT data.
 
 ### Feature Specifications
 - **Domain Registration**: Utilizes a commit-reveal scheme to prevent front-running.
