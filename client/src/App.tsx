@@ -10,6 +10,7 @@ import Search from "@/pages/search";
 import Register from "@/pages/register";
 import Manage from "@/pages/manage";
 import SendPayment from "@/pages/send-payment";
+import AdminMigrate from "@/pages/admin-migrate";
 import Docs from "@/pages/docs";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
@@ -28,6 +29,7 @@ function Router() {
           <Route path="/register" component={Register} />
           <Route path="/manage" component={Manage} />
           <Route path="/send-payment" component={SendPayment} />
+          <Route path="/admin/migrate" component={AdminMigrate} />
           <Route path="/docs" component={Docs} />
           <Route path="/privacy" component={Privacy} />
           <Route path="/terms" component={Terms} />
