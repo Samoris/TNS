@@ -34,11 +34,11 @@ export function WalletConnection({ onConnected, showNetworkInfo = true }: Wallet
     return (
       <Card className="trust-card">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-trust-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Wallet className="h-8 w-8 text-trust-blue" />
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-trust-blue/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <Wallet className="h-6 w-6 sm:h-8 sm:w-8 text-trust-blue" />
           </div>
-          <CardTitle>Connect Your Wallet</CardTitle>
-          <p className="text-gray-600 dark:text-gray-400">
+          <CardTitle className="text-xl sm:text-2xl">Connect Your Wallet</CardTitle>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 px-4">
             Connect your wallet to view and manage your TNS domains
           </p>
         </CardHeader>
@@ -46,14 +46,14 @@ export function WalletConnection({ onConnected, showNetworkInfo = true }: Wallet
           {error && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="text-sm">{error}</AlertDescription>
             </Alert>
           )}
           
           <Button
             onClick={connectWallet}
             disabled={isLoading}
-            className="w-full trust-button"
+            className="w-full trust-button min-h-[48px]"
             data-testid="connect-wallet-main"
           >
             <Wallet className="mr-2 h-4 w-4" />
@@ -73,16 +73,16 @@ export function WalletConnection({ onConnected, showNetworkInfo = true }: Wallet
           </div>
 
           {showNetworkInfo && (
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+            <div className="mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-2 sm:mb-3 flex items-center">
                 <Globe className="mr-2 h-4 w-4" />
                 Network Requirements
               </h3>
-              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="space-y-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 <div>Chain ID: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">1155</code></div>
                 <div>Network: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">Intuition mainnet</code></div>
                 <div>Currency: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">TRUST</code></div>
-                <div>RPC URL: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">https://intuition.calderachain.xyz</code></div>
+                <div className="break-all">RPC URL: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">https://intuition.calderachain.xyz</code></div>
               </div>
             </div>
           )}

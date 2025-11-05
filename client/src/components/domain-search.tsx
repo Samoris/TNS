@@ -86,7 +86,7 @@ export function DomainSearch({ onDomainSelect, autoFocus = false, placeholder = 
   return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Search Input */}
-      <div className="relative mb-6">
+      <div className="relative mb-4 sm:mb-6">
         <div className="flex">
           <Input
             type="text"
@@ -95,20 +95,21 @@ export function DomainSearch({ onDomainSelect, autoFocus = false, placeholder = 
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
             autoFocus={autoFocus}
-            className="trust-input flex-1 text-lg py-4 pr-20 rounded-r-none"
+            className="trust-input flex-1 text-base sm:text-lg py-3 sm:py-4 pr-16 sm:pr-20 rounded-r-none min-h-[48px]"
             data-testid="domain-search-input"
           />
-          <div className="flex items-center px-4 border-t border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-medium">
+          <div className="flex items-center px-2 sm:px-4 border-t border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-medium text-sm sm:text-base">
             .trust
           </div>
           <Button
             onClick={handleSearch}
             disabled={!isValidSearch || isLoading}
-            className="trust-button text-lg px-8 py-4 rounded-l-none"
+            className="trust-button text-sm sm:text-lg px-4 sm:px-8 py-3 sm:py-4 rounded-l-none min-h-[48px]"
             data-testid="search-button"
           >
-            <Search className="mr-2 h-4 w-4" />
-            {isLoading ? "Searching..." : "Search"}
+            <Search className="mr-1 sm:mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">{isLoading ? "Searching..." : "Search"}</span>
+            <span className="inline sm:hidden">{isLoading ? "..." : ""}</span>
           </Button>
         </div>
 
