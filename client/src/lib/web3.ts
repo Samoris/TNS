@@ -912,6 +912,15 @@ export class Web3Service {
   }
 
   /**
+   * Calculate registration cost for a domain (in TRUST tokens)
+   */
+  public calculateRegistrationCost(domainName: string, durationYears: number): string {
+    const pricePerYear = parseFloat(this.calculateDomainPrice(domainName));
+    const totalCost = pricePerYear * durationYears;
+    return totalCost.toString();
+  }
+
+  /**
    * Set the resolver contract for a domain (Registry function)
    */
   public async setResolver(registryAddress: string, registryAbi: any[], domainName: string, resolverAddress: string): Promise<string> {

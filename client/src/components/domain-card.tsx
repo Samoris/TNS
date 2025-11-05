@@ -107,22 +107,69 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const addSubdomainMutation = useMutation({
     mutationFn: async (subdomain: typeof newSubdomain) => {
+      // Construct the full subdomain name (e.g., "blog.alice")
+      const fullSubdomainName = `${subdomain.name}.${domain.name.replace('.trust', '')}`;
+      
+      // Step 1: Generate secret and create commitment
+      const secret = web3Service.generateSecret();
+      const commitment = web3Service.createCommitmentHash(
+        fullSubdomainName,
+        walletAddress,
+        secret
+      );
+      
+      toast({
+        title: "Step 1: Making commitment",
+        description: "Please confirm the commitment transaction in MetaMask...",
+      });
+      
+      // Make commitment on-chain
+      await web3Service.makeCommitment(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, commitment);
+      
+      toast({
+        title: "Commitment made!",
+        description: "Waiting 60 seconds before registration...",
+      });
+      
+      // Wait for minimum commitment age (60 seconds)
+      await new Promise(resolve => setTimeout(resolve, 61000));
+      
+      toast({
+        title: "Step 2: Registering subdomain",
+        description: "Please confirm the registration transaction in MetaMask...",
+      });
+      
+      // Step 2: Register the subdomain on blockchain (1 year duration)
+      const duration = 1;
+      const cost = web3Service.calculateRegistrationCost(fullSubdomainName, duration);
+      
+      const txHash = await web3Service.registerDomain(
+        TNS_REGISTRY_ADDRESS,
+        TNS_REGISTRY_ABI,
+        fullSubdomainName,
+        duration,
+        cost,
+        secret
+      );
+      
+      // Step 3: Store in backend for tracking
       const response = await apiRequest("POST", `/api/domains/${domain.name.replace('.trust', '')}/subdomains`, {
         subdomain: subdomain.name,
         owner: walletAddress,
         targetOwner: subdomain.owner,
       });
-      return response.json();
+      
+      return { txHash, data: await response.json() };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       // Invalidate both blockchain domains and subdomains queries
       queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
       queryClient.invalidateQueries({ queryKey: ["subdomains", walletAddress] });
       setIsAddingSubdomain(false);
       setNewSubdomain({ name: "", owner: walletAddress });
       toast({
-        title: "Subdomain created",
-        description: "Subdomain has been successfully created.",
+        title: "Subdomain registered on blockchain!",
+        description: `Transaction: ${result.txHash.substring(0, 10)}...`,
       });
     },
     onError: (error: any) => {
