@@ -71,7 +71,7 @@ export function Footer() {
           {/* Resources */}
           <div>
             <h3 className="font-semibold text-white mb-4">Resources</h3>
-            <ul className="space-y-2 text-gray-300">
+            <ul className="space-y-1 text-gray-300">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
                   {link.external ? (
@@ -79,7 +79,7 @@ export function Footer() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-white transition-colors text-sm"
+                      className="inline-flex items-center min-h-[44px] py-2 hover:text-white transition-colors text-sm"
                       data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
                     >
                       {link.name} ↗
@@ -87,7 +87,7 @@ export function Footer() {
                   ) : (
                     <Link href={link.href}>
                       <span
-                        className="hover:text-white transition-colors text-sm cursor-pointer"
+                        className="inline-flex items-center min-h-[44px] py-2 hover:text-white transition-colors text-sm cursor-pointer"
                         data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         {link.name}
@@ -102,7 +102,7 @@ export function Footer() {
           {/* Network */}
           <div>
             <h3 className="font-semibold text-white mb-4">Network</h3>
-            <ul className="space-y-2 text-gray-300 text-sm">
+            <ul className="space-y-1 text-gray-300 text-sm">
               {footerLinks.network.map((link) => (
                 <li key={link.name}>
                   {link.external ? (
@@ -110,13 +110,13 @@ export function Footer() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-white transition-colors"
+                      className="inline-flex items-center min-h-[44px] py-2 hover:text-white transition-colors"
                       data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
                     >
                       {link.name}
                     </a>
                   ) : (
-                    <span className="font-mono" data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                    <span className="inline-flex items-center min-h-[44px] py-2 font-mono" data-testid={`footer-${link.name.toLowerCase().replace(/\s+/g, "-")}`}>
                       {link.name}
                     </span>
                   )}
@@ -131,11 +131,11 @@ export function Footer() {
           <div className="text-gray-400 text-sm mb-4 md:mb-0">
             © {currentYear} Trust Name Service. Built on Intuition blockchain.
           </div>
-          <div className="flex space-x-6 text-sm text-gray-400">
+          <div className="flex flex-wrap gap-3 sm:gap-6 text-sm text-gray-400">
             {footerLinks.legal.map((link) => (
               <Link key={link.name} href={link.href}>
                 <span
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="inline-flex items-center min-h-[44px] py-2 hover:text-white transition-colors cursor-pointer"
                   data-testid={`footer-legal-${link.name.toLowerCase().replace(/\s+/g, "-")}`}
                 >
                   {link.name}

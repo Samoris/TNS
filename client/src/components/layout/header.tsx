@@ -226,7 +226,7 @@ export function Header() {
                 key={item.name}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
+                className={`flex items-center px-3 py-3 min-h-[44px] rounded-md text-base font-medium transition-colors ${
                   item.active
                     ? "bg-trust-blue/10 text-trust-blue"
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
