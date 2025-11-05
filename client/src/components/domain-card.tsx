@@ -107,7 +107,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const addSubdomainMutation = useMutation({
     mutationFn: async (subdomain: typeof newSubdomain) => {
-      const response = await apiRequest("POST", `/api/domains/${domain.name}/subdomains`, {
+      const response = await apiRequest("POST", `/api/domains/${domain.name.replace('.trust', '')}/subdomains`, {
         subdomain: subdomain.name,
         owner: walletAddress,
         targetOwner: subdomain.owner,
@@ -115,7 +115,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
+      // Invalidate both blockchain domains and subdomains queries
+      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["subdomains", walletAddress] });
       setIsAddingSubdomain(false);
       setNewSubdomain({ name: "", owner: walletAddress });
       toast({

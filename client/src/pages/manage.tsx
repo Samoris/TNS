@@ -47,7 +47,7 @@ export default function ManagePage() {
 
   // Fetch user's domains from blockchain contract
   const { 
-    data: domains, 
+    data: blockchainDomains, 
     isLoading: isLoadingDomains, 
     error: domainsError 
   } = useQuery<DomainWithRecords[]>({
@@ -61,6 +61,43 @@ export default function ManagePage() {
     refetchOnWindowFocus: false,
     refetchInterval: 30000, // Refresh every 30 seconds to get latest blockchain data
   });
+
+  // Fetch subdomains from backend for each domain
+  const { data: subdomainsData } = useQuery({
+    queryKey: ["subdomains", address, blockchainDomains?.map(d => d.id).join(',')],
+    queryFn: async () => {
+      if (!blockchainDomains || blockchainDomains.length === 0) return {};
+      
+      const subdomainsByDomain: Record<string, any[]> = {};
+      
+      // Fetch subdomains for each domain
+      await Promise.all(
+        blockchainDomains.map(async (domain) => {
+          try {
+            const response = await fetch(`/api/domains/${domain.name.replace('.trust', '')}/subdomains`);
+            if (response.ok) {
+              const data = await response.json();
+              subdomainsByDomain[domain.id] = data;
+            } else {
+              subdomainsByDomain[domain.id] = [];
+            }
+          } catch (error) {
+            console.error(`Error fetching subdomains for ${domain.name}:`, error);
+            subdomainsByDomain[domain.id] = [];
+          }
+        })
+      );
+      
+      return subdomainsByDomain;
+    },
+    enabled: !!blockchainDomains && blockchainDomains.length > 0,
+  });
+
+  // Merge blockchain domains with subdomains
+  const domains = blockchainDomains?.map(domain => ({
+    ...domain,
+    subdomains: subdomainsData?.[domain.id] || []
+  }));
 
   // Filter and sort domains
   const filteredAndSortedDomains = domains ? domains.filter((domain) => {
