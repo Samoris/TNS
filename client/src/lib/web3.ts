@@ -1257,6 +1257,12 @@ export class Web3Service {
       console.log("Primary domain for", ownerAddress, ":", primaryDomain);
       return primaryDomain;
     } catch (error: any) {
+      // Silently handle BAD_DATA error (contract not deployed)
+      if (error.code === "BAD_DATA" && error.value === "0x") {
+        // Contract not deployed yet, return empty string
+        return "";
+      }
+      // Log other errors
       console.error("Get primary domain error:", error);
       return "";
     }
