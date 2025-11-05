@@ -45,15 +45,6 @@ export const domainCommits = pgTable("domain_commits", {
   isRevealed: boolean("is_revealed").notNull().default(false),
 });
 
-export const subdomains = pgTable("subdomains", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(), // e.g., "blog.alice.trust"
-  parentDomainId: text("parent_domain_id").notNull().references(() => domains.id),
-  owner: text("owner").notNull(),
-  resolver: text("resolver"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  isActive: boolean("is_active").notNull().default(true),
-});
 
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -79,11 +70,6 @@ export const insertDomainCommitSchema = createInsertSchema(domainCommits).omit({
   isRevealed: true,
 });
 
-export const insertSubdomainSchema = createInsertSchema(subdomains).omit({
-  id: true,
-  createdAt: true,
-  isActive: true,
-});
 
 // Domain search and availability schema
 export const domainSearchSchema = z.object({
@@ -110,8 +96,6 @@ export type DomainRecord = typeof domainRecords.$inferSelect;
 export type InsertDomainCommit = z.infer<typeof insertDomainCommitSchema>;
 export type DomainCommit = typeof domainCommits.$inferSelect;
 
-export type InsertSubdomain = z.infer<typeof insertSubdomainSchema>;
-export type Subdomain = typeof subdomains.$inferSelect;
 
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;
@@ -119,7 +103,7 @@ export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;
 // Domain with records
 export type DomainWithRecords = Domain & {
   records: DomainRecord[];
-  subdomains: Subdomain[];
+  subdomains: never[];
 };
 
 // Pricing tiers - Fixed TRUST pricing

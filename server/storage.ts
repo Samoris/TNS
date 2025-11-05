@@ -7,8 +7,6 @@ import {
   type InsertDomainRecord,
   type DomainCommit,
   type InsertDomainCommit,
-  type Subdomain,
-  type InsertSubdomain,
   type DomainWithRecords,
   PRICING_TIERS
 } from "@shared/schema";
@@ -41,10 +39,6 @@ export interface IStorage {
   getDomainCommit(commitment: string): Promise<DomainCommit | undefined>;
   revealDomainCommit(commitment: string): Promise<DomainCommit | undefined>;
 
-  // Subdomains
-  getSubdomains(parentDomainId: string): Promise<Subdomain[]>;
-  createSubdomain(subdomain: InsertSubdomain): Promise<Subdomain>;
-  updateSubdomain(id: string, updates: Partial<Subdomain>): Promise<Subdomain | undefined>;
 
   // Primary domain
   setPrimaryDomain(owner: string, domainName: string): Promise<void>;
@@ -59,14 +53,12 @@ export class MemStorage implements IStorage {
   private domains: Map<string, Domain>;
   private domainRecords: Map<string, DomainRecord>;
   private domainCommits: Map<string, DomainCommit>;
-  private subdomains: Map<string, Subdomain>;
 
   constructor() {
     this.users = new Map();
     this.domains = new Map();
     this.domainRecords = new Map();
     this.domainCommits = new Map();
-    this.subdomains = new Map();
   }
 
   // Users
@@ -110,12 +102,11 @@ export class MemStorage implements IStorage {
     if (!domain) return undefined;
 
     const records = await this.getDomainRecords(domain.id);
-    const subdomains = await this.getSubdomains(domain.id);
 
     return {
       ...domain,
       records,
-      subdomains,
+      subdomains: [],
     };
   }
 
@@ -221,35 +212,6 @@ export class MemStorage implements IStorage {
     };
     this.domainCommits.set(commitment, updatedCommit);
     return updatedCommit;
-  }
-
-  // Subdomains
-  async getSubdomains(parentDomainId: string): Promise<Subdomain[]> {
-    return Array.from(this.subdomains.values()).filter(
-      (subdomain) => subdomain.parentDomainId === parentDomainId
-    );
-  }
-
-  async createSubdomain(insertSubdomain: InsertSubdomain): Promise<Subdomain> {
-    const id = randomUUID();
-    const subdomain: Subdomain = {
-      ...insertSubdomain,
-      id,
-      createdAt: new Date(),
-      isActive: true,
-      resolver: insertSubdomain.resolver ?? null,
-    };
-    this.subdomains.set(id, subdomain);
-    return subdomain;
-  }
-
-  async updateSubdomain(id: string, updates: Partial<Subdomain>): Promise<Subdomain | undefined> {
-    const subdomain = this.subdomains.get(id);
-    if (!subdomain) return undefined;
-
-    const updatedSubdomain = { ...subdomain, ...updates };
-    this.subdomains.set(id, updatedSubdomain);
-    return updatedSubdomain;
   }
 
   // Utility methods

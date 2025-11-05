@@ -47,9 +47,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [isAddingRecord, setIsAddingRecord] = useState(false);
-  const [isAddingSubdomain, setIsAddingSubdomain] = useState(false);
   const [newRecord, setNewRecord] = useState({ recordType: "address", key: "", value: "" });
-  const [newSubdomain, setNewSubdomain] = useState({ name: "", owner: walletAddress });
   const [copiedField, setCopiedField] = useState<string | null>(null);
   
   // Resolver states
@@ -105,81 +103,6 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     },
   });
 
-  const addSubdomainMutation = useMutation({
-    mutationFn: async (subdomain: typeof newSubdomain) => {
-      // Construct the full subdomain name (e.g., "blog.alice")
-      const fullSubdomainName = `${subdomain.name}.${domain.name.replace('.trust', '')}`;
-      
-      // Step 1: Generate secret and create commitment
-      const secret = web3Service.generateSecret();
-      const commitment = web3Service.createCommitmentHash(
-        fullSubdomainName,
-        walletAddress,
-        secret
-      );
-      
-      toast({
-        title: "Step 1: Making commitment",
-        description: "Please confirm the commitment transaction in MetaMask...",
-      });
-      
-      // Make commitment on-chain
-      await web3Service.makeCommitment(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, commitment);
-      
-      toast({
-        title: "Commitment made!",
-        description: "Waiting 60 seconds before registration...",
-      });
-      
-      // Wait for minimum commitment age (60 seconds)
-      await new Promise(resolve => setTimeout(resolve, 61000));
-      
-      toast({
-        title: "Step 2: Registering subdomain",
-        description: "Please confirm the registration transaction in MetaMask...",
-      });
-      
-      // Step 2: Register the subdomain on blockchain (1 year duration)
-      const duration = 1;
-      const cost = web3Service.calculateRegistrationCost(fullSubdomainName, duration);
-      
-      const txHash = await web3Service.registerDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        fullSubdomainName,
-        duration,
-        cost,
-        secret
-      );
-      
-      // Step 3: Store in backend for tracking
-      const response = await apiRequest("POST", `/api/domains/${domain.name.replace('.trust', '')}/subdomains`, {
-        subdomain: subdomain.name,
-        owner: walletAddress,
-        targetOwner: subdomain.owner,
-      });
-      
-      return { txHash, data: await response.json() };
-    },
-    onSuccess: (result) => {
-      // Invalidate both blockchain domains and subdomains queries
-      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
-      queryClient.invalidateQueries({ queryKey: ["subdomains", walletAddress] });
-      setIsAddingSubdomain(false);
-      setNewSubdomain({ name: "", owner: walletAddress });
-      toast({
-        title: "Subdomain registered on blockchain!",
-        description: `Transaction: ${result.txHash.substring(0, 10)}...`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to create subdomain",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
-    },
-  });
 
   const burnDomainMutation = useMutation({
     mutationFn: async () => {
@@ -490,7 +413,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                 <DialogHeader>
                   <DialogTitle>Manage {domain.name || 'Domain'}</DialogTitle>
                   <DialogDescription>
-                    Configure your domain settings, records, and subdomains
+                    Configure your domain settings and records
                   </DialogDescription>
                 </DialogHeader>
 
@@ -1063,93 +986,6 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                     </div>
                   </div>
 
-                  <Separator />
-
-                  {/* Subdomains */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-semibold">Subdomains</h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAddingSubdomain(true)}
-                        data-testid="add-subdomain-button"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Create Subdomain
-                      </Button>
-                    </div>
-
-                    {isAddingSubdomain && (
-                      <Card className="mb-4 p-4 bg-gray-50 dark:bg-gray-800">
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor="subdomainName">Subdomain Name</Label>
-                              <div className="flex items-center">
-                                <Input
-                                  id="subdomainName"
-                                  placeholder="blog"
-                                  value={newSubdomain.name}
-                                  onChange={(e) => setNewSubdomain({ ...newSubdomain, name: e.target.value })}
-                                  className="rounded-r-none"
-                                />
-                                <div className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-l-0 rounded-r text-sm">
-                                  .{domain.name}
-                                </div>
-                              </div>
-                            </div>
-                            <div>
-                              <Label htmlFor="subdomainOwner">Owner Address</Label>
-                              <Input
-                                id="subdomainOwner"
-                                placeholder="0x..."
-                                value={newSubdomain.owner}
-                                onChange={(e) => setNewSubdomain({ ...newSubdomain, owner: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              onClick={() => addSubdomainMutation.mutate(newSubdomain)}
-                              disabled={!newSubdomain.name || !newSubdomain.owner || addSubdomainMutation.isPending}
-                              size="sm"
-                            >
-                              {addSubdomainMutation.isPending ? "Creating..." : "Create Subdomain"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => setIsAddingSubdomain(false)}
-                              size="sm"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    )}
-
-                    <div className="space-y-2">
-                      {(!Array.isArray(domain.subdomains) || domain.subdomains.length === 0) ? (
-                        <p className="text-gray-500 text-sm">No subdomains created</p>
-                      ) : (
-                        Array.isArray(domain.subdomains) && domain.subdomains.map((subdomain) => (
-                          <div
-                            key={subdomain.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                          >
-                            <div>
-                              <div className="font-medium">{subdomain.name}</div>
-                              <div className="text-sm text-gray-500">Owner: {subdomain.owner}</div>
-                            </div>
-                            <Button variant="ghost" size="sm">
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -1162,7 +998,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <div>Annual Price: {formatPrice(domain.pricePerYear)}</div>
             <div>
-              {loadingResolver ? '...' : getRecordCount()} {loadingResolver ? '' : (getRecordCount() === 1 ? 'record' : 'records')}, {(domain.subdomains || []).length} {(domain.subdomains || []).length === 1 ? 'subdomain' : 'subdomains'}
+              {loadingResolver ? '...' : getRecordCount()} {loadingResolver ? '' : (getRecordCount() === 1 ? 'record' : 'records')}
             </div>
           </div>
           
