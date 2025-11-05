@@ -126,12 +126,12 @@ export default function ManagePage() {
   if (!isConnected || !isCorrectNetwork) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-trust-dark">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
               Manage Your Domains
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
+            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 px-4">
               Connect your wallet to view and manage your TNS domains
             </p>
           </div>
@@ -143,30 +143,30 @@ export default function ManagePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-trust-dark">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 sm:mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
               My Domains
             </h1>
-            <p className="text-gray-600 dark:text-gray-300">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
               Manage your TNS domains, records, and subdomains
             </p>
             {domains && domains.find(d => d.isPrimary) && (
-              <div className="mt-3 flex items-center space-x-2">
-                <Badge className="bg-trust-violet text-white text-sm px-3 py-1" data-testid="primary-domain-badge">
+              <div className="mt-3 flex items-center space-x-2 flex-wrap">
+                <Badge className="bg-trust-violet text-white text-xs sm:text-sm px-2 sm:px-3 py-1" data-testid="primary-domain-badge">
                   Primary Domain
                 </Badge>
-                <span className="text-lg font-semibold text-trust-blue dark:text-trust-blue" data-testid="primary-domain-name">
+                <span className="text-base sm:text-lg font-semibold text-trust-blue dark:text-trust-blue" data-testid="primary-domain-name">
                   {domains.find(d => d.isPrimary)?.name}
                 </span>
               </div>
             )}
           </div>
-          <div className="mt-4 lg:mt-0 flex space-x-4">
+          <div className="mt-4 lg:mt-0">
             <Link href="/search">
-              <Button className="trust-button" data-testid="register-new-domain">
+              <Button className="trust-button w-full sm:w-auto min-h-[44px]" data-testid="register-new-domain">
                 <Plus className="mr-2 h-4 w-4" />
                 Register New Domain
               </Button>
@@ -175,64 +175,64 @@ export default function ManagePage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="trust-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center">
-                <Globe className="h-8 w-8 text-trust-blue mr-3" />
+                <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-trust-blue mr-2 sm:mr-3 flex-shrink-0" />
                 <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="total-domains">
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white" data-testid="total-domains">
                     {statusCounts.total}
                   </div>
-                  <div className="text-sm text-gray-500">Total Domains</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Total</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="trust-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mr-3">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="active-domains">
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white" data-testid="active-domains">
                     {statusCounts.active}
                   </div>
-                  <div className="text-sm text-gray-500">Active</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Active</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="trust-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/20 rounded-lg flex items-center justify-center mr-3">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-amber-100 dark:bg-amber-900/20 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                  <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="expiring-domains">
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white" data-testid="expiring-domains">
                     {statusCounts.expiring}
                   </div>
-                  <div className="text-sm text-gray-500">Expiring Soon</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Expiring</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="trust-card">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mr-3">
-                  <Calendar className="w-4 h-4 text-red-600" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-red-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="expired-domains">
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white" data-testid="expired-domains">
                     {statusCounts.expired}
                   </div>
-                  <div className="text-sm text-gray-500">Expired</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Expired</div>
                 </div>
               </div>
             </CardContent>
@@ -241,26 +241,26 @@ export default function ManagePage() {
 
         {/* Filters and Controls */}
         <Card className="trust-card mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col space-y-3 sm:space-y-4">
               {/* Search */}
-              <div className="flex-1">
+              <div className="w-full">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search domains..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11"
                     data-testid="domain-search-filter"
                   />
                 </div>
               </div>
 
               {/* Filters */}
-              <div className="flex space-x-4">
+              <div className="flex flex-wrap gap-2 sm:gap-4">
                 <Select value={filterOption} onValueChange={(value: FilterOption) => setFilterOption(value)}>
-                  <SelectTrigger className="w-32" data-testid="status-filter">
+                  <SelectTrigger className="flex-1 min-w-[120px] h-11" data-testid="status-filter">
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue />
                   </SelectTrigger>
@@ -273,7 +273,7 @@ export default function ManagePage() {
                 </Select>
 
                 <Select value={sortOption} onValueChange={(value: SortOption) => setSortOption(value)}>
-                  <SelectTrigger className="w-32" data-testid="sort-filter">
+                  <SelectTrigger className="flex-1 min-w-[120px] h-11" data-testid="sort-filter">
                     <TrendingUp className="mr-2 h-4 w-4" />
                     <SelectValue />
                   </SelectTrigger>
@@ -284,12 +284,12 @@ export default function ManagePage() {
                   </SelectContent>
                 </Select>
 
-                <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg">
+                <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg h-11">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("grid")}
-                    className="rounded-r-none"
+                    className="rounded-r-none h-full px-4"
                     data-testid="grid-view"
                   >
                     <Grid className="h-4 w-4" />
@@ -298,7 +298,7 @@ export default function ManagePage() {
                     variant={viewMode === "list" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("list")}
-                    className="rounded-l-none"
+                    className="rounded-l-none h-full px-4"
                     data-testid="list-view"
                   >
                     <List className="h-4 w-4" />

@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_176063388
 
 export function Header() {
   const [location] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") as "light" | "dark" || "light";
@@ -80,14 +81,14 @@ export function Header() {
               <img 
                 src={logoImage} 
                 alt="TNS Logo" 
-                className="h-10 w-auto object-contain"
+                className="h-8 sm:h-10 w-auto object-contain"
               />
-              <Badge variant="secondary" className="ml-2 bg-trust-violet/10 text-trust-violet">
+              <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs bg-trust-violet/10 text-trust-violet">
                 BETA
               </Badge>
             </Link>
 
-            {/* Navigation */}
+            {/* Desktop Navigation */}
             <div className="hidden md:ml-8 md:flex md:space-x-8">
               {navigation.map((item) => (
                 <Link
@@ -106,7 +107,7 @@ export function Header() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Network Status */}
             {isConnected && (
               <div className="hidden sm:flex items-center">
@@ -124,7 +125,7 @@ export function Header() {
             )}
 
             {/* Theme Toggle */}
-            <Button variant="ghost" size="icon" onClick={toggleTheme} data-testid="theme-toggle">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-10 w-10" data-testid="theme-toggle">
               {theme === "light" ? (
                 <Moon className="h-5 w-5" />
               ) : (
@@ -137,17 +138,17 @@ export function Header() {
               <Button
                 onClick={connectWallet}
                 disabled={isLoading}
-                className="trust-button"
+                className="trust-button h-10"
                 data-testid="connect-wallet-button"
               >
-                <Wallet className="mr-2 h-4 w-4" />
-                {isLoading ? "Connecting..." : "Connect Wallet"}
+                <Wallet className="mr-0 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">{isLoading ? "Connecting..." : "Connect Wallet"}</span>
               </Button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center space-x-2" data-testid="wallet-dropdown">
+                    <Button variant="outline" className="flex items-center space-x-1 sm:space-x-2 h-10" data-testid="wallet-dropdown">
                       <Wallet className="h-4 w-4" />
                       <span className="hidden sm:block">
                         {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
@@ -193,7 +194,7 @@ export function Header() {
                   variant="ghost"
                   size="icon"
                   onClick={disconnectWallet}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 hidden sm:flex"
                   title="Disconnect Wallet"
                   data-testid="disconnect-wallet-button"
                 >
@@ -201,9 +202,58 @@ export function Header() {
                 </Button>
               </div>
             )}
+
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden h-10 w-10"
+              data-testid="mobile-menu-toggle"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-3 rounded-md text-base font-medium transition-colors ${
+                  item.active
+                    ? "bg-trust-blue/10 text-trust-blue"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                data-testid={`mobile-nav-${item.name.toLowerCase().replace(" ", "-")}`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+          {isConnected && (
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Network Status</div>
+              {isCorrectNetwork ? (
+                <Badge variant="default" className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 text-xs">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  Intuition Mainnet
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="cursor-pointer" onClick={switchNetwork}>
+                  Wrong Network - Tap to Switch
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Wallet Error */}
       {error && (

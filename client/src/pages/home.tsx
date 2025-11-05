@@ -64,14 +64,14 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32">
+      <section className="relative py-12 sm:py-20 lg:py-32">
         {/* Background */}
         <div className="absolute inset-0 hero-gradient"></div>
         <div className="absolute inset-0 pattern-dots opacity-30"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
               Your{" "}
               <span className="bg-gradient-to-r from-trust-blue to-trust-violet bg-clip-text text-transparent">
                 Web3 Identity
@@ -80,19 +80,19 @@ export default function Home() {
               Starts with{" "}
               <span className="text-trust-blue">.trust</span>
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed px-4">
               Trust Name Service (TNS) provides decentralized, human-readable names for your crypto addresses 
               on Intuition blockchain. Own your digital identity with .trust domains.
             </p>
 
             {/* Domain Search */}
-            <div className="mb-16">
+            <div className="mb-12 sm:mb-16 px-2">
               <DomainSearch onDomainSelect={handleDomainSelect} autoFocus />
               
               {selectedDomain && (
                 <div className="mt-6 flex justify-center">
                   <Link href={`/register?domain=${encodeURIComponent(selectedDomain.name)}`}>
-                    <Button className="trust-button text-lg px-8 py-3" data-testid="proceed-to-register">
+                    <Button className="trust-button text-base sm:text-lg px-6 sm:px-8 py-3 min-h-[44px]" data-testid="proceed-to-register">
                       Register {selectedDomain.name} <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
@@ -101,16 +101,16 @@ export default function Home() {
             </div>
 
             {/* Key Features */}
-            <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4">
               {features.map((feature, index) => (
                 <div key={index} className="text-center">
-                  <div className={`w-16 h-16 ${feature.bgColor} rounded-xl flex items-center justify-center mx-auto mb-4`}>
-                    <feature.icon className={`${feature.color} text-2xl h-8 w-8`} />
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${feature.bgColor} rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4`}>
+                    <feature.icon className={`${feature.color} h-7 w-7 sm:h-8 sm:w-8`} />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2" data-testid={`feature-${index}`}>
+                  <h3 className="text-base sm:text-lg font-semibold mb-2" data-testid={`feature-${index}`}>
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400">{feature.description}</p>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{feature.description}</p>
                 </div>
               ))}
             </div>
@@ -119,13 +119,13 @@ export default function Home() {
       </section>
 
       {/* Real-time Statistics Section */}
-      <section className="py-16 bg-white dark:bg-gray-800">
+      <section className="py-12 sm:py-16 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
               Live Network Statistics
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 px-4">
               Real-time data from the TNS blockchain registry
             </p>
           </div>
@@ -137,66 +137,66 @@ export default function Home() {
       <PricingSection />
 
       {/* How It Works Section */}
-      <section className="py-20 bg-gray-50 dark:bg-trust-dark">
+      <section className="py-12 sm:py-20 bg-gray-50 dark:bg-trust-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
               How TNS Works
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto px-4">
               Built on proven ENS architecture with commit-reveal security and ERC-721 ownership
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
-            <div className="space-y-8">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center mb-12 sm:mb-20">
+            <div className="space-y-6 sm:space-y-8">
               {howItWorksSteps.map((item) => (
                 <div key={item.step} className="flex items-start">
-                  <div className={`flex-shrink-0 w-12 h-12 ${item.color} rounded-xl flex items-center justify-center mr-6`}>
-                    <span className="text-white font-bold">{item.step}</span>
+                  <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 ${item.color} rounded-xl flex items-center justify-center mr-4 sm:mr-6`}>
+                    <span className="text-white font-bold text-sm sm:text-base">{item.step}</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">
                       {item.title}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{item.description}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             <Card className="trust-card">
-              <CardContent className="p-8">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+              <CardContent className="p-6 sm:p-8">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">
                   Domain Architecture
                 </h3>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                     <div className="flex items-center mb-2">
-                      <Globe className="text-trust-blue mr-3 h-5 w-5" />
-                      <span className="font-semibold">Registry Contract</span>
+                      <Globe className="text-trust-blue mr-2 sm:mr-3 h-5 w-5 flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">Registry Contract</span>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Maintains domain ownership and resolver mappings
                     </p>
                   </div>
                   
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                  <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                     <div className="flex items-center mb-2">
-                      <Shield className="text-trust-violet mr-3 h-5 w-5" />
-                      <span className="font-semibold">Resolver Contract</span>
+                      <Shield className="text-trust-violet mr-2 sm:mr-3 h-5 w-5 flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">Resolver Contract</span>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Translates domains to addresses and resource records
                     </p>
                   </div>
                   
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+                  <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                     <div className="flex items-center mb-2">
-                      <Award className="text-trust-emerald mr-3 h-5 w-5" />
-                      <span className="font-semibold">Registrar Contract</span>
+                      <Award className="text-trust-emerald mr-2 sm:mr-3 h-5 w-5 flex-shrink-0" />
+                      <span className="font-semibold text-sm sm:text-base">Registrar Contract</span>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Handles registration, pricing, and renewals
                     </p>
                   </div>
