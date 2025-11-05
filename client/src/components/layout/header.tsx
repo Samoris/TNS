@@ -125,7 +125,7 @@ export function Header() {
             )}
 
             {/* Theme Toggle */}
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-10 w-10" data-testid="theme-toggle">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="min-h-[44px] min-w-[44px] h-11 w-11" data-testid="theme-toggle">
               {theme === "light" ? (
                 <Moon className="h-5 w-5" />
               ) : (
@@ -138,7 +138,7 @@ export function Header() {
               <Button
                 onClick={connectWallet}
                 disabled={isLoading}
-                className="trust-button h-10"
+                className="trust-button min-h-[44px]"
                 data-testid="connect-wallet-button"
               >
                 <Wallet className="mr-0 sm:mr-2 h-4 w-4" />
@@ -148,7 +148,7 @@ export function Header() {
               <div className="flex items-center gap-1 sm:gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center space-x-1 sm:space-x-2 h-10" data-testid="wallet-dropdown">
+                    <Button variant="outline" className="flex items-center space-x-1 sm:space-x-2 min-h-[44px]" data-testid="wallet-dropdown">
                       <Wallet className="h-4 w-4" />
                       <span className="hidden sm:block">
                         {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
@@ -194,7 +194,7 @@ export function Header() {
                   variant="ghost"
                   size="icon"
                   onClick={disconnectWallet}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 hidden sm:flex"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[44px] min-w-[44px] h-11 w-11 hidden sm:flex"
                   title="Disconnect Wallet"
                   data-testid="disconnect-wallet-button"
                 >
@@ -208,7 +208,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden h-10 w-10"
+              className="md:hidden min-h-[44px] min-w-[44px] h-11 w-11"
               data-testid="mobile-menu-toggle"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
