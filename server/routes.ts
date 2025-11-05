@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { blockchainService } from "./blockchain";
 import { 
   domainSearchSchema, 
   domainRegistrationSchema, 
@@ -19,24 +20,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name } = req.params;
       const parsedName = domainSearchSchema.parse({ name });
       
-      // Check both backend storage AND blockchain availability
-      const backendAvailable = await storage.isDomainAvailable(parsedName.name);
+      // Check blockchain availability as the source of truth
+      const blockchainAvailable = await blockchainService.isAvailable(parsedName.name);
       
-      // Note: For now we'll use backend availability, but in a production system
-      // you would also check the blockchain using web3 calls
-      // const blockchainAvailable = await checkBlockchainAvailability(parsedName.name);
-      // const isAvailable = backendAvailable && blockchainAvailable;
-      
-      const isAvailable = backendAvailable;
       const pricing = storage.calculateDomainPrice(parsedName.name);
       
       const fullName = `${parsedName.name}.trust`;
       
       res.json({
         name: fullName,
-        available: isAvailable,
+        available: blockchainAvailable,
         pricing,
-        suggestions: isAvailable ? [] : await generateSuggestions(parsedName.name),
+        suggestions: blockchainAvailable ? [] : await generateSuggestions(parsedName.name),
       });
     } catch (error) {
       res.status(400).json({ 

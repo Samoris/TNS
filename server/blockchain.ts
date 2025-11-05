@@ -9,7 +9,8 @@ const TNS_REGISTRY_ADDRESS = "0x7C365AF9034b00dadc616dE7f38221C678D423Fa";
 const TNS_REGISTRY_ABI = [
   "function tokenIdToDomain(uint256) view returns (string)",
   "function getDomainInfo(string) view returns (address owner, uint256 tokenId, uint256 expirationTime, bool exists)",
-  "function domains(string) view returns (string name, uint256 expirationTime, bool exists)"
+  "function domains(string) view returns (string name, uint256 expirationTime, bool exists)",
+  "function isAvailable(string) view returns (bool)"
 ];
 
 export class BlockchainService {
@@ -96,6 +97,19 @@ export class BlockchainService {
     } catch (error) {
       console.error(`Error getting domain by token ID ${tokenId}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Check if a domain is available for registration on the blockchain
+   */
+  async isAvailable(domainName: string): Promise<boolean> {
+    try {
+      const available = await this.contract.isAvailable(domainName);
+      return available;
+    } catch (error) {
+      console.error(`Error checking availability for ${domainName}:`, error);
+      return false;
     }
   }
 }
