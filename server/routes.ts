@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       rpcUrl: "https://intuition.calderachain.xyz",
       currencySymbol: "TRUST",
       explorerUrl: "https://explorer.intuition.systems",
-      contractAddress: "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7",
+      contractAddress: "0x7C365AF9034b00dadc616dE7f38221C678D423Fa",
     });
   });
 

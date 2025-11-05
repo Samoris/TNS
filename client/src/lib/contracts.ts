@@ -1,5 +1,5 @@
 // TNS Contract Configuration - ERC721 NFT Contract (UPDATED with metadata support)
-export const TNS_REGISTRY_ADDRESS = "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7";
+export const TNS_REGISTRY_ADDRESS = "0x7C365AF9034b00dadc616dE7f38221C678D423Fa";
 
 // TNS Registry ABI - ERC721 NFT contract with security features
 export const TNS_REGISTRY_ABI = [
@@ -292,7 +292,7 @@ export const TNS_REGISTRY_ABI = [
 ];
 
 // TNS Resolver Contract (UPDATE THIS ADDRESS AFTER DEPLOYMENT)
-export const TNS_RESOLVER_ADDRESS = "0x84647A645e4FFD0A104E09eA781f1FEF306FACd9";
+export const TNS_RESOLVER_ADDRESS = "0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06";
 
 // TNS Resolver ABI - Handles domain resolution (addresses, content hashes, text records)
 export const TNS_RESOLVER_ABI = [
@@ -623,7 +623,7 @@ export const TNS_RESOLVER_ABI = [
 ];
 
 // TNS Payment Forwarder Contract
-export const TNS_PAYMENT_FORWARDER_ADDRESS = "0xe9CCcEBed8937e707FeeaE35107d0C2a4748bB57";
+export const TNS_PAYMENT_FORWARDER_ADDRESS = "0x640E4fD39A2f7f65BBB344988eFF7470A98E2547";
 
 // TNS Payment Forwarder ABI - Handles payments to .trust domains
 export const TNS_PAYMENT_FORWARDER_ABI = [

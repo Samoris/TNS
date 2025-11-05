@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 // Intuition mainnet configuration
 const CHAIN_ID = 1155;
 const RPC_URL = "https://intuition.calderachain.xyz";
-const TNS_REGISTRY_ADDRESS = "0xF5D672880CE1288cB41C8283fe90B68Efc2f6db7";
+const TNS_REGISTRY_ADDRESS = "0x7C365AF9034b00dadc616dE7f38221C678D423Fa";
 
 // Minimal ABI for reading domain data
 const TNS_REGISTRY_ABI = [
