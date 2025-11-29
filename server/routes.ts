@@ -976,6 +976,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prepare sync transaction for a single domain (used for auto-sync after registration)
+  app.post("/api/sync/prepare", async (req, res) => {
+    try {
+      const { domainName } = req.body;
+      
+      if (!domainName) {
+        return res.status(400).json({ error: "domainName required" });
+      }
+      
+      const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+      const cleanName = fullName.replace(/\.trust$/, '');
+      const atomUri = intuitionService.generateDomainAtomUri(cleanName);
+      
+      // Check if already synced
+      const existingStatus = await storage.getDomainSyncStatus(fullName);
+      if (existingStatus?.syncStatus === 'synced') {
+        return res.json({
+          alreadySynced: true,
+          atomId: existingStatus.atomId,
+          txHash: existingStatus.txHash
+        });
+      }
+      
+      // Check if atom already exists on-chain
+      const atomCheck = await blockchainService.checkAtomExists(atomUri);
+      if (atomCheck.exists) {
+        // Mark as synced and return
+        await storage.createDomainSyncStatus({
+          domainName: fullName,
+          atomUri,
+          syncStatus: 'synced',
+          atomId: atomCheck.atomId.toString()
+        });
+        return res.json({
+          alreadySynced: true,
+          atomId: atomCheck.atomId.toString()
+        });
+      }
+      
+      // Prepare transaction data
+      const atomCost = await blockchainService.getAtomCost();
+      const tx = blockchainService.buildCreateAtomTransaction(atomUri);
+      
+      // Create pending sync status
+      if (!existingStatus) {
+        await storage.createDomainSyncStatus({
+          domainName: fullName,
+          atomUri,
+          syncStatus: 'pending'
+        });
+      }
+      
+      res.json({
+        alreadySynced: false,
+        domainName: fullName,
+        atomUri,
+        transaction: {
+          ...tx,
+          value: `0x${atomCost.toString(16)}`,
+          valueEth: (Number(atomCost) / 1e18).toFixed(6)
+        }
+      });
+    } catch (error) {
+      console.error("Prepare sync error:", error);
+      res.status(500).json({ error: "Failed to prepare sync" });
+    }
+  });
+
   // Mark domain as synced (called after transaction is confirmed)
   app.post("/api/sync/confirm", async (req, res) => {
     try {
