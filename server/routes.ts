@@ -848,6 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let syncStatus = await storage.getDomainSyncStatus(fullName);
         
         if (!syncStatus) {
+          // New domain - check if atom exists on-chain
           const atomCheck = await blockchainService.checkAtomExists(atomUri);
           
           syncStatus = await storage.createDomainSyncStatus({
@@ -856,6 +857,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             syncStatus: atomCheck.exists ? 'synced' : 'pending',
             atomId: atomCheck.exists ? atomCheck.atomId.toString() : undefined,
           });
+        } else if (syncStatus.syncStatus === 'pending' || syncStatus.syncStatus === 'failed') {
+          // Existing pending/failed domain - verify if atom now exists on-chain
+          const atomCheck = await blockchainService.checkAtomExists(atomUri);
+          
+          if (atomCheck.exists) {
+            // Atom exists on-chain, update status to synced
+            syncStatus = await storage.updateDomainSyncStatus(fullName, {
+              syncStatus: 'synced',
+              atomId: atomCheck.atomId.toString(),
+              syncedAt: new Date(),
+              errorMessage: null
+            });
+          }
         }
         
         syncResults.push({
@@ -864,8 +878,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tokenId: domain.tokenId,
           expirationDate: domain.expirationTime,
           atomUri,
-          syncStatus: syncStatus.syncStatus,
-          atomId: syncStatus.atomId
+          syncStatus: syncStatus?.syncStatus || 'pending',
+          atomId: syncStatus?.atomId
         });
       }
       
