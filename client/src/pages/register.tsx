@@ -78,7 +78,7 @@ export default function RegisterPage() {
     isCorrectNetwork,
     connectWallet,
     switchNetwork,
-    sendTransaction,
+    sendTransactionWithWei,
     getExplorerUrl,
   } = useWallet();
 
@@ -268,7 +268,7 @@ export default function RegisterPage() {
         throw error;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setRegisteredDomain(data.domain);
       setCommitmentData(null);
       setKgSyncState({ status: "pending" });
@@ -276,6 +276,15 @@ export default function RegisterPage() {
         title: "🎉 NFT Domain registered successfully!",
         description: `${selectedDomain} is now yours as an ERC-721 NFT! Now syncing to Knowledge Graph...`,
       });
+      
+      // Automatically trigger Knowledge Graph sync
+      const domainName = data.domain?.name || selectedDomain?.replace('.trust', '');
+      if (domainName) {
+        // Small delay to let UI update first
+        setTimeout(() => {
+          syncToKnowledgeGraph(domainName);
+        }, 1500);
+      }
     },
     onError: (error: any) => {
       console.error("Registration mutation error:", error);
@@ -308,12 +317,16 @@ export default function RegisterPage() {
         return;
       }
       
-      // Send the transaction
-      const valueInEth = prepareData.transaction.valueEth || "0";
-      const txHash = await sendTransaction(
+      // Use the exact wei value to avoid precision loss
+      const valueWei = prepareData.transaction.value.startsWith('0x') 
+        ? BigInt(prepareData.transaction.value).toString()
+        : prepareData.transaction.value;
+      
+      const txHash = await sendTransactionWithWei(
         prepareData.transaction.to,
-        valueInEth,
-        prepareData.transaction.data
+        valueWei,
+        prepareData.transaction.data,
+        prepareData.transaction.gasLimit || "500000"
       );
       
       // Confirm the sync
