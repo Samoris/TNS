@@ -28,6 +28,9 @@ export interface IStorage {
   getDomainsByOwner(owner: string): Promise<Domain[]>;
   searchDomains(query: string): Promise<Domain[]>;
 
+  // Get all domains
+  getAllDomains(): Promise<Domain[]>;
+
   // Domain Records
   getDomainRecords(domainId: string): Promise<DomainRecord[]>;
   createDomainRecord(record: InsertDomainRecord): Promise<DomainRecord>;
@@ -146,6 +149,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.domains.values()).filter(
       (domain) => domain.name.toLowerCase().includes(searchTerm)
     );
+  }
+
+  async getAllDomains(): Promise<Domain[]> {
+    return Array.from(this.domains.values());
   }
 
   // Domain Records

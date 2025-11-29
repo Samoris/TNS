@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { blockchainService } from "./blockchain";
+import { intuitionService } from "./intuition";
 import { 
   domainSearchSchema, 
   domainRegistrationSchema, 
@@ -490,6 +491,340 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Image generation error:", error);
       res.status(500).send("Failed to generate image");
+    }
+  });
+
+  // ============================================
+  // INTUITION KNOWLEDGE GRAPH INTEGRATION
+  // ============================================
+
+  // Get domain atom metadata (for Knowledge Graph)
+  app.get("/api/atom/:domain", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const domainName = domain.replace('.trust', '');
+      
+      const domainInfo = await blockchainService.getDomainInfo(domainName);
+      
+      if (!domainInfo || !domainInfo.exists) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      const length = domainName.length;
+      let pricingTier: string;
+      if (length === 3) {
+        pricingTier = "Premium (3 characters)";
+      } else if (length === 4) {
+        pricingTier = "Standard (4 characters)";
+      } else {
+        pricingTier = "Basic (5+ characters)";
+      }
+      
+      res.json({
+        '@context': 'https://schema.org',
+        '@type': 'DigitalDocument',
+        '@id': `tns:${domainName}.trust`,
+        name: `${domainName}.trust`,
+        description: `Trust Name Service domain: ${domainName}.trust`,
+        identifier: domainInfo.tokenId.toString(),
+        owner: domainInfo.owner,
+        expirationDate: new Date(Number(domainInfo.expirationTime) * 1000).toISOString(),
+        pricingTier,
+        url: `https://tns.intuition.box/domain/${domainName}`,
+        atomUri: intuitionService.generateDomainAtomUri(domainName)
+      });
+    } catch (error) {
+      console.error("Atom metadata error:", error);
+      res.status(500).json({ error: "Failed to fetch domain atom metadata" });
+    }
+  });
+
+  // Get domain knowledge graph data
+  app.get("/api/domains/:name/graph", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const domainName = name.replace('.trust', '');
+      
+      const graph = await intuitionService.getDomainGraph(domainName);
+      
+      res.json(graph);
+    } catch (error) {
+      console.error("Domain graph error:", error);
+      res.status(500).json({ error: "Failed to fetch domain graph" });
+    }
+  });
+
+  // Get domain reputation from Knowledge Graph
+  app.get("/api/domains/:name/reputation", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const domainName = name.replace('.trust', '');
+      
+      const reputation = await intuitionService.getDomainReputation(domainName);
+      
+      if (!reputation) {
+        return res.json({
+          totalStaked: '0',
+          totalShares: '0',
+          stakeholders: 0,
+          reputationScore: 0
+        });
+      }
+      
+      res.json(reputation);
+    } catch (error) {
+      console.error("Domain reputation error:", error);
+      res.status(500).json({ error: "Failed to fetch domain reputation" });
+    }
+  });
+
+  // Search atoms by URI pattern
+  app.get("/api/knowledge-graph/atoms", async (req, res) => {
+    try {
+      const { uri } = req.query;
+      
+      if (!uri || typeof uri !== 'string') {
+        return res.status(400).json({ error: "URI query parameter required" });
+      }
+      
+      const atoms = await intuitionService.searchAtomsByUri(uri);
+      
+      res.json({ atoms });
+    } catch (error) {
+      console.error("Atom search error:", error);
+      res.status(500).json({ error: "Failed to search atoms" });
+    }
+  });
+
+  // Get specific atom by ID
+  app.get("/api/knowledge-graph/atoms/:atomId", async (req, res) => {
+    try {
+      const { atomId } = req.params;
+      
+      const atom = await intuitionService.getAtomById(atomId);
+      
+      if (!atom) {
+        return res.status(404).json({ error: "Atom not found" });
+      }
+      
+      res.json(atom);
+    } catch (error) {
+      console.error("Atom fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch atom" });
+    }
+  });
+
+  // ============================================
+  // AGENT REGISTRY ENDPOINTS
+  // ============================================
+
+  // Register an AI agent with a .trust identity
+  app.post("/api/agents/register", async (req, res) => {
+    try {
+      const { 
+        domainName, 
+        agentType, 
+        capabilities, 
+        endpoint,
+        publicKey,
+        owner 
+      } = req.body;
+      
+      if (!domainName || !agentType || !capabilities || !owner) {
+        return res.status(400).json({ error: "Missing required fields: domainName, agentType, capabilities, owner" });
+      }
+      
+      const cleanDomainName = domainName.replace('.trust', '');
+      
+      const domain = await storage.getDomainByName(`${cleanDomainName}.trust`);
+      if (!domain) {
+        return res.status(404).json({ error: "Domain not found. Register the domain first." });
+      }
+      
+      if (domain.owner.toLowerCase() !== owner.toLowerCase()) {
+        return res.status(403).json({ error: "Not domain owner" });
+      }
+      
+      const agentMetadata = {
+        type: 'ai-agent',
+        agentType,
+        capabilities,
+        endpoint: endpoint || null,
+        publicKey: publicKey || null,
+        version: '1.0',
+        registeredAt: Date.now()
+      };
+      
+      await storage.createDomainRecord({
+        domainId: domain.id,
+        recordType: 'text',
+        key: 'agent.metadata',
+        value: JSON.stringify(agentMetadata)
+      });
+      
+      res.json({
+        success: true,
+        domain: `${cleanDomainName}.trust`,
+        atomUri: intuitionService.generateAgentAtomUri(cleanDomainName),
+        message: 'Agent registered successfully'
+      });
+    } catch (error) {
+      console.error("Agent registration error:", error);
+      res.status(500).json({ error: "Failed to register agent" });
+    }
+  });
+
+  // Resolve agent identity
+  app.get("/api/agents/:domain", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const domainName = domain.replace('.trust', '');
+      
+      const storedDomain = await storage.getDomainByName(`${domainName}.trust`);
+      
+      if (!storedDomain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      const records = await storage.getDomainRecords(storedDomain.id);
+      const agentRecord = records.find(r => r.key === 'agent.metadata');
+      
+      if (!agentRecord) {
+        return res.status(404).json({ error: "Agent not found. This domain is not registered as an agent." });
+      }
+      
+      const metadata = JSON.parse(agentRecord.value);
+      
+      const domainInfo = await blockchainService.getDomainInfo(domainName);
+      const resolvedAddress = domainInfo?.owner || storedDomain.owner;
+      
+      res.json({
+        domain: `${domainName}.trust`,
+        address: resolvedAddress,
+        atomUri: intuitionService.generateAgentAtomUri(domainName),
+        ...metadata
+      });
+    } catch (error) {
+      console.error("Agent resolve error:", error);
+      res.status(500).json({ error: "Failed to resolve agent" });
+    }
+  });
+
+  // Discover agents by capability
+  app.get("/api/agents/discover", async (req, res) => {
+    try {
+      const { capability, type } = req.query;
+      
+      const allDomains = await storage.getAllDomains();
+      
+      const agents = [];
+      for (const domain of allDomains) {
+        const records = await storage.getDomainRecords(domain.id);
+        const agentRecord = records.find(r => r.key === 'agent.metadata');
+        
+        if (agentRecord) {
+          try {
+            const metadata = JSON.parse(agentRecord.value);
+            
+            if (capability && !metadata.capabilities?.includes(capability)) {
+              continue;
+            }
+            if (type && metadata.agentType !== type) {
+              continue;
+            }
+            
+            agents.push({
+              domain: domain.name,
+              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace('.trust', '')),
+              ...metadata
+            });
+          } catch (e) {
+          }
+        }
+      }
+      
+      res.json({ agents });
+    } catch (error) {
+      console.error("Agent discover error:", error);
+      res.status(500).json({ error: "Failed to discover agents" });
+    }
+  });
+
+  // Agent directory listing
+  app.get("/api/agents/directory", async (req, res) => {
+    try {
+      const { page = '1', limit = '20' } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      
+      const allDomains = await storage.getAllDomains();
+      
+      const agents = [];
+      for (const domain of allDomains) {
+        const records = await storage.getDomainRecords(domain.id);
+        const agentRecord = records.find(r => r.key === 'agent.metadata');
+        
+        if (agentRecord) {
+          try {
+            const metadata = JSON.parse(agentRecord.value);
+            agents.push({
+              domain: domain.name,
+              owner: domain.owner,
+              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace('.trust', '')),
+              ...metadata
+            });
+          } catch (e) {
+          }
+        }
+      }
+      
+      const start = (pageNum - 1) * limitNum;
+      const paginatedAgents = agents.slice(start, start + limitNum);
+      
+      res.json({
+        agents: paginatedAgents,
+        page: pageNum,
+        limit: limitNum,
+        total: agents.length
+      });
+    } catch (error) {
+      console.error("Agent directory error:", error);
+      res.status(500).json({ error: "Failed to fetch agent directory" });
+    }
+  });
+
+  // Update agent records
+  app.post("/api/agents/:domain/records", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const { records, owner } = req.body;
+      
+      const domainName = domain.replace('.trust', '');
+      const storedDomain = await storage.getDomainByName(`${domainName}.trust`);
+      
+      if (!storedDomain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      if (storedDomain.owner.toLowerCase() !== owner.toLowerCase()) {
+        return res.status(403).json({ error: "Not domain owner" });
+      }
+      
+      for (const [key, value] of Object.entries(records)) {
+        if (key.startsWith('agent.')) {
+          await storage.createDomainRecord({
+            domainId: storedDomain.id,
+            recordType: 'text',
+            key,
+            value: value as string
+          });
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Agent records update error:", error);
+      res.status(500).json({ error: "Failed to update agent records" });
     }
   });
 
