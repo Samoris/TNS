@@ -165,44 +165,65 @@ TNS provides a complete naming infrastructure for Intuition:
 
 ---
 
-### Quarterly Milestones
+### What's Already Live
+
+TNS is already deployed and operational on Intuition mainnet with the following features:
+
+| Feature | Status |
+|---------|--------|
+| Domain registration with commit-reveal (front-running protection) | ✅ Live |
+| ERC-721 NFT domain ownership | ✅ Live |
+| Address resolution | ✅ Live |
+| Payment forwarding to .trust domains | ✅ Live |
+| Reverse resolution (primary domain display) | ✅ Live |
+| Domain renewal/extension | ✅ Live |
+| 30-day grace period for expired domains | ✅ Live |
+| Permissionless burn for expired domain NFTs | ✅ Live |
+| Dynamic NFT metadata with tier-based SVG images | ✅ Live |
+| Tiered pricing (3-char: 100, 4-char: 70, 5+: 30 TRUST) | ✅ Live |
+| Domain management dashboard | ✅ Live |
+| Resolver records (ETH address, IPFS, text records) | ✅ Live |
+| Mobile-responsive web UI | ✅ Live |
+
+---
+
+### Quarterly Milestones (Remaining Work)
 
 | Quarter | Milestone | Budget (USD) | Budget (TRUST) |
 |---------|-----------|--------------|----------------|
-| Q1 | Subdomain Support & Knowledge Graph Integration | $5,000 | 7,500 TRUST |
+| Q1 | Knowledge Graph Integration | $5,000 | 7,500 TRUST |
 | Q2 | Agent Registry & AI Identity Infrastructure | $5,000 | 7,500 TRUST |
-| Q3 | Mobile Application & Accessibility Compliance | $5,000 | 7,500 TRUST |
+| Q3 | Native Mobile Apps & Enhanced UX | $5,000 | 7,500 TRUST |
 | Q4 | Marketplace, Governance & Ecosystem Expansion | $5,000 | 7,500 TRUST |
 
 ---
 
 ### Expected Timeline & Deliverables
 
-**Q1: Subdomain Support & Knowledge Graph Integration (Months 1-3)**
+**Q1: Knowledge Graph Integration (Months 1-3)**
 
 *Development Focus:*
-- Implement hierarchical subdomain registration (e.g., `app.alice.trust`, `dao.company.trust`)
-- Parent domain owners control subdomain creation and permissions
-- Subdomain resolver inheritance with optional override
 - Create atoms for each registered domain in Intuition Knowledge Graph
 - Establish triples linking domains to owners, resolvers, expiration, and metadata
 - Enable attestations and reputation signals on domain identities
 - API endpoints for querying domain atoms and relationships
+- Sync existing registered domains to knowledge graph
+- Real-time event listeners for new registrations
 
 *Team & Operations:*
-- Hire part-time Solidity developer for subdomain contracts
-- Security audit for new subdomain functionality
-- Server infrastructure scaling
+- Hire part-time backend developer for Graph API integration
+- Server infrastructure scaling for event processing
+- Documentation for knowledge graph queries
 
 *Marketing:*
 - Launch "Claim Your .trust Identity" campaign
 - Partnership announcements with Intuition ecosystem projects
-- Educational content on subdomain use cases
+- Educational content on domain identity attestations
 
 *Success Criteria:*
-- Users can register and manage unlimited subdomains
 - Every domain registration automatically creates knowledge graph atoms/triples
 - Domain atoms queryable via Intuition Graph API
+- All existing domains synced to knowledge graph
 - 100+ new domain registrations
 
 ---
@@ -236,32 +257,31 @@ TNS provides a complete naming infrastructure for Intuition:
 
 ---
 
-**Q3: Mobile Application & Accessibility Compliance (Months 7-9)**
+**Q3: Native Mobile Apps & Enhanced UX (Months 7-9)**
 
 *Development Focus:*
-- Mobile-responsive Progressive Web App (PWA)
 - Native mobile app (React Native) for iOS and Android
-- WCAG 2.1 AAA accessibility compliance across all interfaces
 - Biometric authentication for domain management
 - Push notifications for expiration reminders and transfers
 - Offline mode for viewing owned domains
 - QR code generation for payment forwarding
+- Enhanced onboarding flow for new users
 
 *Team & Operations:*
-- Hire UI/UX designer for mobile experience
-- Accessibility audit by third-party specialist
+- Hire mobile developer (React Native)
 - App store submission and review process
+- Beta testing program
 
 *Marketing:*
 - Mobile app launch campaign
 - Influencer partnerships in Web3 mobile space
-- Accessibility-focused PR and community outreach
+- App store optimization (ASO)
 
 *Success Criteria:*
 - Mobile app published on iOS App Store and Google Play
-- WCAG 2.1 AAA audit passed
 - 500+ mobile app downloads in first month
 - 4.5+ star rating on app stores
+- 30% of users accessing via mobile
 
 ---
 
@@ -300,9 +320,9 @@ TNS provides a complete naming infrastructure for Intuition:
 
 | Quarter | Key Metrics |
 |---------|-------------|
-| Q1 | Subdomains live, Knowledge Graph integration complete, 100+ new domains |
+| Q1 | Knowledge Graph integration complete, all domains synced, 100+ new domains |
 | Q2 | 50+ agent identities, MCP integration, Developer SDK released |
-| Q3 | Mobile apps published, WCAG 2.1 AAA certified, 500+ app downloads |
+| Q3 | Mobile apps published on iOS & Android, 500+ downloads |
 | Q4 | Marketplace live, 5,000+ total domains, 5+ ecosystem integrations |
 
 ### Optional
