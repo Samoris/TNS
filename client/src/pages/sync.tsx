@@ -64,7 +64,7 @@ interface PendingDomainsResponse {
 const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
 
 export default function SyncPage() {
-  const { isConnected, address, isCorrectNetwork, sendTransaction, waitForTransaction, parseAtomIdFromReceipt } = useWallet();
+  const { isConnected, address, isCorrectNetwork, sendTransactionWithWei, waitForTransaction, parseAtomIdFromReceipt } = useWallet();
   const { toast } = useToast();
   const [syncingDomain, setSyncingDomain] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -159,15 +159,16 @@ export default function SyncPage() {
       setSyncingDomain(domain.domainName);
 
       try {
-        const valueInEth = domain.transaction.valueEth || 
-          (domain.transaction.value ? 
-            (parseInt(domain.transaction.value.replace('0x', ''), 16) / Math.pow(10, 18)).toString() : 
-            "0");
+        // Use the exact wei value to avoid precision loss
+        const valueWei = domain.transaction.value.startsWith('0x') 
+          ? BigInt(domain.transaction.value).toString()
+          : domain.transaction.value;
         
-        const txHash = await sendTransaction(
+        const txHash = await sendTransactionWithWei(
           domain.transaction.to,
-          valueInEth,
-          domain.transaction.data
+          valueWei,
+          domain.transaction.data,
+          domain.transaction.gasLimit || "500000"
         );
 
         await confirmSyncMutation.mutateAsync({
@@ -220,16 +221,16 @@ export default function SyncPage() {
     setSyncingDomain(domain.domainName);
 
     try {
-      const valueInEth = domain.transaction.valueEth || 
-        (domain.transaction.value ? 
-          (parseInt(domain.transaction.value.replace('0x', ''), 16) / Math.pow(10, 18)).toString() : 
-          "0");
+      // Use the exact wei value to avoid precision loss
+      const valueWei = domain.transaction.value.startsWith('0x') 
+        ? BigInt(domain.transaction.value).toString()
+        : domain.transaction.value;
       
-      const txHash = await sendTransaction(
+      const txHash = await sendTransactionWithWei(
         domain.transaction.to,
-        valueInEth,
+        valueWei,
         domain.transaction.data,
-        domain.transaction.gasLimit || "250000"
+        domain.transaction.gasLimit || "500000"
       );
 
       toast({

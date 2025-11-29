@@ -110,6 +110,23 @@ export function useWallet() {
     }
   };
 
+  const sendTransactionWithWei = async (to: string, valueWei: string, data?: string, gasLimit?: string) => {
+    try {
+      if (!walletState.isConnected) {
+        throw new Error("Wallet not connected");
+      }
+
+      if (!walletState.isCorrectNetwork) {
+        await switchNetwork();
+      }
+
+      return await web3Service.sendTransactionWithWei(to, valueWei, data, gasLimit);
+    } catch (error: any) {
+      console.error("Transaction failed:", error);
+      throw error;
+    }
+  };
+
   const waitForTransaction = async (txHash: string) => {
     return await web3Service.waitForTransaction(txHash);
   };
@@ -127,6 +144,7 @@ export function useWallet() {
     disconnectWallet,
     switchNetwork,
     sendTransaction,
+    sendTransactionWithWei,
     waitForTransaction,
     parseAtomIdFromReceipt,
     formatAddress: web3Service.formatAddress,

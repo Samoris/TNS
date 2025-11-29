@@ -321,6 +321,54 @@ export class Web3Service {
   }
 
   /**
+   * Send a transaction with value already in wei (as a decimal string)
+   * This avoids precision loss from ETH-to-wei conversion
+   */
+  public async sendTransactionWithWei(to: string, valueWei: string, data?: string, gasLimit?: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected) {
+      throw new Error("Wallet not connected");
+    }
+
+    if (!state.isCorrectNetwork) {
+      await this.switchToIntuitionNetwork();
+    }
+
+    // Convert decimal wei string to hex
+    const valueHex = `0x${BigInt(valueWei).toString(16)}`;
+
+    const txParams: Record<string, string> = {
+      from: state.address!,
+      to,
+      value: valueHex,
+    };
+    
+    if (data) {
+      txParams.data = data;
+    }
+    
+    if (gasLimit) {
+      txParams.gas = `0x${parseInt(gasLimit).toString(16)}`;
+    }
+
+    console.log("Transaction (wei precision):");
+    console.log("- Value wei:", valueWei);
+    console.log("- Value hex:", valueHex);
+    console.log("- Gas limit:", gasLimit || "auto");
+
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [txParams],
+    });
+
+    return txHash;
+  }
+
+  /**
    * Wait for a transaction to be mined and return the receipt
    */
   public async waitForTransaction(txHash: string, maxAttempts: number = 60): Promise<any> {
