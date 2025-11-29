@@ -915,7 +915,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...domain,
           transaction: {
             ...tx,
-            value: atomCost.toString()
+            value: `0x${atomCost.toString(16)}`,
+            valueEth: (Number(atomCost) / 1e18).toFixed(6)
           }
         };
       });

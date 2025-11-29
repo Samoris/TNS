@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X, Database } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +68,7 @@ export function Header() {
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
+    { name: "Sync", href: "/sync", active: location === "/sync" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 
