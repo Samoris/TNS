@@ -20,16 +20,19 @@ const TNS_REGISTRY_ABI = [
   "function ownerOf(uint256) view returns (address)"
 ];
 
-// Intuition EthMultiVault ABI for atom creation (v1.5 mainnet)
+// Intuition EthMultiVault ABI for atom creation (v1.5 mainnet on Chain 1155)
+// The contract uses createAtoms (plural, with curve) instead of createAtom (singular)
 const INTUITION_MULTIVAULT_ABI = [
-  "function createAtom(bytes atomUri) payable returns (uint256)",
+  "function createAtoms(bytes[] atomUris, uint256[] curveIds) payable returns (uint256[])",
   "function createTriple(uint256 subjectId, uint256 predicateId, uint256 objectId) payable returns (uint256)",
   "function atomsByHash(bytes32) view returns (uint256)",
   "function atoms(uint256) view returns (bytes)",
   "function count() view returns (uint256)",
   "function atomConfig() view returns (uint256 atomWalletInitialDepositAmount, uint256 atomCreationProtocolFee)",
   "function generalConfig() view returns (address admin, address protocolMultisig, uint256 feeDenominator, uint256 minDeposit, uint256 minShare, uint256 atomUriMaxLength, uint256 decimalPrecision, uint256 minDelay)",
-  "function vaults(uint256) view returns (uint256 totalAssets, uint256 totalShares)"
+  "function vaults(uint256) view returns (uint256 totalAssets, uint256 totalShares)",
+  "function getAtomCost() view returns (uint256)",
+  "function paused() view returns (bool)"
 ];
 
 export class BlockchainService {
@@ -196,22 +199,18 @@ export class BlockchainService {
 
   /**
    * Get the cost to create an atom in Intuition (in wei)
-   * Cost = atomWalletInitialDepositAmount + atomCreationProtocolFee
-   * Note: The atomWalletInitialDepositAmount already includes the minimum deposit requirements
+   * Uses the getAtomCost() view function which returns the total cost including all fees
    */
   async getAtomCost(): Promise<bigint> {
     try {
-      const [atomWalletInitialDepositAmount, atomCreationProtocolFee] = await this.multivaultContract.atomConfig();
-      
-      // Total cost is the sum of wallet initial deposit and protocol fee
-      // The wallet initial deposit already covers the minDeposit requirement
-      const totalCost = BigInt(atomWalletInitialDepositAmount) + BigInt(atomCreationProtocolFee);
-      console.log(`Atom cost: wallet=${atomWalletInitialDepositAmount}, protocol=${atomCreationProtocolFee}, total=${totalCost} (${Number(totalCost) / 1e18} TRUST)`);
-      return totalCost;
+      // The getAtomCost() function returns the total cost directly
+      const totalCost = await this.multivaultContract.getAtomCost();
+      console.log(`Atom cost: ${totalCost} wei (${Number(totalCost) / 1e18} TRUST)`);
+      return BigInt(totalCost);
     } catch (error) {
       console.error('Error getting atom cost:', error);
-      // Return a reasonable default (0.0003 TRUST) if unable to fetch from contract
-      return BigInt("300000000000000");
+      // Return a reasonable default (~0.1 TRUST) if unable to fetch from contract
+      return BigInt("100000000001000000");
     }
   }
 
@@ -260,6 +259,8 @@ export class BlockchainService {
 
   /**
    * Build transaction data for creating an atom (user signs this)
+   * Uses createAtoms(bytes[], uint256[]) which is the correct function on v1.5 mainnet
+   * The curveId of 1 represents the default bonding curve
    */
   buildCreateAtomTransaction(atomUri: string): {
     to: string;
@@ -269,13 +270,22 @@ export class BlockchainService {
   } {
     const iface = new ethers.Interface(INTUITION_MULTIVAULT_ABI);
     const uriBytes = ethers.toUtf8Bytes(atomUri);
-    const data = iface.encodeFunctionData('createAtom', [uriBytes]);
+    
+    // createAtoms expects arrays: bytes[] atomUris, uint256[] curveIds
+    // curveId 1 is the default bonding curve on Intuition mainnet
+    const atomUris = [uriBytes];
+    const curveIds = [BigInt(1)];
+    
+    const data = iface.encodeFunctionData('createAtoms', [atomUris, curveIds]);
+    
+    console.log(`Built createAtoms tx for: ${atomUri}`);
+    console.log(`  Selector: ${data.slice(0, 10)}`);
     
     return {
       to: INTUITION_MULTIVAULT_ADDRESS,
       data,
       value: '0', // Caller needs to add atom cost
-      gasLimit: '250000' // Reasonable gas limit for createAtom
+      gasLimit: '400000' // Increased gas limit for createAtoms with bonding curve
     };
   }
 
