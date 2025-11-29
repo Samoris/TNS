@@ -259,8 +259,42 @@ export class BlockchainService {
 
   /**
    * Build transaction data for creating an atom (user signs this)
-   * Uses createAtoms(bytes[], uint256[]) which is the correct function on v1.5 mainnet
-   * The curveId of 1 represents the default bonding curve
+   * Uses createAtoms(bytes[], uint256[]) on v1.5 mainnet
+   * The second parameter is the stake/deposit amount per atom (same as atomCost)
+   */
+  async buildCreateAtomTransactionAsync(atomUri: string): Promise<{
+    to: string;
+    data: string;
+    value: string;
+    valueWei: bigint;
+    gasLimit: string;
+  }> {
+    const atomCost = await this.getAtomCost();
+    const iface = new ethers.Interface(INTUITION_MULTIVAULT_ABI);
+    const uriBytes = ethers.toUtf8Bytes(atomUri);
+    
+    // createAtoms expects: bytes[] atomUris, uint256[] depositAmounts
+    // The deposit amount should match the atomCost
+    const atomUris = [uriBytes];
+    const depositAmounts = [atomCost];
+    
+    const data = iface.encodeFunctionData('createAtoms', [atomUris, depositAmounts]);
+    
+    console.log(`Built createAtoms tx for: ${atomUri}`);
+    console.log(`  Selector: ${data.slice(0, 10)}`);
+    console.log(`  Deposit: ${atomCost.toString()} wei (${Number(atomCost) / 1e18} TRUST)`);
+    
+    return {
+      to: INTUITION_MULTIVAULT_ADDRESS,
+      data,
+      value: atomCost.toString(),
+      valueWei: atomCost,
+      gasLimit: '500000' // Increased gas limit for createAtoms
+    };
+  }
+
+  /**
+   * Synchronous version for backward compatibility (uses default atom cost)
    */
   buildCreateAtomTransaction(atomUri: string): {
     to: string;
@@ -268,24 +302,26 @@ export class BlockchainService {
     value: string;
     gasLimit: string;
   } {
+    // Use the default atom cost
+    const atomCost = BigInt("100000000001000000"); // ~0.1 TRUST
     const iface = new ethers.Interface(INTUITION_MULTIVAULT_ABI);
     const uriBytes = ethers.toUtf8Bytes(atomUri);
     
-    // createAtoms expects arrays: bytes[] atomUris, uint256[] curveIds
-    // curveId 1 is the default bonding curve on Intuition mainnet
+    // createAtoms expects: bytes[] atomUris, uint256[] depositAmounts
     const atomUris = [uriBytes];
-    const curveIds = [BigInt(1)];
+    const depositAmounts = [atomCost];
     
-    const data = iface.encodeFunctionData('createAtoms', [atomUris, curveIds]);
+    const data = iface.encodeFunctionData('createAtoms', [atomUris, depositAmounts]);
     
     console.log(`Built createAtoms tx for: ${atomUri}`);
     console.log(`  Selector: ${data.slice(0, 10)}`);
+    console.log(`  Deposit: ${atomCost.toString()} wei`);
     
     return {
       to: INTUITION_MULTIVAULT_ADDRESS,
       data,
-      value: '0', // Caller needs to add atom cost
-      gasLimit: '400000' // Increased gas limit for createAtoms with bonding curve
+      value: atomCost.toString(),
+      gasLimit: '500000'
     };
   }
 
