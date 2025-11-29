@@ -206,11 +206,11 @@ export class BlockchainService {
       // Total cost is the sum of wallet initial deposit and protocol fee
       // The wallet initial deposit already covers the minDeposit requirement
       const totalCost = BigInt(atomWalletInitialDepositAmount) + BigInt(atomCreationProtocolFee);
-      console.log(`Atom cost: wallet=${atomWalletInitialDepositAmount}, protocol=${atomCreationProtocolFee}, total=${totalCost} (${Number(totalCost) / 1e18} ETH)`);
+      console.log(`Atom cost: wallet=${atomWalletInitialDepositAmount}, protocol=${atomCreationProtocolFee}, total=${totalCost} (${Number(totalCost) / 1e18} TRUST)`);
       return totalCost;
     } catch (error) {
       console.error('Error getting atom cost:', error);
-      // Return a reasonable default (0.0003 ETH) if unable to fetch from contract
+      // Return a reasonable default (0.0003 TRUST) if unable to fetch from contract
       return BigInt("300000000000000");
     }
   }

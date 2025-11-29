@@ -248,18 +248,39 @@ export default function SyncPage() {
         description: `${domain.domainName} has been synced to the Knowledge Graph.`,
       });
     } catch (error: any) {
-      console.error("Sync error:", error);
+      console.log("User cancelled the transaction");
       
-      await failSyncMutation.mutateAsync({
-        domainName: domain.domainName,
-        errorMessage: error.message || "Transaction failed",
-      });
+      // Check if user cancelled the transaction
+      const errorMessage = error?.message?.toLowerCase() || "";
+      const isUserCancelled = 
+        errorMessage.includes("user rejected") ||
+        errorMessage.includes("user denied") ||
+        errorMessage.includes("cancelled") ||
+        errorMessage.includes("canceled") ||
+        error?.code === 4001 ||
+        error?.code === "ACTION_REJECTED";
+      
+      if (isUserCancelled) {
+        // User cancelled - just show info toast, don't mark as failed
+        toast({
+          title: "Transaction Cancelled",
+          description: "You cancelled the sync transaction. You can try again anytime.",
+        });
+      } else {
+        // Actual error - mark as failed
+        console.error("Sync error:", error);
+        
+        await failSyncMutation.mutateAsync({
+          domainName: domain.domainName,
+          errorMessage: error.message || "Transaction failed",
+        });
 
-      toast({
-        title: "Sync Failed",
-        description: error.message || "Failed to sync domain",
-        variant: "destructive",
-      });
+        toast({
+          title: "Sync Failed",
+          description: error.message || "Failed to sync domain",
+          variant: "destructive",
+        });
+      }
     } finally {
       setSyncingDomain(null);
     }
@@ -511,7 +532,7 @@ export default function SyncPage() {
                     <div className="flex items-center space-x-2">
                       {domain.transaction.valueEth && parseFloat(domain.transaction.valueEth) > 0 && (
                         <span className="text-xs text-gray-500" data-testid={`cost-${domain.domainName}`}>
-                          Cost: {domain.transaction.valueEth} ETH
+                          Cost: {domain.transaction.valueEth} TRUST
                         </span>
                       )}
                       {domain.txHash && (
