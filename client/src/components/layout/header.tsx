@@ -16,6 +16,8 @@ import { web3Service } from "@/lib/web3";
 import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
 import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_1760633880162.jpeg";
 
+const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
+
 export function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,12 +65,14 @@ export function Header() {
     refetchInterval: 5000,
   });
 
+  const isAdmin = address?.toLowerCase() === ADMIN_WALLET_ADDRESS;
+
   const navigation = [
     { name: "Search", href: "/", active: location === "/" },
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
-    { name: "Sync", href: "/sync", active: location === "/sync" },
+    ...(isAdmin ? [{ name: "Sync", href: "/sync", active: location === "/sync" }] : []),
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 

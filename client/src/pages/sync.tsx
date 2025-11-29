@@ -60,11 +60,17 @@ interface PendingDomainsResponse {
   domains: PendingDomain[];
 }
 
+const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
+
 export default function SyncPage() {
   const { isConnected, address, isCorrectNetwork, sendTransaction } = useWallet();
   const { toast } = useToast();
   const [syncingDomain, setSyncingDomain] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [syncAllProgress, setSyncAllProgress] = useState({ current: 0, total: 0 });
+
+  const isAdmin = address?.toLowerCase() === ADMIN_WALLET_ADDRESS;
 
   const { data: syncStatus, isLoading: isLoadingStatus, refetch: refetchStatus } = useQuery<SyncStatus>({
     queryKey: ["/api/sync/status"],
@@ -130,6 +136,75 @@ export default function SyncPage() {
       refetchPending();
     },
   });
+
+  const handleSyncAll = async () => {
+    if (!pendingDomains || pendingDomains.count === 0) {
+      toast({
+        title: "No Domains to Sync",
+        description: "All domains are already synced.",
+      });
+      return;
+    }
+
+    setIsSyncingAll(true);
+    setSyncAllProgress({ current: 0, total: pendingDomains.domains.length });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < pendingDomains.domains.length; i++) {
+      const domain = pendingDomains.domains[i];
+      setSyncAllProgress({ current: i + 1, total: pendingDomains.domains.length });
+      setSyncingDomain(domain.domainName);
+
+      try {
+        const valueInEth = domain.transaction.valueEth || 
+          (domain.transaction.value ? 
+            (parseInt(domain.transaction.value.replace('0x', ''), 16) / Math.pow(10, 18)).toString() : 
+            "0");
+        
+        const txHash = await sendTransaction(
+          domain.transaction.to,
+          valueInEth,
+          domain.transaction.data
+        );
+
+        await confirmSyncMutation.mutateAsync({
+          domainName: domain.domainName,
+          atomId: "0",
+          txHash,
+        });
+
+        successCount++;
+      } catch (error: any) {
+        console.error(`Failed to sync ${domain.domainName}:`, error);
+        
+        if (error.message?.includes("User rejected") || error.message?.includes("cancelled")) {
+          toast({
+            title: "Sync Cancelled",
+            description: `Stopped at ${domain.domainName}. ${successCount} domains synced successfully.`,
+          });
+          break;
+        }
+
+        await failSyncMutation.mutateAsync({
+          domainName: domain.domainName,
+          errorMessage: error.message || "Transaction failed",
+        });
+        failCount++;
+      }
+    }
+
+    setIsSyncingAll(false);
+    setSyncingDomain(null);
+    refetchStatus();
+    refetchPending();
+
+    toast({
+      title: "Sync Complete",
+      description: `${successCount} domains synced successfully. ${failCount} failed.`,
+    });
+  };
 
   const handleSyncDomain = async (domain: PendingDomain) => {
     if (!isConnected || !isCorrectNetwork) {
@@ -225,6 +300,29 @@ export default function SyncPage() {
     );
   }
 
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-trust-dark">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <XCircle className="h-8 w-8 text-red-500" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
+              Access Denied
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+              This page is only accessible to administrators.
+            </p>
+            <p className="text-sm text-gray-500">
+              Connected wallet: {address}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const syncProgress = syncStatus ? (syncStatus.synced / Math.max(syncStatus.totalDomains, 1)) * 100 : 0;
 
   return (
@@ -239,11 +337,12 @@ export default function SyncPage() {
               Sync .trust domains to Intuition's decentralized Knowledge Graph
             </p>
           </div>
-          <div className="mt-4 lg:mt-0">
+          <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row gap-2">
             <Button
               onClick={() => scanMutation.mutate()}
-              disabled={isScanning || scanMutation.isPending}
-              className="trust-button w-full sm:w-auto min-h-[44px]"
+              disabled={isScanning || scanMutation.isPending || isSyncingAll}
+              variant="outline"
+              className="w-full sm:w-auto min-h-[44px]"
               data-testid="scan-blockchain"
             >
               {isScanning || scanMutation.isPending ? (
@@ -255,6 +354,24 @@ export default function SyncPage() {
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Scan Blockchain
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleSyncAll}
+              disabled={isSyncingAll || !pendingDomains || pendingDomains.count === 0}
+              className="trust-button w-full sm:w-auto min-h-[44px]"
+              data-testid="sync-all"
+            >
+              {isSyncingAll ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing {syncAllProgress.current}/{syncAllProgress.total}...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Sync All ({pendingDomains?.count || 0})
                 </>
               )}
             </Button>
