@@ -7,6 +7,8 @@ import {
   type InsertDomainRecord,
   type DomainCommit,
   type InsertDomainCommit,
+  type DomainSyncStatus,
+  type InsertDomainSyncStatus,
   type DomainWithRecords,
   PRICING_TIERS
 } from "@shared/schema";
@@ -49,6 +51,13 @@ export interface IStorage {
   // Utility methods
   isDomainAvailable(name: string): Promise<boolean>;
   calculateDomainPrice(name: string): { pricePerYear: string; tier: string };
+
+  // Domain Sync Status (Knowledge Graph)
+  getDomainSyncStatus(domainName: string): Promise<DomainSyncStatus | undefined>;
+  getAllSyncStatuses(): Promise<DomainSyncStatus[]>;
+  createDomainSyncStatus(status: InsertDomainSyncStatus): Promise<DomainSyncStatus>;
+  updateDomainSyncStatus(domainName: string, updates: Partial<DomainSyncStatus>): Promise<DomainSyncStatus | undefined>;
+  getUnsyncedDomains(): Promise<DomainSyncStatus[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -56,12 +65,14 @@ export class MemStorage implements IStorage {
   private domains: Map<string, Domain>;
   private domainRecords: Map<string, DomainRecord>;
   private domainCommits: Map<string, DomainCommit>;
+  private domainSyncStatuses: Map<string, DomainSyncStatus>;
 
   constructor() {
     this.users = new Map();
     this.domains = new Map();
     this.domainRecords = new Map();
     this.domainCommits = new Map();
+    this.domainSyncStatuses = new Map();
   }
 
   // Users
@@ -258,6 +269,48 @@ export class MemStorage implements IStorage {
     } else {
       return { pricePerYear: PRICING_TIERS.FIVE_PLUS_CHAR.pricePerYear, tier: "5+ characters" };
     }
+  }
+
+  // Domain Sync Status methods
+  async getDomainSyncStatus(domainName: string): Promise<DomainSyncStatus | undefined> {
+    const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+    return this.domainSyncStatuses.get(fullName);
+  }
+
+  async getAllSyncStatuses(): Promise<DomainSyncStatus[]> {
+    return Array.from(this.domainSyncStatuses.values());
+  }
+
+  async createDomainSyncStatus(insertStatus: InsertDomainSyncStatus): Promise<DomainSyncStatus> {
+    const id = randomUUID();
+    const status: DomainSyncStatus = {
+      id,
+      domainName: insertStatus.domainName,
+      atomUri: insertStatus.atomUri,
+      syncStatus: insertStatus.syncStatus ?? 'pending',
+      syncedAt: null,
+      atomId: insertStatus.atomId ?? null,
+      txHash: insertStatus.txHash ?? null,
+      errorMessage: insertStatus.errorMessage ?? null,
+    };
+    this.domainSyncStatuses.set(status.domainName, status);
+    return status;
+  }
+
+  async updateDomainSyncStatus(domainName: string, updates: Partial<DomainSyncStatus>): Promise<DomainSyncStatus | undefined> {
+    const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+    const status = this.domainSyncStatuses.get(fullName);
+    if (!status) return undefined;
+
+    const updatedStatus = { ...status, ...updates };
+    this.domainSyncStatuses.set(fullName, updatedStatus);
+    return updatedStatus;
+  }
+
+  async getUnsyncedDomains(): Promise<DomainSyncStatus[]> {
+    return Array.from(this.domainSyncStatuses.values()).filter(
+      status => status.syncStatus === 'pending' || status.syncStatus === 'failed'
+    );
   }
 }
 

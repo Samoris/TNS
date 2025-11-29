@@ -45,6 +45,17 @@ export const domainCommits = pgTable("domain_commits", {
   isRevealed: boolean("is_revealed").notNull().default(false),
 });
 
+// Knowledge Graph sync status for domains
+export const domainSyncStatus = pgTable("domain_sync_status", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  domainName: text("domain_name").notNull().unique(),
+  atomId: text("atom_id"), // Intuition atom ID once synced
+  atomUri: text("atom_uri").notNull(),
+  syncStatus: text("sync_status").notNull().default("pending"), // pending, synced, failed
+  syncedAt: timestamp("synced_at"),
+  txHash: text("tx_hash"),
+  errorMessage: text("error_message"),
+});
 
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -68,6 +79,11 @@ export const insertDomainCommitSchema = createInsertSchema(domainCommits).omit({
   createdAt: true,
   revealedAt: true,
   isRevealed: true,
+});
+
+export const insertDomainSyncStatusSchema = createInsertSchema(domainSyncStatus).omit({
+  id: true,
+  syncedAt: true,
 });
 
 
@@ -96,6 +112,8 @@ export type DomainRecord = typeof domainRecords.$inferSelect;
 export type InsertDomainCommit = z.infer<typeof insertDomainCommitSchema>;
 export type DomainCommit = typeof domainCommits.$inferSelect;
 
+export type InsertDomainSyncStatus = z.infer<typeof insertDomainSyncStatusSchema>;
+export type DomainSyncStatus = typeof domainSyncStatus.$inferSelect;
 
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;

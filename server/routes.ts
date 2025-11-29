@@ -828,6 +828,262 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // KNOWLEDGE GRAPH SYNC ENDPOINTS
+  // ============================================
+
+  // Scan blockchain for registered domains and check sync status
+  app.post("/api/sync/scan", async (req, res) => {
+    try {
+      console.log("Starting blockchain domain scan...");
+      
+      const domains = await blockchainService.scanAllDomains();
+      const syncResults = [];
+      
+      for (const domain of domains) {
+        const fullName = domain.name.endsWith('.trust') ? domain.name : `${domain.name}.trust`;
+        const cleanName = domain.name.replace(/\.trust$/, '');
+        const atomUri = intuitionService.generateDomainAtomUri(cleanName);
+        
+        let syncStatus = await storage.getDomainSyncStatus(fullName);
+        
+        if (!syncStatus) {
+          const atomCheck = await blockchainService.checkAtomExists(atomUri);
+          
+          syncStatus = await storage.createDomainSyncStatus({
+            domainName: fullName,
+            atomUri,
+            syncStatus: atomCheck.exists ? 'synced' : 'pending',
+            atomId: atomCheck.exists ? atomCheck.atomId.toString() : undefined,
+          });
+        }
+        
+        syncResults.push({
+          domain: fullName,
+          owner: domain.owner,
+          tokenId: domain.tokenId,
+          expirationDate: domain.expirationTime,
+          atomUri,
+          syncStatus: syncStatus.syncStatus,
+          atomId: syncStatus.atomId
+        });
+      }
+      
+      res.json({
+        totalDomains: domains.length,
+        synced: syncResults.filter(r => r.syncStatus === 'synced').length,
+        pending: syncResults.filter(r => r.syncStatus === 'pending').length,
+        failed: syncResults.filter(r => r.syncStatus === 'failed').length,
+        domains: syncResults
+      });
+    } catch (error) {
+      console.error("Sync scan error:", error);
+      res.status(500).json({ error: "Failed to scan domains" });
+    }
+  });
+
+  // Get sync status for all domains
+  app.get("/api/sync/status", async (req, res) => {
+    try {
+      const allStatuses = await storage.getAllSyncStatuses();
+      const atomCost = await blockchainService.getAtomCost();
+      
+      res.json({
+        totalDomains: allStatuses.length,
+        synced: allStatuses.filter(s => s.syncStatus === 'synced').length,
+        pending: allStatuses.filter(s => s.syncStatus === 'pending').length,
+        failed: allStatuses.filter(s => s.syncStatus === 'failed').length,
+        atomCostWei: atomCost.toString(),
+        atomCostEth: (Number(atomCost) / 1e18).toFixed(6),
+        domains: allStatuses
+      });
+    } catch (error) {
+      console.error("Sync status error:", error);
+      res.status(500).json({ error: "Failed to get sync status" });
+    }
+  });
+
+  // Get unsynced domains that need to be added to Knowledge Graph
+  app.get("/api/sync/pending", async (req, res) => {
+    try {
+      const unsyncedDomains = await storage.getUnsyncedDomains();
+      const atomCost = await blockchainService.getAtomCost();
+      
+      const pendingWithTx = unsyncedDomains.map(domain => {
+        const tx = blockchainService.buildCreateAtomTransaction(domain.atomUri);
+        return {
+          ...domain,
+          transaction: {
+            ...tx,
+            value: atomCost.toString()
+          }
+        };
+      });
+      
+      res.json({
+        count: pendingWithTx.length,
+        totalCostWei: (atomCost * BigInt(pendingWithTx.length)).toString(),
+        totalCostEth: (Number(atomCost * BigInt(pendingWithTx.length)) / 1e18).toFixed(6),
+        domains: pendingWithTx
+      });
+    } catch (error) {
+      console.error("Pending sync error:", error);
+      res.status(500).json({ error: "Failed to get pending domains" });
+    }
+  });
+
+  // Prepare batch transaction data for syncing multiple domains
+  app.post("/api/sync/prepare-batch", async (req, res) => {
+    try {
+      const { domainNames } = req.body;
+      
+      if (!domainNames || !Array.isArray(domainNames) || domainNames.length === 0) {
+        return res.status(400).json({ error: "domainNames array required" });
+      }
+      
+      const atomCost = await blockchainService.getAtomCost();
+      const transactions = [];
+      
+      for (const domainName of domainNames) {
+        const cleanName = domainName.replace(/\.trust$/, '');
+        const atomUri = intuitionService.generateDomainAtomUri(cleanName);
+        
+        const atomCheck = await blockchainService.checkAtomExists(atomUri);
+        
+        if (!atomCheck.exists) {
+          const tx = blockchainService.buildCreateAtomTransaction(atomUri);
+          transactions.push({
+            domain: `${cleanName}.trust`,
+            atomUri,
+            transaction: {
+              ...tx,
+              value: atomCost.toString()
+            }
+          });
+        }
+      }
+      
+      res.json({
+        count: transactions.length,
+        totalCostWei: (atomCost * BigInt(transactions.length)).toString(),
+        totalCostEth: (Number(atomCost * BigInt(transactions.length)) / 1e18).toFixed(6),
+        transactions
+      });
+    } catch (error) {
+      console.error("Batch prepare error:", error);
+      res.status(500).json({ error: "Failed to prepare batch" });
+    }
+  });
+
+  // Mark domain as synced (called after transaction is confirmed)
+  app.post("/api/sync/confirm", async (req, res) => {
+    try {
+      const { domainName, atomId, txHash } = req.body;
+      
+      if (!domainName || !atomId) {
+        return res.status(400).json({ error: "domainName and atomId required" });
+      }
+      
+      const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+      
+      let syncStatus = await storage.getDomainSyncStatus(fullName);
+      
+      if (!syncStatus) {
+        const cleanName = fullName.replace(/\.trust$/, '');
+        syncStatus = await storage.createDomainSyncStatus({
+          domainName: fullName,
+          atomUri: intuitionService.generateDomainAtomUri(cleanName),
+          syncStatus: 'synced',
+          atomId: atomId.toString(),
+          txHash
+        });
+      } else {
+        syncStatus = await storage.updateDomainSyncStatus(fullName, {
+          syncStatus: 'synced',
+          atomId: atomId.toString(),
+          txHash,
+          syncedAt: new Date(),
+          errorMessage: null
+        });
+      }
+      
+      res.json({
+        success: true,
+        domain: fullName,
+        atomId,
+        txHash,
+        syncStatus: 'synced'
+      });
+    } catch (error) {
+      console.error("Sync confirm error:", error);
+      res.status(500).json({ error: "Failed to confirm sync" });
+    }
+  });
+
+  // Mark sync as failed
+  app.post("/api/sync/fail", async (req, res) => {
+    try {
+      const { domainName, errorMessage } = req.body;
+      
+      if (!domainName) {
+        return res.status(400).json({ error: "domainName required" });
+      }
+      
+      const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+      
+      let syncStatus = await storage.getDomainSyncStatus(fullName);
+      
+      if (!syncStatus) {
+        const cleanName = fullName.replace(/\.trust$/, '');
+        syncStatus = await storage.createDomainSyncStatus({
+          domainName: fullName,
+          atomUri: intuitionService.generateDomainAtomUri(cleanName),
+          syncStatus: 'failed',
+          errorMessage
+        });
+      } else {
+        syncStatus = await storage.updateDomainSyncStatus(fullName, {
+          syncStatus: 'failed',
+          errorMessage
+        });
+      }
+      
+      res.json({
+        success: true,
+        domain: fullName,
+        syncStatus: 'failed',
+        errorMessage
+      });
+    } catch (error) {
+      console.error("Sync fail error:", error);
+      res.status(500).json({ error: "Failed to mark sync as failed" });
+    }
+  });
+
+  // Check if a specific domain is synced to Knowledge Graph
+  app.get("/api/sync/check/:domain", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const cleanName = domain.replace(/\.trust$/, '');
+      const atomUri = intuitionService.generateDomainAtomUri(cleanName);
+      
+      const atomCheck = await blockchainService.checkAtomExists(atomUri);
+      
+      const storedStatus = await storage.getDomainSyncStatus(`${cleanName}.trust`);
+      
+      res.json({
+        domain: `${cleanName}.trust`,
+        atomUri,
+        existsOnChain: atomCheck.exists,
+        atomId: atomCheck.exists ? atomCheck.atomId.toString() : null,
+        storedStatus: storedStatus?.syncStatus || 'unknown'
+      });
+    } catch (error) {
+      console.error("Sync check error:", error);
+      res.status(500).json({ error: "Failed to check sync status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
