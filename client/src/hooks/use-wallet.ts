@@ -93,7 +93,7 @@ export function useWallet() {
     }
   };
 
-  const sendTransaction = async (to: string, value: string, data?: string) => {
+  const sendTransaction = async (to: string, value: string, data?: string, gasLimit?: string) => {
     try {
       if (!walletState.isConnected) {
         throw new Error("Wallet not connected");
@@ -103,7 +103,7 @@ export function useWallet() {
         await switchNetwork();
       }
 
-      return await web3Service.sendTransaction(to, value, data);
+      return await web3Service.sendTransaction(to, value, data, gasLimit);
     } catch (error: any) {
       console.error("Transaction failed:", error);
       throw error;

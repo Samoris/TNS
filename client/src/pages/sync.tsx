@@ -50,6 +50,7 @@ interface PendingDomain extends DomainSyncStatus {
     data: string;
     value: string;
     valueEth: string;
+    gasLimit?: string;
   };
 }
 
@@ -227,7 +228,8 @@ export default function SyncPage() {
       const txHash = await sendTransaction(
         domain.transaction.to,
         valueInEth,
-        domain.transaction.data
+        domain.transaction.data,
+        domain.transaction.gasLimit || "250000"
       );
 
       toast({

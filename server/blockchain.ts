@@ -265,6 +265,7 @@ export class BlockchainService {
     to: string;
     data: string;
     value: string;
+    gasLimit: string;
   } {
     const iface = new ethers.Interface(INTUITION_MULTIVAULT_ABI);
     const uriBytes = ethers.toUtf8Bytes(atomUri);
@@ -273,7 +274,8 @@ export class BlockchainService {
     return {
       to: INTUITION_MULTIVAULT_ADDRESS,
       data,
-      value: '0' // Caller needs to add atom cost
+      value: '0', // Caller needs to add atom cost
+      gasLimit: '250000' // Reasonable gas limit for createAtom
     };
   }
 

@@ -271,7 +271,7 @@ export class Web3Service {
     this.listeners.forEach(listener => listener(disconnectedState));
   }
 
-  public async sendTransaction(to: string, value: string, data?: string): Promise<string> {
+  public async sendTransaction(to: string, value: string, data?: string, gasLimit?: string): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
     }
@@ -289,18 +289,26 @@ export class Web3Service {
     const valueInWei = Math.floor(parseFloat(value) * Math.pow(10, 18));
     const valueHex = `0x${valueInWei.toString(16)}`;
 
-    const txParams = {
-      from: state.address,
+    const txParams: Record<string, string> = {
+      from: state.address!,
       to,
       value: valueHex,
-      ...(data && { data }),
     };
+    
+    if (data) {
+      txParams.data = data;
+    }
+    
+    // Add gas limit to prevent high gas estimation
+    if (gasLimit) {
+      txParams.gas = `0x${parseInt(gasLimit).toString(16)}`;
+    }
 
     console.log("Transaction value breakdown:");
     console.log("- Original value:", value, "TRUST");
     console.log("- Value in wei:", valueInWei);
     console.log("- Value hex:", valueHex);
-    console.log("- Value in ETH:", valueInWei / Math.pow(10, 18));
+    console.log("- Gas limit:", gasLimit || "auto");
 
     console.log("Sending transaction:", txParams);
 
