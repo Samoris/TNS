@@ -191,10 +191,9 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 
 | Quarter | Milestone | Budget (USD) | Budget (TRUST) |
 |---------|-----------|--------------|----------------|
-| Q1 | Knowledge Graph Integration | $5,000 | 7,500 TRUST |
-| Q2 | Agent Registry & AI Identity Infrastructure | $5,000 | 7,500 TRUST |
-| Q3 | Native Mobile Apps & Enhanced UX | $5,000 | 7,500 TRUST |
-| Q4 | Marketplace, Governance & Ecosystem Expansion | $5,000 | 7,500 TRUST |
+| Q1 | Knowledge Graph Integration | $6,500 | 10,000 TRUST |
+| Q2 | Agent Registry & AI Identity Infrastructure | $6,500 | 10,000 TRUST |
+| Q3 | Marketplace, Governance & Ecosystem Expansion | $7,000 | 10,000 TRUST |
 
 ---
 
@@ -257,35 +256,7 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 
 ---
 
-**Q3: Native Mobile Apps & Enhanced UX (Months 7-9)**
-
-*Development Focus:*
-- Native mobile app (React Native) for iOS and Android
-- Biometric authentication for domain management
-- Push notifications for expiration reminders and transfers
-- Offline mode for viewing owned domains
-- QR code generation for payment forwarding
-- Enhanced onboarding flow for new users
-
-*Team & Operations:*
-- Hire mobile developer (React Native)
-- App store submission and review process
-- Beta testing program
-
-*Marketing:*
-- Mobile app launch campaign
-- Influencer partnerships in Web3 mobile space
-- App store optimization (ASO)
-
-*Success Criteria:*
-- Mobile app published on iOS App Store and Google Play
-- 500+ mobile app downloads in first month
-- 4.5+ star rating on app stores
-- 30% of users accessing via mobile
-
----
-
-**Q4: Marketplace, Governance & Ecosystem Expansion (Months 10-12)**
+**Q3: Marketplace, Governance & Ecosystem Expansion (Months 7-9)**
 
 *Development Focus:*
 - Premium domain auction system (Dutch and English auctions)
@@ -305,7 +276,7 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 - Premium domain auction events
 - Enterprise partnership program launch
 - Governance token announcement (if applicable)
-- Year-in-review report and 2026 roadmap
+- Year-in-review report and roadmap
 
 *Success Criteria:*
 - Marketplace with 100+ listed domains
@@ -322,8 +293,7 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 |---------|-------------|
 | Q1 | Knowledge Graph integration complete, all domains synced, 100+ new domains |
 | Q2 | 50+ agent identities, MCP integration, Developer SDK released |
-| Q3 | Mobile apps published on iOS & Android, 500+ downloads |
-| Q4 | Marketplace live, 5,000+ total domains, 5+ ecosystem integrations |
+| Q3 | Marketplace live, 5,000+ total domains, 5+ ecosystem integrations |
 
 ### Optional
 
