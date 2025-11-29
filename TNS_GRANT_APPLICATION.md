@@ -157,10 +157,10 @@ TNS provides a complete naming infrastructure for Intuition:
 
 | Category | Amount (USD) | Amount (TRUST) | Description |
 |----------|--------------|----------------|-------------|
-| **Current Operations** | $3,000 | 5,000 TRUST | Server hosting, RPC costs, domain maintenance, security audits |
-| **Development** | $8,000 | 12,000 TRUST | Smart contract upgrades, frontend/backend development, testing |
-| **Marketing & Community** | $4,000 | 6,000 TRUST | Community campaigns, content creation, partnerships, events |
-| **Hiring & Team Expansion** | $5,000 | 7,000 TRUST | Part-time developers, UI/UX designer, community manager |
+| **Marketing & Community** | $10,000 | 15,000 TRUST | Community campaigns, content creation, partnerships, events, influencer outreach, hackathon sponsorships |
+| **Current Staff Salaries** | $4,000 | 6,000 TRUST | Ongoing compensation for existing team members |
+| **New Hires** | $3,500 | 5,000 TRUST | Part-time developers, community manager, integration specialists |
+| **Running Costs & Operations** | $2,500 | 4,000 TRUST | Server hosting, RPC costs, domain maintenance, security audits, legal review |
 | **Total** | **$20,000** | **30,000 TRUST** | |
 
 ---
@@ -187,19 +187,18 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 
 ---
 
-### Quarterly Milestones (Remaining Work)
+### Milestones (Remaining Work)
 
-| Quarter | Milestone | Budget (USD) | Budget (TRUST) |
-|---------|-----------|--------------|----------------|
-| Q1 | Knowledge Graph Integration | $6,500 | 10,000 TRUST |
-| Q2 | Agent Registry & AI Identity Infrastructure | $6,500 | 10,000 TRUST |
-| Q3 | Marketplace, Governance & Ecosystem Expansion | $7,000 | 10,000 TRUST |
+| Phase | Milestone | Timeline | Budget (USD) | Budget (TRUST) |
+|-------|-----------|----------|--------------|----------------|
+| Phase 1 | Knowledge Graph & Agent Identity Integration | Months 1-6 | $10,000 | 15,000 TRUST |
+| Phase 2 | Marketplace, Governance & Ecosystem Expansion | Months 7-12 | $10,000 | 15,000 TRUST |
 
 ---
 
 ### Expected Timeline & Deliverables
 
-**Q1: Knowledge Graph Integration (Months 1-3)**
+**Phase 1: Knowledge Graph & Agent Identity Integration (Months 1-6)**
 
 *Development Focus:*
 - Create atoms for each registered domain in Intuition Knowledge Graph
@@ -208,28 +207,6 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 - API endpoints for querying domain atoms and relationships
 - Sync existing registered domains to knowledge graph
 - Real-time event listeners for new registrations
-
-*Team & Operations:*
-- Hire part-time backend developer for Graph API integration
-- Server infrastructure scaling for event processing
-- Documentation for knowledge graph queries
-
-*Marketing:*
-- Launch "Claim Your .trust Identity" campaign
-- Partnership announcements with Intuition ecosystem projects
-- Educational content on domain identity attestations
-
-*Success Criteria:*
-- Every domain registration automatically creates knowledge graph atoms/triples
-- Domain atoms queryable via Intuition Graph API
-- All existing domains synced to knowledge graph
-- 100+ new domain registrations
-
----
-
-**Q2: Agent Registry & AI Identity Infrastructure (Months 4-6)**
-
-*Development Focus:*
 - Enable AI agents to register and resolve `.trust` identities
 - Implement agent-to-agent discovery via domain names
 - Add MCP (Model Context Protocol) context for agent interactions
@@ -238,25 +215,34 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 - Agent-specific resolver records (capabilities, endpoints, protocols)
 
 *Team & Operations:*
+- Current staff salaries and ongoing development
+- Hire part-time backend developer for Graph API integration
 - Hire AI/ML integration specialist (part-time)
-- Expand backend infrastructure for agent queries
-- Documentation for agent developers
+- Server infrastructure scaling for event processing
+- Documentation for knowledge graph queries and agent developers
 
 *Marketing:*
+- Launch "Claim Your .trust Identity" campaign
+- Partnership announcements with Intuition ecosystem projects
+- Educational content on domain identity attestations
 - Agent developer outreach program
 - Hackathon sponsorship for agent identity use cases
 - Case studies with early agent adopters
 - Twitter/X and Discord community growth
 
 *Success Criteria:*
+- Every domain registration automatically creates knowledge graph atoms/triples
+- Domain atoms queryable via Intuition Graph API
+- All existing domains synced to knowledge graph
 - 50+ AI agents registered with `.trust` identities
 - Agent discovery API with <100ms response time
 - MCP integration documentation published
 - Developer SDK for agent registration
+- 500+ new domain registrations
 
 ---
 
-**Q3: Marketplace, Governance & Ecosystem Expansion (Months 7-9)**
+**Phase 2: Marketplace, Governance & Ecosystem Expansion (Months 7-12)**
 
 *Development Focus:*
 - Premium domain auction system (Dutch and English auctions)
@@ -268,14 +254,18 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 - Advanced analytics dashboard for domain owners
 
 *Team & Operations:*
+- Current staff salaries and ongoing development
 - Hire community manager for governance facilitation
 - Legal review for marketplace operations
 - Enterprise sales outreach
+- Ongoing server and infrastructure costs
 
 *Marketing:*
 - Premium domain auction events
 - Enterprise partnership program launch
 - Governance token announcement (if applicable)
+- Influencer partnerships and sponsored content
+- Community incentive programs
 - Year-in-review report and roadmap
 
 *Success Criteria:*
@@ -289,11 +279,10 @@ TNS is already deployed and operational on Intuition mainnet with the following 
 
 ### Success Criteria Summary
 
-| Quarter | Key Metrics |
-|---------|-------------|
-| Q1 | Knowledge Graph integration complete, all domains synced, 100+ new domains |
-| Q2 | 50+ agent identities, MCP integration, Developer SDK released |
-| Q3 | Marketplace live, 5,000+ total domains, 5+ ecosystem integrations |
+| Phase | Timeline | Key Metrics |
+|-------|----------|-------------|
+| Phase 1 | Months 1-6 | Knowledge Graph live, 50+ agent identities, MCP integration, 500+ domains |
+| Phase 2 | Months 7-12 | Marketplace live, 5,000+ total domains, 5+ ecosystem integrations |
 
 ### Optional
 
