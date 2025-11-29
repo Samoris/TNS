@@ -116,6 +116,8 @@ Domain sync endpoints to synchronize existing .trust domains to Intuition's Know
   - TNS Registry: `0x7C365AF9034b00dadc616dE7f38221C678D423Fa` (ERC-721 with NFT metadata support)
   - TNS Resolver: `0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06`
   - Payment Forwarder: `0x640E4fD39A2f7f65BBB344988eFF7470A98E2547`
+  - Intuition EthMultiVault (Proxy): `0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e` (Knowledge Graph - TransparentUpgradeableProxy)
+  - Intuition MultiVault (Implementation): `0xc6f28A5fFe30eee3fadE5080B8930C58187F4903`
 - **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin (for ERC-721, Ownable, ReentrancyGuard)
 - **Styling Framework**: Tailwind CSS

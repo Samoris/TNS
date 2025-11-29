@@ -5,8 +5,10 @@ const CHAIN_ID = 1155;
 const RPC_URL = "https://intuition.calderachain.xyz";
 const TNS_REGISTRY_ADDRESS = "0x7C365AF9034b00dadc616dE7f38221C678D423Fa";
 
-// Intuition Atom Wallet (EthMultiVault) for creating atoms
-const INTUITION_MULTIVAULT_ADDRESS = "0x430BbF52503Bd4801E51182f4cB9f8F534225DE5";
+// Intuition EthMultiVault (Knowledge Graph) for creating atoms
+// Proxy contract (TransparentUpgradeableProxy) on Intuition mainnet (Chain ID: 1155)
+const INTUITION_MULTIVAULT_ADDRESS = "0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e";
+// Implementation (MultiVault): 0xc6f28A5fFe30eee3fadE5080B8930C58187F4903
 
 // Minimal ABI for reading domain data
 const TNS_REGISTRY_ABI = [
@@ -18,12 +20,16 @@ const TNS_REGISTRY_ABI = [
   "function ownerOf(uint256) view returns (address)"
 ];
 
-// Intuition EthMultiVault ABI for atom creation
+// Intuition EthMultiVault ABI for atom creation (v1.5 mainnet)
 const INTUITION_MULTIVAULT_ABI = [
   "function createAtom(bytes atomUri) payable returns (uint256)",
   "function createTriple(uint256 subjectId, uint256 predicateId, uint256 objectId) payable returns (uint256)",
   "function atomsByHash(bytes32) view returns (uint256)",
-  "function getAtomCost() view returns (uint256)"
+  "function atoms(uint256) view returns (bytes)",
+  "function count() view returns (uint256)",
+  "function atomConfig() view returns (uint256 atomWalletInitialDepositAmount, uint256 atomCreationProtocolFee)",
+  "function generalConfig() view returns (address admin, address protocolMultisig, uint256 feeDenominator, uint256 minDeposit, uint256 minShare, uint256 atomUriMaxLength, uint256 decimalPrecision, uint256 minDelay)",
+  "function vaults(uint256) view returns (uint256 totalAssets, uint256 totalShares)"
 ];
 
 export class BlockchainService {
@@ -190,13 +196,34 @@ export class BlockchainService {
 
   /**
    * Get the cost to create an atom in Intuition (in wei)
+   * Cost = atomWalletInitialDepositAmount + atomCreationProtocolFee
+   * Note: The atomWalletInitialDepositAmount already includes the minimum deposit requirements
    */
   async getAtomCost(): Promise<bigint> {
     try {
-      const cost = await this.multivaultContract.getAtomCost();
-      return cost;
+      const [atomWalletInitialDepositAmount, atomCreationProtocolFee] = await this.multivaultContract.atomConfig();
+      
+      // Total cost is the sum of wallet initial deposit and protocol fee
+      // The wallet initial deposit already covers the minDeposit requirement
+      const totalCost = BigInt(atomWalletInitialDepositAmount) + BigInt(atomCreationProtocolFee);
+      console.log(`Atom cost: wallet=${atomWalletInitialDepositAmount}, protocol=${atomCreationProtocolFee}, total=${totalCost} (${Number(totalCost) / 1e18} ETH)`);
+      return totalCost;
     } catch (error) {
       console.error('Error getting atom cost:', error);
+      // Return a reasonable default (0.0003 ETH) if unable to fetch from contract
+      return BigInt("300000000000000");
+    }
+  }
+
+  /**
+   * Get the total count of atoms created
+   */
+  async getAtomCount(): Promise<bigint> {
+    try {
+      const count = await this.multivaultContract.count();
+      return count;
+    } catch (error) {
+      console.error('Error getting atom count:', error);
       return BigInt(0);
     }
   }
@@ -204,7 +231,7 @@ export class BlockchainService {
   /**
    * Check if an atom exists in Intuition by URI
    * Note: When atom doesn't exist, the contract may return empty data (0x)
-   * which causes a decoding error - we treat this as "atom does not exist"
+   * which causes a CALL_EXCEPTION - we treat this as "atom does not exist"
    */
   async checkAtomExists(atomUri: string): Promise<{ exists: boolean; atomId: bigint }> {
     try {
@@ -216,11 +243,17 @@ export class BlockchainService {
         atomId
       };
     } catch (error: unknown) {
-      const ethersError = error as { code?: string; value?: string };
-      if (ethersError.code === 'BAD_DATA' && ethersError.value === '0x') {
+      const ethersError = error as { code?: string; value?: string; data?: string };
+      // Handle both BAD_DATA and CALL_EXCEPTION with empty data - both mean atom doesn't exist
+      if (
+        (ethersError.code === 'BAD_DATA' && ethersError.value === '0x') ||
+        (ethersError.code === 'CALL_EXCEPTION' && ethersError.data === '0x')
+      ) {
+        // Atom doesn't exist - this is expected, not an error
         return { exists: false, atomId: BigInt(0) };
       }
-      console.error('Error checking atom existence:', error);
+      // Only log unexpected errors
+      console.error('Unexpected error checking atom existence:', error);
       return { exists: false, atomId: BigInt(0) };
     }
   }
