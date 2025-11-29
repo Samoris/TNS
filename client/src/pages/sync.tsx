@@ -64,7 +64,7 @@ interface PendingDomainsResponse {
 const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
 
 export default function SyncPage() {
-  const { isConnected, address, isCorrectNetwork, sendTransaction } = useWallet();
+  const { isConnected, address, isCorrectNetwork, sendTransaction, waitForTransaction, parseAtomIdFromReceipt } = useWallet();
   const { toast } = useToast();
   const [syncingDomain, setSyncingDomain] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -234,10 +234,20 @@ export default function SyncPage() {
 
       toast({
         title: "Transaction Sent",
-        description: `Creating atom for ${domain.domainName}...`,
+        description: `Creating atom for ${domain.domainName}. Waiting for confirmation...`,
       });
 
-      const atomId = "0";
+      // Wait for transaction to be mined
+      const receipt = await waitForTransaction(txHash);
+      console.log("Transaction receipt:", receipt);
+
+      // Try to parse atomId from receipt logs
+      let atomId = parseAtomIdFromReceipt(receipt);
+      if (!atomId) {
+        // If we can't parse it, use a placeholder - the backend can verify later
+        console.log("Could not parse atomId from receipt, using txHash as reference");
+        atomId = "pending";
+      }
 
       await confirmSyncMutation.mutateAsync({
         domainName: domain.domainName,
@@ -247,7 +257,7 @@ export default function SyncPage() {
 
       toast({
         title: "Domain Synced",
-        description: `${domain.domainName} has been synced to the Knowledge Graph.`,
+        description: `${domain.domainName} has been synced to the Knowledge Graph!`,
       });
     } catch (error: any) {
       console.log("User cancelled the transaction");

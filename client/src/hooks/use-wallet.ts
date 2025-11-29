@@ -110,6 +110,14 @@ export function useWallet() {
     }
   };
 
+  const waitForTransaction = async (txHash: string) => {
+    return await web3Service.waitForTransaction(txHash);
+  };
+
+  const parseAtomIdFromReceipt = (receipt: any) => {
+    return web3Service.parseAtomIdFromReceipt(receipt);
+  };
+
   return {
     ...walletState,
     isLoading,
@@ -119,6 +127,8 @@ export function useWallet() {
     disconnectWallet,
     switchNetwork,
     sendTransaction,
+    waitForTransaction,
+    parseAtomIdFromReceipt,
     formatAddress: web3Service.formatAddress,
     getExplorerUrl: web3Service.getExplorerUrl,
   };

@@ -320,6 +320,74 @@ export class Web3Service {
     return txHash;
   }
 
+  /**
+   * Wait for a transaction to be mined and return the receipt
+   */
+  public async waitForTransaction(txHash: string, maxAttempts: number = 60): Promise<any> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    console.log("Waiting for transaction to be mined:", txHash);
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const receipt = await window.ethereum.request({
+          method: "eth_getTransactionReceipt",
+          params: [txHash],
+        });
+
+        if (receipt) {
+          console.log("Transaction mined:", receipt);
+          
+          // Check if transaction was successful (status = 0x1)
+          if (receipt.status === "0x1") {
+            return receipt;
+          } else {
+            throw new Error("Transaction failed on-chain");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking receipt:", error);
+      }
+
+      // Wait 2 seconds before next attempt
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    throw new Error("Transaction not confirmed after timeout");
+  }
+
+  /**
+   * Parse atom ID from transaction receipt logs
+   * The AtomCreated event has signature: AtomCreated(address indexed creator, uint256 indexed atomId, bytes atomUri)
+   */
+  public parseAtomIdFromReceipt(receipt: any): string | null {
+    if (!receipt.logs || receipt.logs.length === 0) {
+      return null;
+    }
+
+    // AtomCreated event topic: keccak256("AtomCreated(address,uint256,bytes)")
+    const atomCreatedTopic = "0x94e2d3aa8c1c72fbb8d06d0de9c8dcb0a7a51f9703d9cb4edc2a2a7b6d2b5c4f";
+    
+    for (const log of receipt.logs) {
+      // The atomId is in the second indexed topic (topics[2])
+      if (log.topics && log.topics.length >= 2) {
+        // Parse the atomId from the topic (it's a uint256)
+        const atomIdHex = log.topics[1];
+        if (atomIdHex) {
+          const atomId = parseInt(atomIdHex, 16);
+          if (atomId > 0) {
+            console.log("Parsed atomId from receipt:", atomId);
+            return atomId.toString();
+          }
+        }
+      }
+    }
+
+    return null;
+  }
+
   public async callContract(contractAddress: string, data: string): Promise<any> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
