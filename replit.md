@@ -50,6 +50,49 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS + shadcn/ui, TanStack Query, Wouter.
 - **Backend**: Express.js, TypeScript, In-memory storage (MemStorage). Provides API for domain availability, registration processing, and user account management.
 
+## Intuition Knowledge Graph Integration
+TNS integrates with Intuition's decentralized Knowledge Graph to enable AI agent identity infrastructure.
+
+### Integration Components
+- **@0xintuition/graphql SDK**: Query atoms, triples, and signals from the Knowledge Graph
+- **IntuitionService** (`server/intuition.ts`): Service module for Knowledge Graph operations
+- **MCP Server** (`server/mcp-server.ts`): Model Context Protocol server for AI agent integration
+
+### API Endpoints
+
+#### Knowledge Graph Endpoints
+- `GET /api/atom/:domain` - Get domain atom metadata (Schema.org format)
+- `GET /api/domains/:name/graph` - Get domain knowledge graph relationships
+- `GET /api/domains/:name/reputation` - Get domain reputation from Knowledge Graph
+- `GET /api/knowledge-graph/atoms?uri=` - Search atoms by URI pattern
+- `GET /api/knowledge-graph/atoms/:atomId` - Get specific atom by ID
+
+#### Agent Registry Endpoints
+- `POST /api/agents/register` - Register an AI agent with a .trust identity
+- `GET /api/agents/:domain` - Resolve agent identity and metadata
+- `GET /api/agents/discover?capability=&type=` - Discover agents by capability or type
+- `GET /api/agents/directory` - List all registered agents
+- `POST /api/agents/:domain/records` - Update agent-specific resolver records
+
+### MCP Server Tools
+The MCP server (`mcp.json`) exposes these tools for AI assistants:
+- `resolve_domain` - Resolve a .trust domain to its owner and metadata
+- `check_availability` - Check if a domain is available for registration
+- `get_domain_reputation` - Get reputation score from Knowledge Graph
+- `get_domain_graph` - Get knowledge graph relationships
+- `discover_agents` - Find AI agents by capability
+- `get_agent_info` - Get detailed agent information
+- `get_pricing` - Get current domain pricing tiers
+- `search_atoms` - Search atoms in the Knowledge Graph
+
+### Agent Identity Schema
+Agents registered with .trust domains store metadata including:
+- `agentType`: assistant, analyzer, trader, validator
+- `capabilities`: text-generation, code-review, data-analysis, etc.
+- `endpoint`: API endpoint URL
+- `publicKey`: For agent-to-agent authentication
+- `version`: Semantic version
+
 ## External Dependencies
 - **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
 - **Smart Contract Addresses**: 

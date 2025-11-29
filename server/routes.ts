@@ -634,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields: domainName, agentType, capabilities, owner" });
       }
       
-      const cleanDomainName = domainName.replace('.trust', '');
+      const cleanDomainName = domainName.replace(/\.trust$/, '');
       
       const domain = await storage.getDomainByName(`${cleanDomainName}.trust`);
       if (!domain) {
@@ -674,11 +674,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Resolve agent identity
+  // Discover agents by capability (MUST come before :domain route)
+  app.get("/api/agents/discover", async (req, res) => {
+    try {
+      const { capability, type } = req.query;
+      
+      const allDomains = await storage.getAllDomains();
+      
+      const agents = [];
+      for (const domain of allDomains) {
+        const records = await storage.getDomainRecords(domain.id);
+        const agentRecord = records.find(r => r.key === 'agent.metadata');
+        
+        if (agentRecord) {
+          try {
+            const metadata = JSON.parse(agentRecord.value);
+            
+            if (capability && !metadata.capabilities?.includes(capability)) {
+              continue;
+            }
+            if (type && metadata.agentType !== type) {
+              continue;
+            }
+            
+            agents.push({
+              domain: domain.name,
+              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace(/\.trust$/, '')),
+              ...metadata
+            });
+          } catch (e) {
+          }
+        }
+      }
+      
+      res.json({ agents });
+    } catch (error) {
+      console.error("Agent discover error:", error);
+      res.status(500).json({ error: "Failed to discover agents" });
+    }
+  });
+
+  // Agent directory listing (MUST come before :domain route)
+  app.get("/api/agents/directory", async (req, res) => {
+    try {
+      const { page = '1', limit = '20' } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      
+      const allDomains = await storage.getAllDomains();
+      
+      const agents = [];
+      for (const domain of allDomains) {
+        const records = await storage.getDomainRecords(domain.id);
+        const agentRecord = records.find(r => r.key === 'agent.metadata');
+        
+        if (agentRecord) {
+          try {
+            const metadata = JSON.parse(agentRecord.value);
+            agents.push({
+              domain: domain.name,
+              owner: domain.owner,
+              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace(/\.trust$/, '')),
+              ...metadata
+            });
+          } catch (e) {
+          }
+        }
+      }
+      
+      const start = (pageNum - 1) * limitNum;
+      const paginatedAgents = agents.slice(start, start + limitNum);
+      
+      res.json({
+        agents: paginatedAgents,
+        page: pageNum,
+        limit: limitNum,
+        total: agents.length
+      });
+    } catch (error) {
+      console.error("Agent directory error:", error);
+      res.status(500).json({ error: "Failed to fetch agent directory" });
+    }
+  });
+
+  // Resolve agent identity (dynamic route - MUST come after static routes)
   app.get("/api/agents/:domain", async (req, res) => {
     try {
       const { domain } = req.params;
-      const domainName = domain.replace('.trust', '');
+      const domainName = domain.replace(/\.trust$/, '');
       
       const storedDomain = await storage.getDomainByName(`${domainName}.trust`);
       
@@ -710,96 +793,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Discover agents by capability
-  app.get("/api/agents/discover", async (req, res) => {
-    try {
-      const { capability, type } = req.query;
-      
-      const allDomains = await storage.getAllDomains();
-      
-      const agents = [];
-      for (const domain of allDomains) {
-        const records = await storage.getDomainRecords(domain.id);
-        const agentRecord = records.find(r => r.key === 'agent.metadata');
-        
-        if (agentRecord) {
-          try {
-            const metadata = JSON.parse(agentRecord.value);
-            
-            if (capability && !metadata.capabilities?.includes(capability)) {
-              continue;
-            }
-            if (type && metadata.agentType !== type) {
-              continue;
-            }
-            
-            agents.push({
-              domain: domain.name,
-              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace('.trust', '')),
-              ...metadata
-            });
-          } catch (e) {
-          }
-        }
-      }
-      
-      res.json({ agents });
-    } catch (error) {
-      console.error("Agent discover error:", error);
-      res.status(500).json({ error: "Failed to discover agents" });
-    }
-  });
-
-  // Agent directory listing
-  app.get("/api/agents/directory", async (req, res) => {
-    try {
-      const { page = '1', limit = '20' } = req.query;
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
-      
-      const allDomains = await storage.getAllDomains();
-      
-      const agents = [];
-      for (const domain of allDomains) {
-        const records = await storage.getDomainRecords(domain.id);
-        const agentRecord = records.find(r => r.key === 'agent.metadata');
-        
-        if (agentRecord) {
-          try {
-            const metadata = JSON.parse(agentRecord.value);
-            agents.push({
-              domain: domain.name,
-              owner: domain.owner,
-              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace('.trust', '')),
-              ...metadata
-            });
-          } catch (e) {
-          }
-        }
-      }
-      
-      const start = (pageNum - 1) * limitNum;
-      const paginatedAgents = agents.slice(start, start + limitNum);
-      
-      res.json({
-        agents: paginatedAgents,
-        page: pageNum,
-        limit: limitNum,
-        total: agents.length
-      });
-    } catch (error) {
-      console.error("Agent directory error:", error);
-      res.status(500).json({ error: "Failed to fetch agent directory" });
-    }
-  });
-
   // Update agent records
   app.post("/api/agents/:domain/records", async (req, res) => {
     try {
       const { domain } = req.params;
       const { records, owner } = req.body;
       
-      const domainName = domain.replace('.trust', '');
+      const domainName = domain.replace(/\.trust$/, '');
       const storedDomain = await storage.getDomainByName(`${domainName}.trust`);
       
       if (!storedDomain) {
