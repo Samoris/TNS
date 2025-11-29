@@ -148,53 +148,193 @@ TNS provides a complete naming infrastructure for Intuition:
 ### Required
 
 **Amount requested:**  
-[Specify amount in USD and/or TRUST]
+- **$20,000 USD**
+- **30,000 TRUST**
 
-**Budget breakdown by milestones:**
+---
 
-| Milestone | Description | Budget | Timeline |
-|-----------|-------------|--------|----------|
-| M1 | Subdomain Support & Hierarchical Domains | [Amount] | 4 weeks |
-| M2 | Knowledge Graph Integration | [Amount] | 4 weeks |
-| M3 | Agent Registry Integration | [Amount] | 4 weeks |
-| M4 | Mobile App & Advanced Features | [Amount] | 6 weeks |
+### Total Budget Breakdown
 
-**Expected Timeline milestones you will deliver:**
+| Category | Amount (USD) | Amount (TRUST) | Description |
+|----------|--------------|----------------|-------------|
+| **Current Operations** | $3,000 | 5,000 TRUST | Server hosting, RPC costs, domain maintenance, security audits |
+| **Development** | $8,000 | 12,000 TRUST | Smart contract upgrades, frontend/backend development, testing |
+| **Marketing & Community** | $4,000 | 6,000 TRUST | Community campaigns, content creation, partnerships, events |
+| **Hiring & Team Expansion** | $5,000 | 7,000 TRUST | Part-time developers, UI/UX designer, community manager |
+| **Total** | **$20,000** | **30,000 TRUST** | |
 
-**Milestone 1: Subdomain Support (Month 1)**
-- Implement subdomain registration (e.g., `app.alice.trust`)
-- Parent domain owner controls subdomain creation
-- Subdomain resolver inheritance and override
+---
 
-**Milestone 2: Knowledge Graph Integration (Month 2)**
-- Create atoms for each registered domain
-- Establish triples linking domains to owners, resolvers, metadata
-- Enable attestations on domain reputation/verification
+### Quarterly Milestones
 
-**Milestone 3: Agent Registry Integration (Month 3)**
+| Quarter | Milestone | Budget (USD) | Budget (TRUST) |
+|---------|-----------|--------------|----------------|
+| Q1 | Subdomain Support & Knowledge Graph Integration | $5,000 | 7,500 TRUST |
+| Q2 | Agent Registry & AI Identity Infrastructure | $5,000 | 7,500 TRUST |
+| Q3 | Mobile Application & Accessibility Compliance | $5,000 | 7,500 TRUST |
+| Q4 | Marketplace, Governance & Ecosystem Expansion | $5,000 | 7,500 TRUST |
+
+---
+
+### Expected Timeline & Deliverables
+
+**Q1: Subdomain Support & Knowledge Graph Integration (Months 1-3)**
+
+*Development Focus:*
+- Implement hierarchical subdomain registration (e.g., `app.alice.trust`, `dao.company.trust`)
+- Parent domain owners control subdomain creation and permissions
+- Subdomain resolver inheritance with optional override
+- Create atoms for each registered domain in Intuition Knowledge Graph
+- Establish triples linking domains to owners, resolvers, expiration, and metadata
+- Enable attestations and reputation signals on domain identities
+- API endpoints for querying domain atoms and relationships
+
+*Team & Operations:*
+- Hire part-time Solidity developer for subdomain contracts
+- Security audit for new subdomain functionality
+- Server infrastructure scaling
+
+*Marketing:*
+- Launch "Claim Your .trust Identity" campaign
+- Partnership announcements with Intuition ecosystem projects
+- Educational content on subdomain use cases
+
+*Success Criteria:*
+- Users can register and manage unlimited subdomains
+- Every domain registration automatically creates knowledge graph atoms/triples
+- Domain atoms queryable via Intuition Graph API
+- 100+ new domain registrations
+
+---
+
+**Q2: Agent Registry & AI Identity Infrastructure (Months 4-6)**
+
+*Development Focus:*
 - Enable AI agents to register and resolve `.trust` identities
 - Implement agent-to-agent discovery via domain names
-- Add MCP context for agent interactions
+- Add MCP (Model Context Protocol) context for agent interactions
+- Agent verification and attestation system
+- API for agent identity lookup and capability discovery
+- Agent-specific resolver records (capabilities, endpoints, protocols)
 
-**Milestone 4: Advanced Features (Months 4-5)**
-- Mobile-responsive PWA with WCAG 2.1 AAA accessibility
-- Bulk domain management tools
-- Premium domain auctions
-- Domain transfer marketplace
+*Team & Operations:*
+- Hire AI/ML integration specialist (part-time)
+- Expand backend infrastructure for agent queries
+- Documentation for agent developers
 
-**Success criteria for each milestone:**
-- M1: Users can register and manage subdomains; parent owners control permissions
-- M2: Every domain creates corresponding atoms/triples in knowledge graph
-- M3: Agents can register identities and discover other agents via TNS
-- M4: Mobile users can fully manage domains; accessibility audit passed
+*Marketing:*
+- Agent developer outreach program
+- Hackathon sponsorship for agent identity use cases
+- Case studies with early agent adopters
+- Twitter/X and Discord community growth
+
+*Success Criteria:*
+- 50+ AI agents registered with `.trust` identities
+- Agent discovery API with <100ms response time
+- MCP integration documentation published
+- Developer SDK for agent registration
+
+---
+
+**Q3: Mobile Application & Accessibility Compliance (Months 7-9)**
+
+*Development Focus:*
+- Mobile-responsive Progressive Web App (PWA)
+- Native mobile app (React Native) for iOS and Android
+- WCAG 2.1 AAA accessibility compliance across all interfaces
+- Biometric authentication for domain management
+- Push notifications for expiration reminders and transfers
+- Offline mode for viewing owned domains
+- QR code generation for payment forwarding
+
+*Team & Operations:*
+- Hire UI/UX designer for mobile experience
+- Accessibility audit by third-party specialist
+- App store submission and review process
+
+*Marketing:*
+- Mobile app launch campaign
+- Influencer partnerships in Web3 mobile space
+- Accessibility-focused PR and community outreach
+
+*Success Criteria:*
+- Mobile app published on iOS App Store and Google Play
+- WCAG 2.1 AAA audit passed
+- 500+ mobile app downloads in first month
+- 4.5+ star rating on app stores
+
+---
+
+**Q4: Marketplace, Governance & Ecosystem Expansion (Months 10-12)**
+
+*Development Focus:*
+- Premium domain auction system (Dutch and English auctions)
+- Secondary marketplace for domain transfers
+- Bulk domain management tools for enterprises
+- Multi-signature domain ownership for DAOs
+- Governance framework for TNS protocol decisions
+- Cross-protocol integrations (wallets, dApps, DeFi protocols)
+- Advanced analytics dashboard for domain owners
+
+*Team & Operations:*
+- Hire community manager for governance facilitation
+- Legal review for marketplace operations
+- Enterprise sales outreach
+
+*Marketing:*
+- Premium domain auction events
+- Enterprise partnership program launch
+- Governance token announcement (if applicable)
+- Year-in-review report and 2026 roadmap
+
+*Success Criteria:*
+- Marketplace with 100+ listed domains
+- 10+ enterprise/DAO customers
+- Governance proposal system live
+- 5,000+ total registered domains
+- Integration with 5+ major Intuition ecosystem dApps
+
+---
+
+### Success Criteria Summary
+
+| Quarter | Key Metrics |
+|---------|-------------|
+| Q1 | Subdomains live, Knowledge Graph integration complete, 100+ new domains |
+| Q2 | 50+ agent identities, MCP integration, Developer SDK released |
+| Q3 | Mobile apps published, WCAG 2.1 AAA certified, 500+ app downloads |
+| Q4 | Marketplace live, 5,000+ total domains, 5+ ecosystem integrations |
 
 ### Optional
+
+**Stretch Goals:**
+- ENS-style avatar and profile integration
+- Cross-chain domain resolution (Ethereum, Base, Arbitrum)
+- Decentralized domain dispute resolution
+- DAO-controlled premium name releases
+
+**Key Dependencies:**
+- Intuition Knowledge Graph API availability
+- MCP protocol specifications
+- App store approval processes
+- Third-party security audit timelines
+
+**Risk Assessment:**
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Smart contract vulnerabilities | Low | High | Multiple audits, bug bounty program |
+| Low adoption rate | Medium | Medium | Marketing campaigns, ecosystem partnerships |
+| Regulatory uncertainty | Low | Medium | Legal consultation, compliance review |
+| Technical integration delays | Medium | Low | Buffer time in milestones, modular architecture |
 
 **How this work compounds value for the network:**
 - Every domain registration locks TRUST tokens (burned or held)
 - Increases knowledge graph density with identity atoms
 - Provides identity infrastructure for all Intuition applications
 - Enables human-readable agent discovery and communication
+- Creates recurring revenue through renewals
+- Drives TRUST token utility and demand
 
 ---
 
