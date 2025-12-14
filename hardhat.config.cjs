@@ -15,5 +15,26 @@ module.exports = {
     sources: "./contracts",
     cache: "./cache",
     artifacts: "./artifacts"
+  },
+  networks: {
+    intuition: {
+      url: "https://rpc.intuition.systems",
+      chainId: 1155
+    }
+  },
+  etherscan: {
+    apiKey: {
+      intuition: "abc" // Blockscout doesn't require a real API key
+    },
+    customChains: [
+      {
+        network: "intuition",
+        chainId: 1155,
+        urls: {
+          apiURL: "https://explorer.intuition.systems/api",
+          browserURL: "https://explorer.intuition.systems"
+        }
+      }
+    ]
   }
 };
