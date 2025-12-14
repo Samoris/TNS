@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title TNS Registry - Full ERC721 NFT Implementation
@@ -88,7 +88,7 @@ contract TNSRegistryERC721 is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard
         _;
     }
     
-    constructor() ERC721("Trust Name Service", "TNS") Ownable(msg.sender) {
+    constructor() ERC721("Trust Name Service", "TNS") Ownable() {
         // Set default base URI - can be updated later
         _baseTokenURI = "https://tns.replit.app/api/metadata/";
     }
