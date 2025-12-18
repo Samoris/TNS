@@ -180,14 +180,10 @@ export class IntuitionService {
   }
 
   generateDomainAtomUri(domainName: string): string {
-    // Use CAIP-10 format to register the DOMAIN NAME as an "account" type in Intuition Knowledge Graph
-    // Format: CAIP10:eip155:{chainId}:{registryAddress}/{domainName}
-    // Chain ID 1155 = Intuition mainnet
-    // The registry contract address + domain name makes this a domain-specific account atom
-    // This represents the domain identity itself, not the owner's wallet
+    // Use simple domain name format for atom URI
+    // This registers the domain name itself as the identity in the Knowledge Graph
     const cleanName = domainName.replace('.trust', '').toLowerCase();
-    const TNS_REGISTRY = '0x7C365AF9034b00dadc616dE7f38221C678D423Fa';
-    return `CAIP10:eip155:1155:${TNS_REGISTRY}/${cleanName}.trust`;
+    return `${cleanName}.trust`;
   }
   
   generateAccountAtomUri(ownerAddress: string): string {

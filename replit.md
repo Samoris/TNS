@@ -104,19 +104,15 @@ Domain sync endpoints to synchronize existing .trust domains to Intuition's Know
 - `POST /api/sync/fail` - Mark domain sync as failed
 - `GET /api/sync/check/:domain` - Check individual domain sync status
 
-### Atom URI Format (CAIP-10 Account Type)
-Domain atoms are registered using CAIP-10 format to represent them as **account** types in Intuition's Knowledge Graph:
-- **Format**: `CAIP10:eip155:1155:{TNS_REGISTRY_ADDRESS}/{domainName}.trust`
-- **Example**: `CAIP10:eip155:1155:0x7C365AF9034b00dadc616dE7f38221C678D423Fa/samoris.trust`
-- **Chain ID**: 1155 (Intuition mainnet)
-- **Registry Address**: 0x7C365AF9034b00dadc616dE7f38221C678D423Fa
-- **Purpose**: Registers the DOMAIN NAME as an account-type atom in the Knowledge Graph
+### Atom URI Format
+Domain atoms use a simple domain name format in Intuition's Knowledge Graph:
+- **Format**: `{domainName}.trust`
+- **Example**: `samoris.trust`
+- **Purpose**: Registers the domain name as an identity in the Knowledge Graph
 
 This format:
-- Registers the domain itself (e.g., samoris.trust) as an account identity
-- Uses the TNS Registry contract address + domain name for deterministic URIs
+- Uses the domain name directly as the atom URI
 - Atom URI is stable regardless of ownership changes
-- Supports Intuition's CAIP-10 standard for account atoms
 - Allows reputation and staking features for domain identities
 
 ### Sync Workflow
