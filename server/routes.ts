@@ -832,6 +832,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // KNOWLEDGE GRAPH SYNC ENDPOINTS
   // ============================================
 
+  // Get user's domains with sync status (user-facing endpoint)
+  app.get("/api/sync/user/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      if (!/^0x[a-fA-F0-9]{40}$/i.test(address)) {
+        return res.status(400).json({ error: "Invalid Ethereum address" });
+      }
+      
+      console.log(`Getting domains with sync status for user: ${address}`);
+      
+      // Scan all domains from blockchain
+      const allDomains = await blockchainService.scanAllDomains();
+      
+      // Filter to only this user's domains
+      const userDomains = allDomains.filter(
+        d => d.owner.toLowerCase() === address.toLowerCase()
+      );
+      
+      const atomCost = await blockchainService.getAtomCost();
+      const domainsWithSync = [];
+      
+      for (const domain of userDomains) {
+        const fullName = domain.name.endsWith('.trust') ? domain.name : `${domain.name}.trust`;
+        const cleanName = domain.name.replace(/\.trust$/, '');
+        const atomUri = intuitionService.generateDomainAtomUri(cleanName);
+        
+        // Check if atom exists on-chain
+        const atomCheck = await blockchainService.checkAtomExists(atomUri);
+        
+        // Get or create sync status
+        let syncStatus = await storage.getDomainSyncStatus(fullName);
+        
+        if (!syncStatus) {
+          syncStatus = await storage.createDomainSyncStatus({
+            domainName: fullName,
+            atomUri,
+            syncStatus: atomCheck.exists ? 'synced' : 'pending',
+            atomId: atomCheck.exists ? atomCheck.atomId.toString() : undefined,
+          });
+        } else if (syncStatus.syncStatus !== 'synced' && atomCheck.exists) {
+          // Update to synced if atom now exists
+          syncStatus = await storage.updateDomainSyncStatus(fullName, {
+            syncStatus: 'synced',
+            atomId: atomCheck.atomId.toString(),
+            syncedAt: new Date(),
+            errorMessage: null
+          });
+        }
+        
+        // Build transaction if not synced
+        const tx = !atomCheck.exists ? blockchainService.buildCreateAtomTransaction(atomUri) : null;
+        
+        domainsWithSync.push({
+          domainName: fullName,
+          owner: domain.owner,
+          tokenId: domain.tokenId,
+          expirationDate: domain.expirationTime,
+          atomUri,
+          syncStatus: atomCheck.exists ? 'synced' : (syncStatus?.syncStatus || 'pending'),
+          atomId: atomCheck.exists ? atomCheck.atomId.toString() : syncStatus?.atomId,
+          txHash: syncStatus?.txHash,
+          transaction: tx ? {
+            ...tx,
+            value: `0x${atomCost.toString(16)}`,
+            valueEth: (Number(atomCost) / 1e18).toFixed(6)
+          } : null
+        });
+      }
+      
+      res.json({
+        address,
+        totalDomains: domainsWithSync.length,
+        synced: domainsWithSync.filter(d => d.syncStatus === 'synced').length,
+        pending: domainsWithSync.filter(d => d.syncStatus !== 'synced').length,
+        atomCostWei: atomCost.toString(),
+        atomCostEth: (Number(atomCost) / 1e18).toFixed(6),
+        domains: domainsWithSync
+      });
+    } catch (error) {
+      console.error("User sync status error:", error);
+      res.status(500).json({ error: "Failed to get user sync status" });
+    }
+  });
+
   // Scan blockchain for registered domains and check sync status
   app.post("/api/sync/scan", async (req, res) => {
     try {
