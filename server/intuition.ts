@@ -179,16 +179,24 @@ export class IntuitionService {
     }
   }
 
-  generateDomainAtomUri(domainName: string): string {
-    const cleanName = domainName.replace('.trust', '');
-    // Simple domain format for consistent lookups
-    return `${cleanName}.trust`;
+  generateDomainAtomUri(domainName: string, ownerAddress: string): string {
+    // Use CAIP-10 format to register as "account" type in Intuition Knowledge Graph
+    // Format: CAIP10:eip155:{chainId}:{address}
+    // Chain ID 1155 = Intuition mainnet
+    // The owner address makes this an account-type atom
+    return `CAIP10:eip155:1155:${ownerAddress}`;
   }
   
   generateAccountAtomUri(ownerAddress: string): string {
     // Standard CAIP-10 format for blockchain accounts
     // Chain ID 1155 = Intuition mainnet
     return `CAIP10:eip155:1155:${ownerAddress}`;
+  }
+  
+  generateDomainLookupUri(domainName: string): string {
+    // Legacy format for searching/matching existing text-based atoms
+    const cleanName = domainName.replace('.trust', '');
+    return `${cleanName}.trust`;
   }
 
   generateAgentAtomUri(domainName: string): string {
@@ -208,7 +216,7 @@ export class IntuitionService {
     
     return {
       id: '', // Will be set after atom creation
-      uri: this.generateDomainAtomUri(domainName),
+      uri: this.generateDomainAtomUri(domainName, owner),
       domainName: `${cleanName}.trust`,
       owner,
       tokenId,
@@ -217,8 +225,8 @@ export class IntuitionService {
     };
   }
 
-  async getDomainReputation(domainName: string): Promise<DomainReputation | null> {
-    const uri = this.generateDomainAtomUri(domainName);
+  async getDomainReputation(domainName: string, ownerAddress: string): Promise<DomainReputation | null> {
+    const uri = this.generateDomainAtomUri(domainName, ownerAddress);
     
     try {
       const atoms = await this.searchAtomsByUri(uri) as Array<{
@@ -311,14 +319,14 @@ export class IntuitionService {
     }
   }
 
-  async getDomainGraph(domainName: string): Promise<{
+  async getDomainGraph(domainName: string, ownerAddress: string): Promise<{
     domain: string;
     atomId: string | null;
     reputation: DomainReputation | null;
     relationships: Array<{ predicate: string; object: string }>;
     references: Array<{ subject: string; predicate: string }>;
   }> {
-    const uri = this.generateDomainAtomUri(domainName);
+    const uri = this.generateDomainAtomUri(domainName, ownerAddress);
     
     try {
       const atoms = await this.searchAtomsByUri(uri) as Array<{ id: string }>;
@@ -329,7 +337,7 @@ export class IntuitionService {
         object: { uri: string };
       }> : [];
       
-      const reputation = await this.getDomainReputation(domainName);
+      const reputation = await this.getDomainReputation(domainName, ownerAddress);
       
       const referenceTriples = await this.getTriplesByPredicate('tns:predicate:', uri) as Array<{
         subject: { uri: string };

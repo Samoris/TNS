@@ -95,6 +95,7 @@ Agents registered with .trust domains store metadata including:
 
 ### Knowledge Graph Sync Endpoints
 Domain sync endpoints to synchronize existing .trust domains to Intuition's Knowledge Graph:
+- `GET /api/sync/user/:address` - Get user's domains with sync status (user-facing)
 - `POST /api/sync/scan` - Scan blockchain for all registered domains and check sync status
 - `GET /api/sync/status` - Get sync status summary for all domains
 - `GET /api/sync/pending` - Get unsynced domains with prepared transaction data
@@ -103,12 +104,25 @@ Domain sync endpoints to synchronize existing .trust domains to Intuition's Know
 - `POST /api/sync/fail` - Mark domain sync as failed
 - `GET /api/sync/check/:domain` - Check individual domain sync status
 
+### Atom URI Format (CAIP-10 Account Type)
+Domain atoms are registered using CAIP-10 format to represent them as **account** types in Intuition's Knowledge Graph:
+- **Format**: `CAIP10:eip155:1155:{ownerAddress}`
+- **Example**: `CAIP10:eip155:1155:0xf1016a7fe89eb9d244c3bfb270071b24619e36c6`
+- **Chain ID**: 1155 (Intuition mainnet)
+- **Purpose**: Registers domains as account-type atoms rather than generic things/text
+
+This format:
+- Enables domains to be recognized as blockchain account identities
+- Supports Intuition's CAIP-10 standard for account atoms
+- Allows reputation and staking features for account-type entities
+- Note: Atom URI changes if domain ownership transfers
+
 ### Sync Workflow
-1. Call `POST /api/sync/scan` to scan blockchain and identify unsynced domains
-2. Get pending domains from `GET /api/sync/pending` with ready-to-sign transactions
-3. User signs and submits atom creation transactions to Intuition's EthMultiVault
-4. After transaction confirms, call `POST /api/sync/confirm` with atomId and txHash
-5. Domain is now synced and queryable in the Knowledge Graph
+1. User connects wallet on `/sync` page
+2. System fetches user's domains from blockchain with sync status
+3. For each unsynced domain, user clicks "Sync" to create atom transaction
+4. Transaction creates CAIP-10 atom in Intuition's EthMultiVault
+5. After transaction confirms, domain is synced and queryable in the Knowledge Graph
 
 ## External Dependencies
 - **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
