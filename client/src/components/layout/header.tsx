@@ -72,7 +72,7 @@ export function Header() {
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
-    ...(isAdmin ? [{ name: "Sync", href: "/sync", active: location === "/sync" }] : []),
+    { name: "Sync", href: "/sync", active: location === "/sync" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 
