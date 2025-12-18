@@ -531,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expirationDate: new Date(Number(domainInfo.expirationTime) * 1000).toISOString(),
         pricingTier,
         url: `https://tns.intuition.box/domain/${domainName}`,
-        atomUri: intuitionService.generateDomainAtomUri(domainName, domainInfo.owner)
+        atomUri: intuitionService.generateDomainAtomUri(domainName)
       });
     } catch (error) {
       console.error("Atom metadata error:", error);
@@ -551,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Domain not found" });
       }
       
-      const graph = await intuitionService.getDomainGraph(domainName, domainInfo.owner);
+      const graph = await intuitionService.getDomainGraph(domainName);
       
       res.json(graph);
     } catch (error) {
@@ -572,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Domain not found" });
       }
       
-      const reputation = await intuitionService.getDomainReputation(domainName, domainInfo.owner);
+      const reputation = await intuitionService.getDomainReputation(domainName);
       
       if (!reputation) {
         return res.json({
@@ -870,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fullName = domain.name.endsWith('.trust') ? domain.name : `${domain.name}.trust`;
         const cleanName = domain.name.replace(/\.trust$/, '');
         // Use CAIP-10 format with owner address for account-type atoms
-        const atomUri = intuitionService.generateDomainAtomUri(cleanName, domain.owner);
+        const atomUri = intuitionService.generateDomainAtomUri(cleanName);
         
         // Check if atom exists on-chain
         const atomCheck = await blockchainService.checkAtomExists(atomUri);
@@ -942,7 +942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const fullName = domain.name.endsWith('.trust') ? domain.name : `${domain.name}.trust`;
         const cleanName = domain.name.replace(/\.trust$/, '');
         // Use CAIP-10 format with owner address for account-type atoms
-        const atomUri = intuitionService.generateDomainAtomUri(cleanName, domain.owner);
+        const atomUri = intuitionService.generateDomainAtomUri(cleanName);
         
         let syncStatus = await storage.getDomainSyncStatus(fullName);
         
@@ -1065,7 +1065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const domainInfo = await blockchainService.getDomainInfo(cleanName);
         if (!domainInfo || !domainInfo.exists) continue;
         
-        const atomUri = intuitionService.generateDomainAtomUri(cleanName, domainInfo.owner);
+        const atomUri = intuitionService.generateDomainAtomUri(cleanName);
         
         const atomCheck = await blockchainService.checkAtomExists(atomUri);
         
@@ -1113,7 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Domain not found on blockchain" });
       }
       
-      const atomUri = intuitionService.generateDomainAtomUri(cleanName, domainInfo.owner);
+      const atomUri = intuitionService.generateDomainAtomUri(cleanName);
       
       // Check if already synced
       const existingStatus = await storage.getDomainSyncStatus(fullName);
@@ -1191,7 +1191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         syncStatus = await storage.createDomainSyncStatus({
           domainName: fullName,
-          atomUri: intuitionService.generateDomainAtomUri(cleanName, ownerAddress),
+          atomUri: intuitionService.generateDomainAtomUri(cleanName),
           syncStatus: 'synced',
           atomId: atomId.toString(),
           txHash
@@ -1240,7 +1240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         syncStatus = await storage.createDomainSyncStatus({
           domainName: fullName,
-          atomUri: intuitionService.generateDomainAtomUri(cleanName, ownerAddress),
+          atomUri: intuitionService.generateDomainAtomUri(cleanName),
           syncStatus: 'failed',
           errorMessage
         });
@@ -1275,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Domain not found on blockchain" });
       }
       
-      const atomUri = intuitionService.generateDomainAtomUri(cleanName, domainInfo.owner);
+      const atomUri = intuitionService.generateDomainAtomUri(cleanName);
       
       const atomCheck = await blockchainService.checkAtomExists(atomUri);
       
