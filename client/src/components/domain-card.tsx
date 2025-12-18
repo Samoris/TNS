@@ -754,24 +754,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                 if (result.successful && result.successful.length > 0) {
                                   const uploadURL = result.successful[0].uploadURL;
                                   if (uploadURL) {
-                                    try {
-                                      const response = await fetch(`/api/domains/${domain.name}/image`, {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ imageURL: uploadURL, owner: walletAddress })
-                                      });
-                                      const data = await response.json();
-                                      if (data.success && data.imageURL) {
-                                        setAvatarMutation.mutate(data.imageURL);
-                                      }
-                                    } catch (error) {
-                                      console.error("Failed to update domain image:", error);
-                                      toast({
-                                        title: "Failed to set image",
-                                        description: "Image uploaded but failed to update domain",
-                                        variant: "destructive",
-                                      });
-                                    }
+                                    const url = new URL(uploadURL);
+                                    const objectPath = `/objects${url.pathname.split('/.private')[1] || url.pathname}`;
+                                    setAvatarMutation.mutate(objectPath);
                                   }
                                 }
                               }}
