@@ -181,7 +181,14 @@ export class IntuitionService {
 
   generateDomainAtomUri(domainName: string): string {
     const cleanName = domainName.replace('.trust', '');
+    // Simple domain format for consistent lookups
     return `${cleanName}.trust`;
+  }
+  
+  generateAccountAtomUri(ownerAddress: string): string {
+    // Standard CAIP-10 format for blockchain accounts
+    // Chain ID 1155 = Intuition mainnet
+    return `CAIP10:eip155:1155:${ownerAddress}`;
   }
 
   generateAgentAtomUri(domainName: string): string {
