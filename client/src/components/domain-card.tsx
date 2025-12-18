@@ -25,6 +25,7 @@ import {
   Copy,
   Check,
   Flame,
+  ImageIcon,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -54,9 +55,11 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   const [isAddingResolverAddress, setIsAddingResolverAddress] = useState(false);
   const [isAddingTextRecord, setIsAddingTextRecord] = useState(false);
   const [isAddingContentHash, setIsAddingContentHash] = useState(false);
+  const [isAddingAvatar, setIsAddingAvatar] = useState(false);
   const [newResolverAddress, setNewResolverAddress] = useState("");
   const [newTextRecord, setNewTextRecord] = useState({ key: "email", value: "" });
   const [newContentHash, setNewContentHash] = useState("");
+  const [newAvatarUrl, setNewAvatarUrl] = useState("");
   const [resolverData, setResolverData] = useState<{
     ethAddress: string;
     contentHash: string;
@@ -272,6 +275,53 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       });
     },
   });
+
+  const setAvatarMutation = useMutation({
+    mutationFn: async (avatarUrl: string) => {
+      const txHash = await web3Service.setText(
+        TNS_RESOLVER_ADDRESS,
+        TNS_RESOLVER_ABI,
+        domain.name,
+        "avatar",
+        avatarUrl
+      );
+      return txHash;
+    },
+    onSuccess: async (txHash) => {
+      setIsAddingAvatar(false);
+      setNewAvatarUrl("");
+      await loadResolverData();
+      toast({
+        title: "Avatar set successfully!",
+        description: `Domain avatar has been updated. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to set avatar",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Get current avatar from resolver data
+  const getCurrentAvatar = (): string | null => {
+    if (!resolverData || !resolverData.textKeys) return null;
+    const avatarIndex = resolverData.textKeys.indexOf("avatar");
+    if (avatarIndex === -1) return null;
+    const avatarValue = resolverData.textValues[avatarIndex];
+    return avatarValue && avatarValue.trim() !== "" ? avatarValue : null;
+  };
+
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   // Load resolver data
   const loadResolverData = async () => {
@@ -672,6 +722,117 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                     onClick={() => {
                                       setIsAddingResolverAddress(false);
                                       setNewResolverAddress("");
+                                    }}
+                                    size="sm"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        </div>
+
+                        {/* Avatar/Image */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium">Domain Image</Label>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsAddingAvatar(true)}
+                              data-testid="set-avatar-button"
+                            >
+                              {getCurrentAvatar() ? (
+                                <><Edit3 className="h-3 w-3 mr-1" /> Update</>
+                              ) : (
+                                <><Plus className="h-3 w-3 mr-1" /> Add Image</>
+                              )}
+                            </Button>
+                          </div>
+
+                          {getCurrentAvatar() ? (
+                            <div className="flex items-start gap-3">
+                              <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                                <img 
+                                  src={getCurrentAvatar()!} 
+                                  alt={`${domain.name} avatar`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded block font-mono break-all">
+                                  {getCurrentAvatar()}
+                                </code>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(getCurrentAvatar()!, "Avatar URL")}
+                              >
+                                {copiedField === "Avatar URL" ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="text-center">
+                                <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-xs text-gray-500">No image set</p>
+                              </div>
+                            </div>
+                          )}
+
+                          {isAddingAvatar && (
+                            <Card className="mt-2 p-3 bg-gray-50 dark:bg-gray-800">
+                              <div className="space-y-2">
+                                <Label htmlFor="avatarUrl" className="text-xs">Image URL</Label>
+                                <Input
+                                  id="avatarUrl"
+                                  placeholder="https://example.com/image.png"
+                                  value={newAvatarUrl}
+                                  onChange={(e) => setNewAvatarUrl(e.target.value)}
+                                  data-testid="avatar-url-input"
+                                  className={newAvatarUrl && !isValidUrl(newAvatarUrl) ? "border-red-500" : ""}
+                                />
+                                {newAvatarUrl && !isValidUrl(newAvatarUrl) && (
+                                  <p className="text-xs text-red-500">Invalid URL format</p>
+                                )}
+                                {newAvatarUrl && isValidUrl(newAvatarUrl) && (
+                                  <div className="mt-2">
+                                    <p className="text-xs text-gray-500 mb-1">Preview:</p>
+                                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={newAvatarUrl} 
+                                        alt="Preview"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="flex space-x-2">
+                                  <Button
+                                    onClick={() => setAvatarMutation.mutate(newAvatarUrl)}
+                                    disabled={!newAvatarUrl || !isValidUrl(newAvatarUrl) || setAvatarMutation.isPending}
+                                    size="sm"
+                                    data-testid="confirm-avatar-button"
+                                  >
+                                    {setAvatarMutation.isPending ? "Setting..." : "Set Image"}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setIsAddingAvatar(false);
+                                      setNewAvatarUrl("");
                                     }}
                                     size="sm"
                                   >
