@@ -42,3 +42,6 @@ waitForPort = 5000
 
 [userenv.shared]
 VITE_ADMIN_WALLET_ADDRESS = "0xf1016a7fe89eb9d244c3bfb270071b24619e36c6"
+
+[agent]
+integrations = ["javascript_object_storage:1.0.0"]

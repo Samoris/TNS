@@ -26,6 +26,7 @@ import {
   Check,
   Flame,
   ImageIcon,
+  Upload,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,8 @@ import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
 import type { DomainWithRecords } from "@shared/schema";
 import { web3Service } from "@/lib/web3";
 import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, TNS_RESOLVER_ADDRESS, TNS_RESOLVER_ABI } from "@/lib/contracts";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 interface DomainCardProps {
   domain: DomainWithRecords;
@@ -55,11 +58,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   const [isAddingResolverAddress, setIsAddingResolverAddress] = useState(false);
   const [isAddingTextRecord, setIsAddingTextRecord] = useState(false);
   const [isAddingContentHash, setIsAddingContentHash] = useState(false);
-  const [isAddingAvatar, setIsAddingAvatar] = useState(false);
   const [newResolverAddress, setNewResolverAddress] = useState("");
   const [newTextRecord, setNewTextRecord] = useState({ key: "email", value: "" });
   const [newContentHash, setNewContentHash] = useState("");
-  const [newAvatarUrl, setNewAvatarUrl] = useState("");
   const [resolverData, setResolverData] = useState<{
     ethAddress: string;
     contentHash: string;
@@ -737,18 +738,52 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <Label className="text-sm font-medium">Domain Image</Label>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setIsAddingAvatar(true)}
-                              data-testid="set-avatar-button"
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              maxFileSize={5242880}
+                              allowedFileTypes={['image/*']}
+                              onGetUploadParameters={async () => {
+                                const response = await fetch('/api/objects/upload', { method: 'POST' });
+                                const data = await response.json();
+                                return {
+                                  method: 'PUT' as const,
+                                  url: data.uploadURL,
+                                };
+                              }}
+                              onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                                if (result.successful && result.successful.length > 0) {
+                                  const uploadURL = result.successful[0].uploadURL;
+                                  if (uploadURL) {
+                                    try {
+                                      const response = await fetch(`/api/domains/${domain.name}/image`, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ imageURL: uploadURL, owner: walletAddress })
+                                      });
+                                      const data = await response.json();
+                                      if (data.success && data.imageURL) {
+                                        setAvatarMutation.mutate(data.imageURL);
+                                      }
+                                    } catch (error) {
+                                      console.error("Failed to update domain image:", error);
+                                      toast({
+                                        title: "Failed to set image",
+                                        description: "Image uploaded but failed to update domain",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }
+                                }
+                              }}
+                              buttonVariant="outline"
+                              buttonSize="sm"
                             >
                               {getCurrentAvatar() ? (
                                 <><Edit3 className="h-3 w-3 mr-1" /> Update</>
                               ) : (
-                                <><Plus className="h-3 w-3 mr-1" /> Add Image</>
+                                <><Upload className="h-3 w-3 mr-1" /> Upload Image</>
                               )}
-                            </Button>
+                            </ObjectUploader>
                           </div>
 
                           {getCurrentAvatar() ? (
@@ -785,62 +820,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               <div className="text-center">
                                 <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                                 <p className="text-xs text-gray-500">No image set</p>
+                                <p className="text-xs text-gray-400 mt-1">Click "Upload Image" to add</p>
                               </div>
                             </div>
-                          )}
-
-                          {isAddingAvatar && (
-                            <Card className="mt-2 p-3 bg-gray-50 dark:bg-gray-800">
-                              <div className="space-y-2">
-                                <Label htmlFor="avatarUrl" className="text-xs">Image URL</Label>
-                                <Input
-                                  id="avatarUrl"
-                                  placeholder="https://example.com/image.png"
-                                  value={newAvatarUrl}
-                                  onChange={(e) => setNewAvatarUrl(e.target.value)}
-                                  data-testid="avatar-url-input"
-                                  className={newAvatarUrl && !isValidUrl(newAvatarUrl) ? "border-red-500" : ""}
-                                />
-                                {newAvatarUrl && !isValidUrl(newAvatarUrl) && (
-                                  <p className="text-xs text-red-500">Invalid URL format</p>
-                                )}
-                                {newAvatarUrl && isValidUrl(newAvatarUrl) && (
-                                  <div className="mt-2">
-                                    <p className="text-xs text-gray-500 mb-1">Preview:</p>
-                                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                                      <img 
-                                        src={newAvatarUrl} 
-                                        alt="Preview"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                                <div className="flex space-x-2">
-                                  <Button
-                                    onClick={() => setAvatarMutation.mutate(newAvatarUrl)}
-                                    disabled={!newAvatarUrl || !isValidUrl(newAvatarUrl) || setAvatarMutation.isPending}
-                                    size="sm"
-                                    data-testid="confirm-avatar-button"
-                                  >
-                                    {setAvatarMutation.isPending ? "Setting..." : "Set Image"}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                      setIsAddingAvatar(false);
-                                      setNewAvatarUrl("");
-                                    }}
-                                    size="sm"
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            </Card>
                           )}
                         </div>
 

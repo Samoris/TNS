@@ -12,6 +12,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { createHash } from "crypto";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -1292,6 +1293,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Sync check error:", error);
       res.status(500).json({ error: "Failed to check sync status" });
+    }
+  });
+
+  // ============================================
+  // OBJECT STORAGE ENDPOINTS
+  // ============================================
+
+  // Get presigned URL for uploading domain images
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Upload URL error:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Serve uploaded objects (domain images)
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Object fetch error:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  // Update domain image after upload
+  app.put("/api/domains/:name/image", async (req, res) => {
+    try {
+      const { name } = req.params;
+      const { imageURL, owner } = req.body;
+      
+      if (!imageURL) {
+        return res.status(400).json({ error: "imageURL is required" });
+      }
+      
+      const domain = await storage.getDomainByName(name);
+      if (!domain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      if (domain.owner.toLowerCase() !== owner?.toLowerCase()) {
+        return res.status(403).json({ error: "Not domain owner" });
+      }
+      
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(imageURL);
+      
+      res.json({
+        success: true,
+        objectPath,
+        imageURL: objectPath.startsWith('/objects/') ? objectPath : imageURL
+      });
+    } catch (error) {
+      console.error("Domain image update error:", error);
+      res.status(500).json({ error: "Failed to update domain image" });
     }
   });
 

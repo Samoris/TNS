@@ -30,7 +30,8 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 - **Domain Registration**: Utilizes a commit-reveal scheme to prevent front-running.
 - **Payment Forwarding**: Allows direct TRUST token transfers to `.trust` domain names on-chain, resolving to the appropriate address via the TNSResolver.
 - **Reverse Resolution**: Enables users to set a primary domain that is displayed across the platform instead of their wallet address.
-- **Domain Management**: Owners can set resolver records (ETH address, IPFS hash, text records) and manage primary domain status.
+- **Domain Management**: Owners can set resolver records (ETH address, IPFS hash, text records), upload domain images directly from their device, and manage primary domain status.
+- **Domain Image Upload**: Users can upload images directly from their device using Replit Object Storage. Images are stored securely and linked to domains via the resolver's avatar text record.
 - **Domain Renewal**: Users can extend domain registrations with real-time cost calculation and grace period handling.
 - **NFT Metadata**: ERC-721 compliant metadata system for domain NFTs with:
   - Dynamic SVG image generation with tier-based color gradients (Gold for 3-char, Blue for 4-char, Purple for 5+ char)
