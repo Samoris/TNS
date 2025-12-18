@@ -181,7 +181,7 @@ export class IntuitionService {
 
   generateDomainAtomUri(domainName: string): string {
     const cleanName = domainName.replace('.trust', '');
-    return `tns:domain:${cleanName}.trust`;
+    return `${cleanName}.trust`;
   }
 
   generateAgentAtomUri(domainName: string): string {
