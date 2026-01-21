@@ -4,6 +4,9 @@ pragma solidity ^0.8.17;
 // ============================================
 // DEPLOY ORDER: 1 of 7
 // Constructor: No parameters
+// 
+// IMPORTANT: In Remix "Deploy" dropdown, select "TNSRegistry" 
+// (NOT "ITNS" - that's just the interface)
 // ============================================
 
 interface ITNS {
