@@ -239,7 +239,8 @@ export default function RegisterPage() {
           domainName,
           durationSeconds,
           commitmentData.secret,
-          costWei
+          costWei,
+          address // Pass the same address used in commitment
         );
         
         console.log("Transaction successful:", txHash);
@@ -691,7 +692,7 @@ export default function RegisterPage() {
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Registration TX
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => window.open(`https://explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, "_blank")}>
+                    <Button variant="outline" size="sm" onClick={() => window.open(`https://explorer.intuition.systems/address/${TNS_BASE_REGISTRAR_ADDRESS}`, "_blank")}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Contract
                     </Button>

@@ -1774,7 +1774,8 @@ export class Web3Service {
     domainName: string,
     durationSeconds: number,
     secret: string,
-    cost: bigint
+    cost: bigint,
+    ownerAddress?: string
   ): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -1785,13 +1786,28 @@ export class Web3Service {
       throw new Error("Wallet not connected or wrong network");
     }
 
+    // Use provided owner address or fall back to connected wallet
+    const owner = ownerAddress || state.address;
+
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
+      // Compute what the commitment should be to verify it matches
+      const label = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
+      const expectedCommitment = ethers.keccak256(
+        ethers.AbiCoder.defaultAbiCoder().encode(
+          ["bytes32", "address", "bytes32"],
+          [label, owner, secret]
+        )
+      );
+      
       console.log("Registering domain via ENS-forked controller (native TRUST payment):");
       console.log("- Domain:", normalizedDomain);
+      console.log("- Owner:", owner);
       console.log("- Duration:", durationSeconds, "seconds");
       console.log("- Cost:", ethers.formatEther(cost), "TRUST");
+      console.log("- Secret:", secret.substring(0, 10) + "...");
+      console.log("- Expected commitment:", expectedCommitment);
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -1805,7 +1821,7 @@ export class Web3Service {
       // Send native TRUST with the transaction
       const tx = await contract.register(
         normalizedDomain,
-        state.address,
+        owner,
         durationSeconds,
         secret,
         { value: cost, gasLimit: 400000 }
@@ -1873,6 +1889,8 @@ export class Web3Service {
 
       console.log("Generated commitment locally:", commitment);
       console.log("Label hash:", label);
+      console.log("Owner address used:", ownerAddress);
+      console.log("Secret used:", secret);
 
       // Submit the commitment on-chain
       const controllerAbi = [
