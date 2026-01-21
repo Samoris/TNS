@@ -56,6 +56,7 @@ interface CommitmentData {
   commitmentHash: string;
   commitmentTx: string;
   commitmentTime: number;
+  durationSeconds: number;
 }
 
 interface KnowledgeGraphSyncState {
@@ -168,12 +169,18 @@ export default function RegisterPage() {
       const secret = web3Service.generateSecret();
       console.log("Secret generated:", secret.substring(0, 10) + "...");
       
+      // Calculate duration in seconds - MUST match what's used in register
+      const durationSeconds = registrationYears * 365 * 24 * 60 * 60;
+      console.log("Duration for commitment:", durationSeconds, "seconds");
+      
       // Use ENS-style makeCommitmentENS which generates and submits the commitment
+      // IMPORTANT: All parameters must match exactly between commit and register phases
       const result = await web3Service.makeCommitmentENS(
         TNS_CONTROLLER_ADDRESS,
         domainName,
         address,
-        secret
+        secret,
+        durationSeconds  // Duration must be included in commitment hash
       );
       
       console.log("Commitment transaction:", result.txHash);
@@ -182,7 +189,8 @@ export default function RegisterPage() {
         secret,
         commitmentHash: result.commitment,
         commitmentTx: result.txHash,
-        commitmentTime: Date.now()
+        commitmentTime: Date.now(),
+        durationSeconds  // Store duration to ensure it matches during registration
       };
     },
     onSuccess: (data) => {
@@ -224,14 +232,14 @@ export default function RegisterPage() {
         console.log("Starting blockchain registration for:", domainName);
         console.log("Using ENS-style controller:", TNS_CONTROLLER_ADDRESS);
         
-        // Calculate duration in seconds (365 days * registrationYears)
-        const durationSeconds = registrationYears * 365 * 24 * 60 * 60;
+        // IMPORTANT: Use the same duration from commitment phase to ensure hash matches
+        const durationSeconds = commitmentData.durationSeconds || (registrationYears * 365 * 24 * 60 * 60);
         
         // Calculate cost in wei
         const costWei = ethers.parseEther(totalCost.toString());
         
         console.log("Calling ENS-style register function with commitment secret");
-        console.log("Duration:", durationSeconds, "seconds");
+        console.log("Duration:", durationSeconds, "seconds (from commitment)");
         console.log("Cost:", totalCost, "TRUST");
         
         const txHash = await web3Service.registerDomainENS(

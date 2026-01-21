@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { TNS_RESOLVER_ADDRESS } from "./contracts";
 
 export interface NetworkConfig {
   chainId: number;
@@ -1768,6 +1769,9 @@ export class Web3Service {
    * IMPORTANT: TRUST is the native token on Intuition (like ETH on Ethereum)
    * The user sends TRUST directly with the transaction (payable function)
    * No ERC-20 approval is needed.
+   * 
+   * The TNSRegistrarController uses the full ENS signature with 8 parameters:
+   * register(name, owner, duration, secret, resolver, data, reverseRecord, ownerControlledFuses)
    */
   public async registerDomainENS(
     controllerAddress: string,
@@ -1775,7 +1779,8 @@ export class Web3Service {
     durationSeconds: number,
     secret: string,
     cost: bigint,
-    ownerAddress?: string
+    ownerAddress?: string,
+    resolverAddress?: string
   ): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -1786,68 +1791,69 @@ export class Web3Service {
       throw new Error("Wallet not connected or wrong network");
     }
 
-    // Use provided owner address or fall back to connected wallet
     const owner = ownerAddress || state.address;
+    const resolver = resolverAddress || TNS_RESOLVER_ADDRESS;
 
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
-      // Compute what the commitment should be to verify it matches
+      // Full ENS-style commitment parameters
       const label = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
+      const data: string[] = [];
+      const reverseRecord = true;
+      const ownerControlledFuses = 0;
+      
+      // Compute commitment hash matching contract's makeCommitment function
       const expectedCommitment = ethers.keccak256(
         ethers.AbiCoder.defaultAbiCoder().encode(
-          ["bytes32", "address", "bytes32"],
-          [label, owner, secret]
+          ["bytes32", "address", "uint256", "bytes32", "address", "bytes[]", "bool", "uint16"],
+          [label, owner, durationSeconds, secret, resolver, data, reverseRecord, ownerControlledFuses]
         )
       );
       
-      console.log("Registering domain via ENS-forked controller (native TRUST payment):");
+      console.log("Registering domain via TNSRegistrarController (full ENS signature):");
       console.log("- Domain:", normalizedDomain);
       console.log("- Owner:", owner);
       console.log("- Duration:", durationSeconds, "seconds");
-      console.log("- Cost:", ethers.formatEther(cost), "TRUST");
       console.log("- Secret:", secret.substring(0, 10) + "...");
+      console.log("- Resolver:", resolver);
+      console.log("- ReverseRecord:", reverseRecord);
+      console.log("- Cost:", ethers.formatEther(cost), "TRUST");
       console.log("- Expected commitment:", expectedCommitment);
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
       // Verify the commitment is stored and ready
-      const verifyAbi = [
-        "function commitments(bytes32) view returns (uint256)",
-        "function isCommitmentReady(bytes32) view returns (bool)",
-        "function getCommitmentAge(bytes32) view returns (uint256)"
-      ];
-      const verifyContract = new ethers.Contract(controllerAddress, verifyAbi, provider);
-      
       try {
+        const verifyAbi = ["function commitments(bytes32) view returns (uint256)"];
+        const verifyContract = new ethers.Contract(controllerAddress, verifyAbi, provider);
         const commitmentTimestamp = await verifyContract.commitments(expectedCommitment);
-        const isReady = await verifyContract.isCommitmentReady(expectedCommitment);
-        const age = await verifyContract.getCommitmentAge(expectedCommitment);
         
         console.log("Commitment verification:");
         console.log("- Stored timestamp:", commitmentTimestamp.toString());
-        console.log("- Is ready:", isReady);
-        console.log("- Age (seconds):", age.toString());
         
         if (commitmentTimestamp.toString() === "0") {
           throw new Error("Commitment not found in contract! The commitment hash doesn't match what's stored.");
         }
         
-        if (!isReady) {
-          throw new Error(`Commitment not ready yet. Age: ${age.toString()} seconds. Need to wait at least 60 seconds.`);
+        const currentBlock = await provider.getBlock('latest');
+        const age = currentBlock!.timestamp - Number(commitmentTimestamp);
+        console.log("- Age (seconds):", age);
+        
+        if (age < 60) {
+          throw new Error(`Commitment not ready yet. Age: ${age} seconds. Need to wait at least 60 seconds.`);
         }
       } catch (verifyError: any) {
-        console.error("Commitment verification failed:", verifyError);
+        console.error("Commitment verification error:", verifyError);
         if (verifyError.message.includes("not found") || verifyError.message.includes("not ready")) {
           throw verifyError;
         }
-        // If it's just a contract call error, continue anyway
       }
       
-      // Use the correct ABI - register is payable (sends native TRUST)
+      // Full ENS-style register function
       const controllerAbi = [
-        "function register(string name, address owner, uint256 duration, bytes32 secret) payable"
+        "function register(string name, address owner, uint256 duration, bytes32 secret, address resolver, bytes[] data, bool reverseRecord, uint16 ownerControlledFuses) payable"
       ];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
 
@@ -1857,7 +1863,11 @@ export class Web3Service {
         owner,
         durationSeconds,
         secret,
-        { value: cost, gasLimit: 400000 }
+        resolver,
+        data,
+        reverseRecord,
+        ownerControlledFuses,
+        { value: cost, gasLimit: 500000 }
       );
 
       console.log("Registration transaction sent:", tx.hash);
@@ -1874,11 +1884,11 @@ export class Web3Service {
       
       if (error.message?.includes('Commitment not found')) {
         throw new Error("Commitment not found - please make commitment first and wait 1 minute");
-      } else if (error.message?.includes('Commitment too new')) {
+      } else if (error.message?.includes('CommitmentTooNew') || error.message?.includes('not ready')) {
         throw new Error("Please wait at least 1 minute after making commitment");
-      } else if (error.message?.includes('Commitment expired')) {
+      } else if (error.message?.includes('CommitmentTooOld')) {
         throw new Error("Commitment expired - please make a new commitment");
-      } else if (error.message?.includes('insufficient funds')) {
+      } else if (error.message?.includes('insufficient funds') || error.message?.includes('InsufficientValue')) {
         throw new Error("Insufficient TRUST balance for registration");
       }
       
@@ -1888,12 +1898,19 @@ export class Web3Service {
 
   /**
    * Make commitment for ENS-forked controller (Step 1 of commit-reveal)
+   * 
+   * The TNSRegistrarController uses the full ENS signature with 8 parameters for commitment:
+   * makeCommitment(name, owner, duration, secret, resolver, data, reverseRecord, ownerControlledFuses)
+   * 
+   * These same parameters must be used during registration!
    */
   public async makeCommitmentENS(
     controllerAddress: string,
     domainName: string,
     ownerAddress: string,
-    secret: string
+    secret: string,
+    durationSeconds: number,
+    resolverAddress?: string
   ): Promise<{ commitment: string; txHash: string }> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -1904,31 +1921,39 @@ export class Web3Service {
       throw new Error("Wallet not connected or wrong network");
     }
 
+    const resolver = resolverAddress || TNS_RESOLVER_ADDRESS;
+
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
-      // Compute commitment hash locally (matches contract's makeCommitment function)
-      // commitment = keccak256(abi.encode(keccak256(name), owner, secret))
+      // Full ENS-style commitment parameters (must match register call exactly)
       const label = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
+      const data: string[] = [];
+      const reverseRecord = true;
+      const ownerControlledFuses = 0;
+      
+      // Compute commitment hash matching contract's makeCommitment function
       const commitment = ethers.keccak256(
         ethers.AbiCoder.defaultAbiCoder().encode(
-          ["bytes32", "address", "bytes32"],
-          [label, ownerAddress, secret]
+          ["bytes32", "address", "uint256", "bytes32", "address", "bytes[]", "bool", "uint16"],
+          [label, ownerAddress, durationSeconds, secret, resolver, data, reverseRecord, ownerControlledFuses]
         )
       );
 
-      console.log("Generated commitment locally:", commitment);
-      console.log("Label hash:", label);
-      console.log("Owner address used:", ownerAddress);
-      console.log("Secret used:", secret);
+      console.log("Making commitment for domain (full ENS signature):", normalizedDomain);
+      console.log("- Label hash:", label);
+      console.log("- Owner:", ownerAddress);
+      console.log("- Duration:", durationSeconds, "seconds");
+      console.log("- Resolver:", resolver);
+      console.log("- ReverseRecord:", reverseRecord);
+      console.log("- Commitment hash:", commitment);
+      console.log("- Secret:", secret.substring(0, 10) + "...");
 
       // Submit the commitment on-chain
-      const controllerAbi = [
-        "function commit(bytes32 commitment)"
-      ];
+      const controllerAbi = ["function commit(bytes32 commitment)"];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
       
       const tx = await contract.commit(commitment, { gasLimit: 100000 });
