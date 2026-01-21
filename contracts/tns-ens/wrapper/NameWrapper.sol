@@ -126,7 +126,7 @@ contract NameWrapper is ERC1155, INameWrapper, Ownable {
         uint32 fuses,
         uint64 expiry
     ) external override returns (bytes32 node) {
-        node = setSubnodeOwner(parentNode, label, owner, fuses, expiry);
+        node = this.setSubnodeOwner(parentNode, label, owner, fuses, expiry);
         tns.setResolver(node, resolver);
         return node;
     }

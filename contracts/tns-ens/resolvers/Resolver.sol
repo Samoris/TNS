@@ -39,8 +39,6 @@ contract Resolver is
     event Approved(address owner, bytes32 indexed node, address indexed delegate, bool indexed approved);
     event VersionChanged(bytes32 indexed node, uint64 newVersion);
 
-    error Unauthorised();
-
     constructor(
         TNS _tns,
         address _trustedController,
@@ -165,7 +163,7 @@ contract Resolver is
         owner = newOwner;
     }
 
-    function supportsInterface(bytes4 interfaceID) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceID) public pure override(IERC165, ERC165) returns (bool) {
         return
             interfaceID == type(IERC165).interfaceId ||
             interfaceID == type(IAddrResolver).interfaceId ||

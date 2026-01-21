@@ -189,7 +189,7 @@ contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
         tns.setSubnodeOwner(baseNode, bytes32(id), owner);
     }
 
-    function _exists(uint256 tokenId) internal view returns (bool) {
+    function _exists(uint256 tokenId) internal view override returns (bool) {
         return _ownerOf(tokenId) != address(0);
     }
 
