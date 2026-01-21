@@ -14,7 +14,8 @@ import {
   Link as LinkIcon,
   FileText,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database
 } from "lucide-react";
 
 export default function DocsPage() {
@@ -160,6 +161,16 @@ export default function DocsPage() {
           ]
         },
         {
+          heading: "Migrated Domains",
+          text: "Domains migrated from the legacy system may not have resolver records set. The payment system handles this automatically:",
+          items: [
+            "First checks if the domain has a resolver address set",
+            "If no resolver address, falls back to the domain owner's address from the BaseRegistrar",
+            "Uses direct transfer instead of PaymentForwarder contract for migrated domains",
+            "Both methods are secure and fully supported"
+          ]
+        },
+        {
           heading: "Security",
           items: [
             "Domain existence and expiration are validated before transfer",
@@ -238,6 +249,46 @@ export default function DocsPage() {
             "Scroll to 'Resolver Settings' section",
             "Use the forms to add or update records",
             "Each update requires a blockchain transaction"
+          ]
+        }
+      ]
+    },
+    {
+      id: "knowledge-graph",
+      title: "Knowledge Graph Sync",
+      icon: Database,
+      content: [
+        {
+          heading: "What is Knowledge Graph Sync?",
+          text: "TNS integrates with Intuition's decentralized Knowledge Graph. When you update domain records, they can be synced to the Knowledge Graph as atoms and triples, making your domain identity queryable across the Intuition ecosystem."
+        },
+        {
+          heading: "Supported Records",
+          items: [
+            "Email address",
+            "Twitter/X handle",
+            "Discord username",
+            "ETH address",
+            "Avatar image",
+            "Content hash (IPFS)"
+          ]
+        },
+        {
+          heading: "Two-Step Sync Process",
+          text: "When you update a domain record, the Knowledge Graph sync follows a two-step process:",
+          items: [
+            "Step 1: Create atoms for your domain, the record type (predicate), and the record value",
+            "Step 2: Create a triple linking them together (domain → predicate → value)",
+            "Each step requires a blockchain transaction on Intuition's EthMultiVault"
+          ]
+        },
+        {
+          heading: "Benefits",
+          items: [
+            "Your domain identity becomes part of Intuition's decentralized knowledge base",
+            "Records are queryable by AI agents and other applications",
+            "Enables reputation and staking features for your domain",
+            "Creates verifiable on-chain relationships between your domain and its metadata"
           ]
         }
       ]
