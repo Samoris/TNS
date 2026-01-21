@@ -30,7 +30,7 @@ import { DomainCard } from "@/components/domain-card";
 import { useWallet } from "@/hooks/use-wallet";
 import { Link } from "wouter";
 import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { TNS_BASE_REGISTRAR_ADDRESS, LEGACY_REGISTRY_ADDRESS, LEGACY_REGISTRY_ABI } from "@/lib/contracts";
 import type { DomainWithRecords } from "@shared/schema";
 
 type ViewMode = "grid" | "list";
@@ -45,7 +45,8 @@ export default function ManagePage() {
 
   const { isConnected, address, isCorrectNetwork } = useWallet();
 
-  // Fetch user's domains from blockchain contract
+  // Fetch user's domains - uses backend API which has domain data from both legacy and ENS migrations
+  // The backend stores domain data during registration and migration, so it has all domain names mapped
   const { 
     data: blockchainDomains, 
     isLoading: isLoadingDomains, 
@@ -54,8 +55,36 @@ export default function ManagePage() {
     queryKey: ["blockchain-domains", address],
     queryFn: async () => {
       if (!address) return [];
-      console.log("Fetching domains from blockchain for:", address);
-      return await web3Service.getOwnerDomains(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, address);
+      console.log("Fetching domains for:", address);
+      
+      // Primary: Use backend API which stores domain data from registrations
+      // This includes both ENS-style registrations and migrated legacy domains
+      try {
+        const response = await fetch(`/api/domains/owner/${address}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.domains && data.domains.length > 0) {
+            console.log("Got domains from backend API:", data.domains.length);
+            return data.domains;
+          }
+        }
+      } catch (e) {
+        console.log("Backend API fallback to ENS registrar");
+      }
+      
+      // Fallback: Query ENS BaseRegistrar for on-chain verification
+      try {
+        const ensDomains = await web3Service.getOwnerDomainsENS(TNS_BASE_REGISTRAR_ADDRESS, address);
+        if (ensDomains.length > 0) {
+          console.log("Got domains from ENS registrar:", ensDomains.length);
+          return ensDomains;
+        }
+      } catch (e) {
+        console.log("ENS registrar fallback to legacy");
+      }
+      
+      // Last resort: Legacy contract (for migration verification)
+      return await web3Service.getOwnerDomains(LEGACY_REGISTRY_ADDRESS, LEGACY_REGISTRY_ABI, address);
     },
     enabled: isConnected && isCorrectNetwork && !!address,
     refetchOnWindowFocus: false,
@@ -141,7 +170,7 @@ export default function ManagePage() {
     const now = new Date();
     const counts = { total: domains.length, active: 0, expiring: 0, expired: 0 };
 
-    domains.forEach((domain: DomainWithRecords) => {
+    domains.forEach((domain) => {
       const expiryDate = new Date(domain.expirationDate);
       const isExpired = expiryDate < now;
       const isExpiringSoon = expiryDate < new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -398,7 +427,7 @@ export default function ManagePage() {
                 : "space-y-4"
             }
           >
-            {filteredAndSortedDomains.map((domain: DomainWithRecords, index: number) => (
+            {filteredAndSortedDomains.map((domain, index) => (
               <DomainCard
                 key={domain.tokenId || index}
                 domain={domain}

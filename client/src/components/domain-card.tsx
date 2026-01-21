@@ -33,7 +33,16 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
 import type { DomainWithRecords } from "@shared/schema";
 import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, TNS_RESOLVER_ADDRESS, TNS_RESOLVER_ABI } from "@/lib/contracts";
+import { 
+  TNS_RESOLVER_ADDRESS, 
+  TNS_RESOLVER_ABI,
+  TNS_REVERSE_REGISTRAR_ADDRESS,
+  TNS_CONTROLLER_ADDRESS,
+  TNS_BASE_REGISTRAR_ADDRESS,
+  LEGACY_REGISTRY_ADDRESS,
+  LEGACY_REGISTRY_ABI
+} from "@/lib/contracts";
+import { ethers } from "ethers";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 
@@ -72,6 +81,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   // Extend domain states
   const [isExtending, setIsExtending] = useState(false);
   const [extendDuration, setExtendDuration] = useState(1);
+  
+  // Avatar states
+  const [isAddingAvatar, setIsAddingAvatar] = useState(false);
+  const [newAvatarUrl, setNewAvatarUrl] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -111,8 +124,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   const burnDomainMutation = useMutation({
     mutationFn: async () => {
       const txHash = await web3Service.burnExpiredDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
+        LEGACY_REGISTRY_ADDRESS,
+        LEGACY_REGISTRY_ABI,
         domain.name
       );
       return txHash;
@@ -137,10 +150,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const setPrimaryMutation = useMutation({
     mutationFn: async () => {
-      // Call blockchain transaction to set primary domain
-      const txHash = await web3Service.setPrimaryDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
+      // Use ENS-style reverse registrar to set primary name
+      const txHash = await web3Service.setPrimaryNameENS(
+        TNS_REVERSE_REGISTRAR_ADDRESS,
         domain.name
       );
       return txHash;
@@ -164,11 +176,19 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const extendDomainMutation = useMutation({
     mutationFn: async (years: number) => {
-      const txHash = await web3Service.renewDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
+      // Calculate duration in seconds
+      const durationSeconds = years * 365 * 24 * 60 * 60;
+      
+      // Calculate cost (use pricing)
+      const pricePerYear = calculateDomainPrice(domain.name.replace('.trust', ''));
+      const totalCost = parseFloat(pricePerYear.pricePerYear) * years;
+      const costWei = ethers.parseEther(totalCost.toString());
+      
+      const txHash = await web3Service.renewDomainENS(
+        TNS_CONTROLLER_ADDRESS,
         domain.name,
-        years
+        durationSeconds,
+        costWei
       );
       return txHash;
     },

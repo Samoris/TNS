@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { TNS_RESOLVER_ADDRESS } from "@/lib/contracts";
 import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_1760633880162.jpeg";
 
 const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
@@ -49,20 +49,24 @@ export function Header() {
     localStorage.setItem("theme", newTheme);
   };
 
-  // Query for primary domain (reverse resolution)
+  // Query for primary domain (reverse resolution using ENS-style)
   const { data: primaryDomain } = useQuery({
     queryKey: ['/api/primary-domain', address],
     queryFn: async () => {
       if (!address) return "";
-      const domain = await web3Service.getPrimaryDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        address
-      );
-      return domain;
+      try {
+        const domain = await web3Service.getPrimaryDomainENS(
+          TNS_RESOLVER_ADDRESS,
+          address
+        );
+        return domain;
+      } catch {
+        return "";
+      }
     },
     enabled: isConnected && !!address,
-    refetchInterval: 5000,
+    refetchInterval: 30000, // Check less frequently to reduce errors
+    retry: false, // Don't retry on failure
   });
 
   const isAdmin = address?.toLowerCase() === ADMIN_WALLET_ADDRESS;

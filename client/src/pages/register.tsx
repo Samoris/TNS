@@ -29,9 +29,10 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { TNS_CONTROLLER_ADDRESS, TNS_BASE_REGISTRAR_ADDRESS } from "@/lib/contracts";
 import { web3Service } from "@/lib/web3";
 import { INTUITION_TESTNET } from "@/lib/web3";
+import { ethers } from "ethers";
 
 interface DomainSearchResult {
   name: string;
@@ -155,34 +156,32 @@ export default function RegisterPage() {
     },
   ];
 
-  // Commitment mutation (Step 1)
+  // Commitment mutation (Step 1) - Using ENS-style controller
   const commitmentMutation = useMutation({
     mutationFn: async () => {
       if (!selectedDomain || !address) throw new Error("Missing required data");
       
       const domainName = selectedDomain.replace('.trust', '');
-      console.log("Making commitment for domain:", domainName);
+      console.log("Making commitment for domain (ENS-style):", domainName);
       
-      // Generate secret and commitment hash
+      // Generate secret
       const secret = web3Service.generateSecret();
-      const commitmentHash = web3Service.createCommitmentHash(domainName, address, secret);
-      
       console.log("Secret generated:", secret.substring(0, 10) + "...");
-      console.log("Commitment hash:", commitmentHash);
       
-      // Send commitment to blockchain
-      const txHash = await web3Service.makeCommitment(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        commitmentHash
+      // Use ENS-style makeCommitmentENS which generates and submits the commitment
+      const result = await web3Service.makeCommitmentENS(
+        TNS_CONTROLLER_ADDRESS,
+        domainName,
+        address,
+        secret
       );
       
-      console.log("Commitment transaction:", txHash);
+      console.log("Commitment transaction:", result.txHash);
       
       return {
         secret,
-        commitmentHash,
-        commitmentTx: txHash,
+        commitmentHash: result.commitment,
+        commitmentTx: result.txHash,
         commitmentTime: Date.now()
       };
     },
@@ -221,20 +220,26 @@ export default function RegisterPage() {
       console.log("Total cost:", totalCost, "TRUST");
       
       try {
-        // Real blockchain transaction with ERC721 NFT minting
+        // Real blockchain transaction with ERC721 NFT minting (ENS-style)
         console.log("Starting blockchain registration for:", domainName);
-        console.log("Using ERC721 NFT contract:", TNS_REGISTRY_ADDRESS);
+        console.log("Using ENS-style controller:", TNS_CONTROLLER_ADDRESS);
         
-        // Real blockchain registration using ethers.js with secret
-        console.log("Calling smart contract register function with commitment secret");
+        // Calculate duration in seconds (365 days * registrationYears)
+        const durationSeconds = registrationYears * 365 * 24 * 60 * 60;
         
-        const txHash = await web3Service.registerDomain(
-          TNS_REGISTRY_ADDRESS,
-          TNS_REGISTRY_ABI,
+        // Calculate cost in wei
+        const costWei = ethers.parseEther(totalCost.toString());
+        
+        console.log("Calling ENS-style register function with commitment secret");
+        console.log("Duration:", durationSeconds, "seconds");
+        console.log("Cost:", totalCost, "TRUST");
+        
+        const txHash = await web3Service.registerDomainENS(
+          TNS_CONTROLLER_ADDRESS,
           domainName,
-          registrationYears,
-          totalCost.toString(),
-          commitmentData.secret // Pass the secret from commitment
+          durationSeconds,
+          commitmentData.secret,
+          costWei
         );
         
         console.log("Transaction successful:", txHash);
@@ -259,7 +264,7 @@ export default function RegisterPage() {
         return {
           ...result,
           txHash: txHash,
-          contractAddress: TNS_REGISTRY_ADDRESS,
+          contractAddress: TNS_BASE_REGISTRAR_ADDRESS,
           realTransaction: true,
           isNFT: true
         };
