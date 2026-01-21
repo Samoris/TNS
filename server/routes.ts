@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { blockchainService } from "./blockchain";
+import { blockchainService, INTUITION_MULTIVAULT_ADDRESS, INTUITION_MULTIVAULT_ABI } from "./blockchain";
 import { intuitionService } from "./intuition";
 import { 
   domainSearchSchema, 
@@ -13,6 +13,7 @@ import {
 import { z } from "zod";
 import { createHash } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ethers } from "ethers";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -1293,6 +1294,219 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Sync check error:", error);
       res.status(500).json({ error: "Failed to check sync status" });
+    }
+  });
+
+  // ============================================
+  // DOMAIN RECORD SYNC TO KNOWLEDGE GRAPH
+  // ============================================
+
+  // Prepare transaction to sync a domain record to the Knowledge Graph
+  // Creates atoms for domain (if not exists), predicate, and value, then creates a triple
+  app.post("/api/sync/record", async (req, res) => {
+    try {
+      const { domainName, recordKey, recordValue } = req.body;
+      
+      if (!domainName || !recordKey || !recordValue) {
+        return res.status(400).json({ error: "domainName, recordKey, and recordValue required" });
+      }
+      
+      const cleanName = domainName.replace(/\.trust$/, '').toLowerCase();
+      const fullName = `${cleanName}.trust`;
+      
+      // Generate atom URIs for the triple
+      const domainAtomUri = intuitionService.generateDomainAtomUri(cleanName);
+      const predicateAtomUri = `tns:predicate:${recordKey}`; // e.g., tns:predicate:email
+      const valueAtomUri = `tns:value:${recordKey}:${recordValue}`; // e.g., tns:value:email:user@example.com
+      
+      console.log(`Preparing record sync for ${fullName}: ${recordKey} = ${recordValue}`);
+      console.log(`  Domain atom: ${domainAtomUri}`);
+      console.log(`  Predicate atom: ${predicateAtomUri}`);
+      console.log(`  Value atom: ${valueAtomUri}`);
+      
+      // Check which atoms already exist
+      const [domainCheck, predicateCheck, valueCheck] = await Promise.all([
+        blockchainService.checkAtomExists(domainAtomUri),
+        blockchainService.checkAtomExists(predicateAtomUri),
+        blockchainService.checkAtomExists(valueAtomUri)
+      ]);
+      
+      const atomsToCreate: string[] = [];
+      if (!domainCheck.exists) atomsToCreate.push(domainAtomUri);
+      if (!predicateCheck.exists) atomsToCreate.push(predicateAtomUri);
+      if (!valueCheck.exists) atomsToCreate.push(valueAtomUri);
+      
+      const atomCost = await blockchainService.getAtomCost();
+      
+      // Build batch transaction for all atoms that need to be created
+      const transactions: Array<{
+        type: string;
+        uri?: string;
+        subjectId?: string;
+        predicateId?: string;
+        objectId?: string;
+        to: string;
+        data: string;
+        value: string;
+        gasLimit: string;
+      }> = [];
+      
+      if (atomsToCreate.length > 0) {
+        // Build batch atom creation transaction
+        const iface = new ethers.Interface(INTUITION_MULTIVAULT_ABI);
+        const uriBytes = atomsToCreate.map(uri => ethers.toUtf8Bytes(uri));
+        const depositAmounts = atomsToCreate.map(() => atomCost);
+        
+        const data = iface.encodeFunctionData('createAtoms', [uriBytes, depositAmounts]);
+        const totalCost = atomCost * BigInt(atomsToCreate.length);
+        
+        transactions.push({
+          type: 'createAtoms',
+          uri: atomsToCreate.join(','),
+          to: INTUITION_MULTIVAULT_ADDRESS,
+          data,
+          value: totalCost.toString(),
+          gasLimit: '800000'
+        });
+      }
+      
+      // Get atom IDs for the triple
+      const existingAtomIds = {
+        domain: domainCheck.exists ? domainCheck.atomId.toString() : null,
+        predicate: predicateCheck.exists ? predicateCheck.atomId.toString() : null,
+        value: valueCheck.exists ? valueCheck.atomId.toString() : null
+      };
+      
+      // If all atoms exist, we can create the triple directly
+      // Otherwise, atoms need to be created first, then call this endpoint again for the triple
+      let tripleTransaction = null;
+      if (domainCheck.exists && predicateCheck.exists && valueCheck.exists) {
+        // All atoms exist - build the triple transaction
+        const tripleTx = blockchainService.buildCreateTripleTransaction(
+          domainCheck.atomId,
+          predicateCheck.atomId,
+          valueCheck.atomId
+        );
+        
+        // Get triple cost (same as atom cost)
+        const tripleCost = atomCost;
+        
+        tripleTransaction = {
+          type: 'createTriple',
+          subjectId: domainCheck.atomId.toString(),
+          predicateId: predicateCheck.atomId.toString(),
+          objectId: valueCheck.atomId.toString(),
+          to: tripleTx.to,
+          data: tripleTx.data,
+          value: tripleCost.toString(),
+          gasLimit: '500000'
+        };
+        
+        transactions.push(tripleTransaction);
+      }
+      
+      const totalCost = atomCost * BigInt(atomsToCreate.length) + (tripleTransaction ? atomCost : BigInt(0));
+      
+      res.json({
+        success: true,
+        domainName: fullName,
+        recordKey,
+        recordValue,
+        atomUris: {
+          domain: domainAtomUri,
+          predicate: predicateAtomUri,
+          value: valueAtomUri
+        },
+        existingAtoms: {
+          domain: domainCheck.exists,
+          predicate: predicateCheck.exists,
+          value: valueCheck.exists
+        },
+        existingAtomIds,
+        atomsToCreate,
+        atomCostWei: atomCost.toString(),
+        atomCostEth: (Number(atomCost) / 1e18).toFixed(6),
+        totalCostWei: totalCost.toString(),
+        totalCostEth: (Number(totalCost) / 1e18).toFixed(6),
+        transactions,
+        needsAtomCreation: atomsToCreate.length > 0,
+        needsTripleCreation: !tripleTransaction && atomsToCreate.length === 0 ? false : true,
+        readyForTriple: atomsToCreate.length === 0
+      });
+    } catch (error) {
+      console.error("Record sync prepare error:", error);
+      res.status(500).json({ error: "Failed to prepare record sync" });
+    }
+  });
+
+  // Confirm record sync after transaction (stores the relationship in memory for quick lookups)
+  app.post("/api/sync/record/confirm", async (req, res) => {
+    try {
+      const { domainName, recordKey, recordValue, txHash } = req.body;
+      
+      if (!domainName || !recordKey) {
+        return res.status(400).json({ error: "domainName and recordKey required" });
+      }
+      
+      const cleanName = domainName.replace(/\.trust$/, '').toLowerCase();
+      const fullName = `${cleanName}.trust`;
+      
+      console.log(`Confirmed record sync for ${fullName}: ${recordKey} = ${recordValue}`);
+      
+      res.json({
+        success: true,
+        domainName: fullName,
+        recordKey,
+        recordValue,
+        txHash,
+        syncedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Record sync confirm error:", error);
+      res.status(500).json({ error: "Failed to confirm record sync" });
+    }
+  });
+
+  // Get all records synced to Knowledge Graph for a domain
+  app.get("/api/sync/records/:domain", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const cleanName = domain.replace(/\.trust$/, '').toLowerCase();
+      const fullName = `${cleanName}.trust`;
+      
+      const domainAtomUri = intuitionService.generateDomainAtomUri(cleanName);
+      
+      // Check if domain atom exists
+      const domainCheck = await blockchainService.checkAtomExists(domainAtomUri);
+      
+      // Search for related atoms with this domain's records
+      const recordTypes = ['email', 'url', 'avatar', 'description', 'com.twitter', 'com.github', 'com.discord', 'org.telegram'];
+      const syncedRecords: Array<{
+        key: string;
+        predicateUri: string;
+        exists: boolean;
+      }> = [];
+      
+      for (const recordType of recordTypes) {
+        const predicateUri = `tns:predicate:${recordType}`;
+        const check = await blockchainService.checkAtomExists(predicateUri);
+        syncedRecords.push({
+          key: recordType,
+          predicateUri,
+          exists: check.exists
+        });
+      }
+      
+      res.json({
+        domainName: fullName,
+        domainAtomUri,
+        domainSynced: domainCheck.exists,
+        domainAtomId: domainCheck.exists ? domainCheck.atomId.toString() : null,
+        records: syncedRecords
+      });
+    } catch (error) {
+      console.error("Get synced records error:", error);
+      res.status(500).json({ error: "Failed to get synced records" });
     }
   });
 

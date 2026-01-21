@@ -133,6 +133,23 @@ Domain sync endpoints to synchronize existing .trust domains to Intuition's Know
 - `POST /api/sync/fail` - Mark domain sync as failed
 - `GET /api/sync/check/:domain` - Check individual domain sync status
 
+### Domain Record Sync to Knowledge Graph
+When users update domain records (email, twitter, discord, etc.) in the Manage section, those records are automatically synced to Intuition's Knowledge Graph:
+- `POST /api/sync/record` - Prepare transaction to sync a domain record (creates atoms for domain, predicate, and value)
+- `POST /api/sync/record/confirm` - Confirm record sync after transaction is confirmed
+- `GET /api/sync/records/:domain` - Get all synced records for a domain
+
+**Record Atom URI Format:**
+- Domain atom: `{domainName}.trust` (e.g., `alice.trust`)
+- Predicate atom: `tns:predicate:{recordKey}` (e.g., `tns:predicate:email`)
+- Value atom: `tns:value:{recordKey}:{recordValue}` (e.g., `tns:value:email:alice@example.com`)
+
+**Automatic Sync Flow:**
+1. User sets a text record (email, twitter, discord, etc.) in the Manage Domain modal
+2. After the on-chain transaction succeeds, the system prepares Knowledge Graph sync
+3. User signs a transaction to create atoms for the domain, predicate, and value
+4. The record relationship is now queryable in Intuition's Knowledge Graph
+
 ### Atom URI Format
 Domain atoms use a simple domain name format in Intuition's Knowledge Graph:
 - **Format**: `{domainName}.trust`

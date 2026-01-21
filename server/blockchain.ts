@@ -24,7 +24,7 @@ const TNS_REGISTRY_ADDRESS = "0x7C365AF9034b00dadc616dE7f38221C678D423Fa";
 
 // Intuition EthMultiVault (Knowledge Graph) for creating atoms
 // Proxy contract (TransparentUpgradeableProxy) on Intuition mainnet (Chain ID: 1155)
-const INTUITION_MULTIVAULT_ADDRESS = "0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e";
+export const INTUITION_MULTIVAULT_ADDRESS = "0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e";
 // Implementation (MultiVault): 0xc6f28A5fFe30eee3fadE5080B8930C58187F4903
 
 // Minimal ABI for reading domain data (legacy contract)
@@ -88,7 +88,7 @@ const TNS_PRICE_ORACLE_ABI = [
 
 // Intuition EthMultiVault ABI for atom creation (v1.5 mainnet on Chain 1155)
 // The contract uses createAtoms (plural, with curve) instead of createAtom (singular)
-const INTUITION_MULTIVAULT_ABI = [
+export const INTUITION_MULTIVAULT_ABI = [
   "function createAtoms(bytes[] atomUris, uint256[] curveIds) payable returns (uint256[])",
   "function createTriple(uint256 subjectId, uint256 predicateId, uint256 objectId) payable returns (uint256)",
   "function atomsByHash(bytes32) view returns (uint256)",

@@ -81,9 +81,148 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   // Avatar states
   const [isAddingAvatar, setIsAddingAvatar] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState("");
+  
+  // Knowledge Graph sync states
+  const [syncingRecord, setSyncingRecord] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Sync a domain record to the Knowledge Graph
+  const syncRecordToKnowledgeGraph = async (recordKey: string, recordValue: string) => {
+    try {
+      setSyncingRecord(true);
+      
+      if (!window.ethereum) {
+        throw new Error('MetaMask not installed');
+      }
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Step 1: Prepare the sync transaction
+      let prepareResponse = await fetch('/api/sync/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainName: domain.name,
+          recordKey,
+          recordValue
+        })
+      });
+      
+      if (!prepareResponse.ok) {
+        throw new Error('Failed to prepare Knowledge Graph sync');
+      }
+      
+      let prepareData = await prepareResponse.json();
+      console.log('Knowledge Graph sync prepared:', prepareData);
+      
+      // Step 2: If atoms need to be created first, create them
+      if (prepareData.needsAtomCreation && prepareData.transactions.length > 0) {
+        const atomTx = prepareData.transactions.find((t: any) => t.type === 'createAtoms');
+        
+        if (atomTx) {
+          toast({
+            title: "Creating atoms in Knowledge Graph...",
+            description: "Please confirm the transaction to create atoms.",
+          });
+          
+          const atomTxResponse = await signer.sendTransaction({
+            to: atomTx.to,
+            data: atomTx.data,
+            value: atomTx.value,
+            gasLimit: atomTx.gasLimit
+          });
+          
+          toast({
+            title: "Creating atoms...",
+            description: `Transaction submitted: ${atomTxResponse.hash.substring(0, 10)}...`,
+          });
+          
+          // Wait for confirmation
+          await atomTxResponse.wait();
+          
+          // Re-fetch to get the triple transaction now that atoms exist
+          prepareResponse = await fetch('/api/sync/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              domainName: domain.name,
+              recordKey,
+              recordValue
+            })
+          });
+          
+          if (!prepareResponse.ok) {
+            throw new Error('Failed to prepare triple transaction');
+          }
+          
+          prepareData = await prepareResponse.json();
+          console.log('Triple transaction prepared:', prepareData);
+        }
+      }
+      
+      // Step 3: Create the triple (relationship)
+      const tripleTx = prepareData.transactions.find((t: any) => t.type === 'createTriple');
+      
+      if (tripleTx) {
+        toast({
+          title: "Creating record relationship...",
+          description: "Please confirm the transaction to link the record.",
+        });
+        
+        const tripleTxResponse = await signer.sendTransaction({
+          to: tripleTx.to,
+          data: tripleTx.data,
+          value: tripleTx.value,
+          gasLimit: tripleTx.gasLimit
+        });
+        
+        toast({
+          title: "Creating relationship...",
+          description: `Transaction submitted: ${tripleTxResponse.hash.substring(0, 10)}...`,
+        });
+        
+        const receipt = await tripleTxResponse.wait();
+        
+        // Confirm the sync
+        await fetch('/api/sync/record/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domainName: domain.name,
+            recordKey,
+            recordValue,
+            txHash: receipt?.hash
+          })
+        });
+        
+        toast({
+          title: "Synced to Knowledge Graph!",
+          description: `${recordKey} record is now in the Intuition Knowledge Graph.`,
+        });
+      } else if (!prepareData.needsAtomCreation) {
+        // All atoms and triple already exist
+        toast({
+          title: "Already synced",
+          description: `${recordKey} record is already in the Knowledge Graph.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Knowledge Graph sync error:', error);
+      // Don't show error toast for user rejection
+      if (error.code !== 4001) {
+        toast({
+          title: "Knowledge Graph sync skipped",
+          description: "Record saved on-chain. You can sync to the Knowledge Graph later.",
+          variant: "default",
+        });
+      }
+    } finally {
+      setSyncingRecord(false);
+    }
+  };
 
   // Add safety checks for domain properties
   const expirationDate = domain.expirationDate || new Date().toISOString();
@@ -188,9 +327,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         domain.name,
         address
       );
-      return txHash;
+      return { txHash, address };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, address }) => {
       setIsAddingResolverAddress(false);
       setNewResolverAddress("");
       await loadResolverData();
@@ -198,6 +337,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         title: "Address set successfully!",
         description: `Domain now resolves to the specified address. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph('address', address);
     },
     onError: (error: any) => {
       toast({
@@ -217,16 +358,19 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         record.key,
         record.value
       );
-      return txHash;
+      return { txHash, record };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, record }) => {
       setIsAddingTextRecord(false);
+      const savedRecord = { ...newTextRecord };
       setNewTextRecord({ key: "email", value: "" });
       await loadResolverData();
       toast({
         title: "Text record set successfully!",
         description: `Text record has been updated. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph(record.key, record.value);
     },
     onError: (error: any) => {
       toast({
@@ -245,9 +389,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         domain.name,
         contenthash
       );
-      return txHash;
+      return { txHash, contenthash };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, contenthash }) => {
       setIsAddingContentHash(false);
       setNewContentHash("");
       await loadResolverData();
@@ -255,6 +399,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         title: "Content hash set successfully!",
         description: `IPFS content hash has been updated. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph('contenthash', contenthash);
     },
     onError: (error: any) => {
       toast({
@@ -274,9 +420,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         "avatar",
         avatarUrl
       );
-      return txHash;
+      return { txHash, avatarUrl };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, avatarUrl }) => {
       setIsAddingAvatar(false);
       setNewAvatarUrl("");
       await loadResolverData();
@@ -284,6 +430,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         title: "Avatar set successfully!",
         description: `Domain avatar has been updated. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph('avatar', avatarUrl);
     },
     onError: (error: any) => {
       toast({
