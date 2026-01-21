@@ -184,9 +184,9 @@ export function Header() {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      onClick={(e) => {
+                      onSelect={(e) => {
                         e.preventDefault();
-                        switchWallet();
+                        setTimeout(() => switchWallet(), 100);
                       }} 
                       data-testid="switch-wallet"
                     >
