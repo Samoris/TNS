@@ -1733,6 +1733,7 @@ export class Web3Service {
 
   /**
    * Resolve a domain to its payment address via Payment Forwarder contract
+   * Falls back to BaseRegistrar owner for migrated domains without resolver records
    */
   public async resolvePaymentAddress(forwarderAddress: string, forwarderAbi: any[], domainName: string): Promise<string> {
     if (!window.ethereum) {
@@ -1744,9 +1745,40 @@ export class Web3Service {
       const contract = new ethers.Contract(forwarderAddress, forwarderAbi, provider);
 
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
-      const paymentAddress = await contract.resolvePaymentAddress(normalizedDomain);
+      let paymentAddress = ethers.ZeroAddress;
+      
+      // Try to resolve from PaymentForwarder (uses resolver)
+      try {
+        paymentAddress = await contract.resolveAddress(normalizedDomain);
+        console.log("Payment address from resolver for", normalizedDomain, ":", paymentAddress);
+      } catch (resolverError) {
+        console.log("Resolver call failed, will try BaseRegistrar fallback:", resolverError);
+      }
+      
+      // If resolver returns zero address or fails, try to get owner from BaseRegistrar
+      // This handles migrated domains that don't have resolver records set
+      if (!paymentAddress || paymentAddress === ethers.ZeroAddress) {
+        console.log("Resolver returned zero or failed, checking BaseRegistrar owner...");
+        
+        const { TNS_BASE_REGISTRAR_ADDRESS, TNS_BASE_REGISTRAR_ABI } = await import('./contracts');
+        const baseRegistrar = new ethers.Contract(TNS_BASE_REGISTRAR_ADDRESS, TNS_BASE_REGISTRAR_ABI, provider);
+        
+        // Calculate labelhash for the domain
+        const labelhash = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
+        const tokenId = BigInt(labelhash);
+        
+        try {
+          // Try to get owner directly - this works even for expired domains
+          const owner = await baseRegistrar.ownerOf(tokenId);
+          if (owner && owner !== ethers.ZeroAddress) {
+            console.log("Found owner from BaseRegistrar:", owner);
+            paymentAddress = owner;
+          }
+        } catch (ownerError) {
+          console.log("Could not get owner from BaseRegistrar:", ownerError);
+        }
+      }
 
-      console.log("Payment address for", normalizedDomain, ":", paymentAddress);
       return paymentAddress;
     } catch (error: any) {
       console.error("Resolve payment address error:", error);
@@ -1756,6 +1788,7 @@ export class Web3Service {
 
   /**
    * Send payment to a .trust domain via Payment Forwarder contract
+   * Falls back to direct transfer for migrated domains without resolver records
    */
   public async sendToTrustDomain(forwarderAddress: string, forwarderAbi: any[], domainName: string, amountInTrust: string): Promise<string> {
     if (!window.ethereum) {
@@ -1773,23 +1806,72 @@ export class Web3Service {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(forwarderAddress, forwarderAbi, signer);
-
       const amountWei = ethers.parseEther(amountInTrust);
 
-      const tx = await contract.sendToTrustDomain(normalizedDomain, {
-        value: amountWei,
-        gasLimit: 150000
-      });
-
-      console.log("Payment transaction sent:", tx.hash);
-      const receipt = await tx.wait();
-      if (!receipt) {
-        throw new Error("Transaction receipt not received");
+      // First check if resolver has the address
+      const forwarderContract = new ethers.Contract(forwarderAddress, forwarderAbi, provider);
+      let resolverAddress = ethers.ZeroAddress;
+      
+      try {
+        resolverAddress = await forwarderContract.resolveAddress(normalizedDomain);
+        console.log("Resolver address for payment:", resolverAddress);
+      } catch (resolverError) {
+        console.log("Resolver call failed, will use direct transfer:", resolverError);
       }
+      
+      if (resolverAddress && resolverAddress !== ethers.ZeroAddress) {
+        // Use PaymentForwarder for domains with resolver records
+        console.log("Using PaymentForwarder for domain with resolver record");
+        const forwarderWithSigner = new ethers.Contract(forwarderAddress, forwarderAbi, signer);
+        const tx = await forwarderWithSigner.sendPayment(normalizedDomain, {
+          value: amountWei,
+          gasLimit: 150000
+        });
 
-      console.log("Payment sent successfully:", receipt.hash);
-      return receipt.hash;
+        console.log("Payment transaction sent via forwarder:", tx.hash);
+        const receipt = await tx.wait();
+        if (!receipt) {
+          throw new Error("Transaction receipt not received");
+        }
+        console.log("Payment sent successfully:", receipt.hash);
+        return receipt.hash;
+      } else {
+        // For migrated domains without resolver records, send directly to owner
+        console.log("Resolver returned zero, checking BaseRegistrar for owner...");
+        
+        const { TNS_BASE_REGISTRAR_ADDRESS, TNS_BASE_REGISTRAR_ABI } = await import('./contracts');
+        const baseRegistrar = new ethers.Contract(TNS_BASE_REGISTRAR_ADDRESS, TNS_BASE_REGISTRAR_ABI, provider);
+        
+        const labelhash = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
+        const tokenId = BigInt(labelhash);
+        
+        // Try to get owner directly - works for both active and grace period domains
+        let owner: string;
+        try {
+          owner = await baseRegistrar.ownerOf(tokenId);
+        } catch (ownerError) {
+          throw new Error("Domain is not registered or has expired");
+        }
+        
+        if (!owner || owner === ethers.ZeroAddress) {
+          throw new Error("Could not find domain owner");
+        }
+        
+        console.log("Sending direct transfer to owner:", owner);
+        const tx = await signer.sendTransaction({
+          to: owner,
+          value: amountWei,
+          gasLimit: 21000
+        });
+
+        console.log("Direct payment transaction sent:", tx.hash);
+        const receipt = await tx.wait();
+        if (!receipt) {
+          throw new Error("Transaction receipt not received");
+        }
+        console.log("Direct payment sent successfully:", receipt.hash);
+        return receipt.hash;
+      }
     } catch (error: any) {
       console.error("Send payment error:", error);
       throw new Error(error.message || "Failed to send payment");

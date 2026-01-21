@@ -543,22 +543,19 @@ export const TNS_PRICE_ORACLE_ABI = [
 ];
 
 // ============================================
-// TNS PAYMENT FORWARDER ABI
+// TNS PAYMENT FORWARDER ABI (ENS-forked contract)
 // ============================================
 export const TNS_PAYMENT_FORWARDER_ABI = [
   {
-    inputs: [
-      { name: "name", type: "string" },
-      { name: "amount", type: "uint256" }
-    ],
-    name: "sendToTrustDomain",
+    inputs: [{ name: "domainName", type: "string" }],
+    name: "sendPayment",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function"
   },
   {
-    inputs: [{ name: "name", type: "string" }],
-    name: "resolveDomainAddress",
+    inputs: [{ name: "domainName", type: "string" }],
+    name: "resolveAddress",
     outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
     type: "function"
@@ -566,12 +563,12 @@ export const TNS_PAYMENT_FORWARDER_ABI = [
   {
     anonymous: false,
     inputs: [
-      { indexed: true, name: "name", type: "string" },
-      { indexed: true, name: "sender", type: "address" },
-      { indexed: true, name: "recipient", type: "address" },
+      { indexed: true, name: "domainName", type: "string" },
+      { indexed: true, name: "from", type: "address" },
+      { indexed: true, name: "to", type: "address" },
       { indexed: false, name: "amount", type: "uint256" }
     ],
-    name: "PaymentSent",
+    name: "PaymentForwarded",
     type: "event"
   }
 ];
