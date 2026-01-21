@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X, Database, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { TNS_RESOLVER_ADDRESS } from "@/lib/contracts";
 import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_1760633880162.jpeg";
+
+const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
 
 export function Header() {
   const [location] = useLocation();
@@ -35,6 +37,7 @@ export function Header() {
     error,
     connectWallet,
     switchWallet,
+    switchAccount,
     disconnectWallet,
     switchNetwork,
     formatAddress,
@@ -47,27 +50,34 @@ export function Header() {
     localStorage.setItem("theme", newTheme);
   };
 
-  // Query for primary domain (reverse resolution)
+  // Query for primary domain (reverse resolution using ENS-style)
   const { data: primaryDomain } = useQuery({
     queryKey: ['/api/primary-domain', address],
     queryFn: async () => {
       if (!address) return "";
-      const domain = await web3Service.getPrimaryDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        address
-      );
-      return domain;
+      try {
+        const domain = await web3Service.getPrimaryDomainENS(
+          TNS_RESOLVER_ADDRESS,
+          address
+        );
+        return domain;
+      } catch {
+        return "";
+      }
     },
     enabled: isConnected && !!address,
-    refetchInterval: 5000,
+    refetchInterval: 30000, // Check less frequently to reduce errors
+    retry: false, // Don't retry on failure
   });
+
+  const isAdmin = address?.toLowerCase() === ADMIN_WALLET_ADDRESS;
 
   const navigation = [
     { name: "Search", href: "/", active: location === "/" },
     { name: "Register", href: "/register", active: location === "/register" },
     { name: "My Domains", href: "/manage", active: location === "/manage" },
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
+    { name: "Sync", href: "/sync", active: location === "/sync" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 
@@ -151,7 +161,7 @@ export function Header() {
                     <Button variant="outline" className="flex items-center space-x-1 sm:space-x-2 min-h-[44px]" data-testid="wallet-dropdown">
                       <Wallet className="h-4 w-4" />
                       <span className="hidden sm:block">
-                        {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
+                        {primaryDomain ? (primaryDomain.endsWith('.trust') ? primaryDomain : `${primaryDomain}.trust`) : formatAddress(address!)}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -161,7 +171,7 @@ export function Header() {
                         <div className="mb-2 flex items-center gap-2">
                           <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                           <div className="text-sm font-bold text-trust-blue" data-testid="text-primary-domain">
-                            {primaryDomain}.trust
+                            {primaryDomain.endsWith('.trust') ? primaryDomain : `${primaryDomain}.trust`}
                           </div>
                         </div>
                       )}
@@ -184,6 +194,10 @@ export function Header() {
                         Switch to Intuition Mainnet
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem onClick={switchAccount} data-testid="switch-account">
+                      <User className="mr-2 h-4 w-4" />
+                      Switch Account
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet-dropdown">
                       <LogOut className="mr-2 h-4 w-4" />
                       Disconnect

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tns": {
+      "command": "npx",
+      "args": ["tsx", "./server/mcp-server.ts"],
+      "env": {
+        "TNS_API_URL": "https://tns.intuition.box"
+      },
+      "description": "Trust Name Service MCP Server - Provides AI agents with tools to interact with .trust domains and the Intuition Knowledge Graph"
+    }
+  }
+}

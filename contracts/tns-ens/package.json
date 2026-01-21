@@ -1,0 +1,23 @@
+{
+  "name": "tns-ens-contracts",
+  "version": "1.0.0",
+  "description": "Trust Name Service - ENS-forked contracts for Intuition",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.ts --network intuition",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "test": "hardhat test",
+    "clean": "hardhat clean"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0"
+  }
+}

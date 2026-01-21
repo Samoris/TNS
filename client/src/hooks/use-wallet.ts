@@ -93,7 +93,21 @@ export function useWallet() {
     }
   };
 
-  const sendTransaction = async (to: string, value: string, data?: string) => {
+  const switchAccount = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const state = await web3Service.switchAccount();
+      setWalletState(state);
+    } catch (error: any) {
+      console.error("Failed to switch account:", error);
+      setError(error.message || "Failed to switch account");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendTransaction = async (to: string, value: string, data?: string, gasLimit?: string) => {
     try {
       if (!walletState.isConnected) {
         throw new Error("Wallet not connected");
@@ -103,11 +117,36 @@ export function useWallet() {
         await switchNetwork();
       }
 
-      return await web3Service.sendTransaction(to, value, data);
+      return await web3Service.sendTransaction(to, value, data, gasLimit);
     } catch (error: any) {
       console.error("Transaction failed:", error);
       throw error;
     }
+  };
+
+  const sendTransactionWithWei = async (to: string, valueWei: string, data?: string, gasLimit?: string) => {
+    try {
+      if (!walletState.isConnected) {
+        throw new Error("Wallet not connected");
+      }
+
+      if (!walletState.isCorrectNetwork) {
+        await switchNetwork();
+      }
+
+      return await web3Service.sendTransactionWithWei(to, valueWei, data, gasLimit);
+    } catch (error: any) {
+      console.error("Transaction failed:", error);
+      throw error;
+    }
+  };
+
+  const waitForTransaction = async (txHash: string) => {
+    return await web3Service.waitForTransaction(txHash);
+  };
+
+  const parseAtomIdFromReceipt = (receipt: any) => {
+    return web3Service.parseAtomIdFromReceipt(receipt);
   };
 
   return {
@@ -116,9 +155,13 @@ export function useWallet() {
     error,
     connectWallet,
     switchWallet,
+    switchAccount,
     disconnectWallet,
     switchNetwork,
     sendTransaction,
+    sendTransactionWithWei,
+    waitForTransaction,
+    parseAtomIdFromReceipt,
     formatAddress: web3Service.formatAddress,
     getExplorerUrl: web3Service.getExplorerUrl,
   };

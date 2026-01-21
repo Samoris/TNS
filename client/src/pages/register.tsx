@@ -20,6 +20,8 @@ import {
   Globe,
   AlertTriangle,
   Plus,
+  Loader2,
+  Zap,
 } from "lucide-react";
 import { DomainSearch } from "@/components/domain-search";
 import { WalletConnection } from "@/components/wallet-connection";
@@ -27,8 +29,10 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
+import { TNS_CONTROLLER_ADDRESS, TNS_BASE_REGISTRAR_ADDRESS } from "@/lib/contracts";
 import { web3Service } from "@/lib/web3";
+import { INTUITION_TESTNET } from "@/lib/web3";
+import { ethers } from "ethers";
 
 interface DomainSearchResult {
   name: string;
@@ -52,6 +56,13 @@ interface CommitmentData {
   commitmentHash: string;
   commitmentTx: string;
   commitmentTime: number;
+  durationSeconds: number;
+}
+
+interface KnowledgeGraphSyncState {
+  status: "pending" | "syncing" | "synced" | "error";
+  txHash?: string;
+  error?: string;
 }
 
 export default function RegisterPage() {
@@ -60,6 +71,7 @@ export default function RegisterPage() {
   const [registeredDomain, setRegisteredDomain] = useState<any>(null);
   const [commitmentData, setCommitmentData] = useState<CommitmentData | null>(null);
   const [timeUntilRegister, setTimeUntilRegister] = useState<number>(0);
+  const [kgSyncState, setKgSyncState] = useState<KnowledgeGraphSyncState>({ status: "pending" });
 
   const { toast } = useToast();
   const {
@@ -68,37 +80,19 @@ export default function RegisterPage() {
     isCorrectNetwork,
     connectWallet,
     switchNetwork,
-    sendTransaction,
+    sendTransactionWithWei,
     getExplorerUrl,
   } = useWallet();
 
-  // Check blockchain availability in real-time
+  // Get backend data (which checks blockchain for availability)
   const domainName = selectedDomain ? selectedDomain.replace('.trust', '') : '';
-  const { data: blockchainAvailable, isLoading: isCheckingBlockchain } = useQuery({
-    queryKey: ["blockchain-availability", domainName],
-    queryFn: async () => {
-      if (!domainName) return true;
-      return await web3Service.checkDomainAvailability(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, domainName);
-    },
-    enabled: !!domainName && domainName.length >= 3,
-    refetchOnWindowFocus: false,
-    staleTime: 10000,
-  });
-
-  // Get backend data for pricing
-  const { data: backendData, isLoading: isLoadingBackend } = useQuery<DomainSearchResult>({
+  const { data: domainData, isLoading: isDomainLoading } = useQuery<DomainSearchResult>({
     queryKey: ["/api/domains/search", domainName],
     enabled: !!domainName && domainName.length >= 3,
     refetchOnWindowFocus: false,
+    staleTime: 5000,
   });
 
-  // Combine blockchain and backend data
-  const domainData = backendData ? {
-    ...backendData,
-    available: blockchainAvailable ?? false // Use blockchain availability as source of truth
-  } : undefined;
-
-  const isDomainLoading = isCheckingBlockchain || isLoadingBackend;
   const domainError = null;
 
   const pricing = selectedDomain ? calculateDomainPrice(selectedDomain) : null;
@@ -163,35 +157,40 @@ export default function RegisterPage() {
     },
   ];
 
-  // Commitment mutation (Step 1)
+  // Commitment mutation (Step 1) - Using ENS-style controller
   const commitmentMutation = useMutation({
     mutationFn: async () => {
       if (!selectedDomain || !address) throw new Error("Missing required data");
       
       const domainName = selectedDomain.replace('.trust', '');
-      console.log("Making commitment for domain:", domainName);
+      console.log("Making commitment for domain (ENS-style):", domainName);
       
-      // Generate secret and commitment hash
+      // Generate secret
       const secret = web3Service.generateSecret();
-      const commitmentHash = web3Service.createCommitmentHash(domainName, address, secret);
-      
       console.log("Secret generated:", secret.substring(0, 10) + "...");
-      console.log("Commitment hash:", commitmentHash);
       
-      // Send commitment to blockchain
-      const txHash = await web3Service.makeCommitment(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        commitmentHash
+      // Calculate duration in seconds - MUST match what's used in register
+      const durationSeconds = registrationYears * 365 * 24 * 60 * 60;
+      console.log("Duration for commitment:", durationSeconds, "seconds");
+      
+      // Use ENS-style makeCommitmentENS which generates and submits the commitment
+      // IMPORTANT: All parameters must match exactly between commit and register phases
+      const result = await web3Service.makeCommitmentENS(
+        TNS_CONTROLLER_ADDRESS,
+        domainName,
+        address,
+        secret,
+        durationSeconds  // Duration must be included in commitment hash
       );
       
-      console.log("Commitment transaction:", txHash);
+      console.log("Commitment transaction:", result.txHash);
       
       return {
         secret,
-        commitmentHash,
-        commitmentTx: txHash,
-        commitmentTime: Date.now()
+        commitmentHash: result.commitment,
+        commitmentTx: result.txHash,
+        commitmentTime: Date.now(),
+        durationSeconds  // Store duration to ensure it matches during registration
       };
     },
     onSuccess: (data) => {
@@ -229,20 +228,27 @@ export default function RegisterPage() {
       console.log("Total cost:", totalCost, "TRUST");
       
       try {
-        // Real blockchain transaction with ERC721 NFT minting
+        // Real blockchain transaction with ERC721 NFT minting (ENS-style)
         console.log("Starting blockchain registration for:", domainName);
-        console.log("Using ERC721 NFT contract:", TNS_REGISTRY_ADDRESS);
+        console.log("Using ENS-style controller:", TNS_CONTROLLER_ADDRESS);
         
-        // Real blockchain registration using ethers.js with secret
-        console.log("Calling smart contract register function with commitment secret");
+        // IMPORTANT: Use the same duration from commitment phase to ensure hash matches
+        const durationSeconds = commitmentData.durationSeconds || (registrationYears * 365 * 24 * 60 * 60);
         
-        const txHash = await web3Service.registerDomain(
-          TNS_REGISTRY_ADDRESS,
-          TNS_REGISTRY_ABI,
+        // Calculate cost in wei
+        const costWei = ethers.parseEther(totalCost.toString());
+        
+        console.log("Calling ENS-style register function with commitment secret");
+        console.log("Duration:", durationSeconds, "seconds (from commitment)");
+        console.log("Cost:", totalCost, "TRUST");
+        
+        const txHash = await web3Service.registerDomainENS(
+          TNS_CONTROLLER_ADDRESS,
           domainName,
-          registrationYears,
-          totalCost.toString(),
-          commitmentData.secret // Pass the secret from commitment
+          durationSeconds,
+          commitmentData.secret,
+          costWei,
+          address // Pass the same address used in commitment
         );
         
         console.log("Transaction successful:", txHash);
@@ -267,7 +273,7 @@ export default function RegisterPage() {
         return {
           ...result,
           txHash: txHash,
-          contractAddress: TNS_REGISTRY_ADDRESS,
+          contractAddress: TNS_BASE_REGISTRAR_ADDRESS,
           realTransaction: true,
           isNFT: true
         };
@@ -276,13 +282,23 @@ export default function RegisterPage() {
         throw error;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setRegisteredDomain(data.domain);
       setCommitmentData(null);
+      setKgSyncState({ status: "pending" });
       toast({
         title: "🎉 NFT Domain registered successfully!",
-        description: `${selectedDomain} is now yours as an ERC-721 NFT! Check your wallet.`,
+        description: `${selectedDomain} is now yours as an ERC-721 NFT! Now syncing to Knowledge Graph...`,
       });
+      
+      // Automatically trigger Knowledge Graph sync
+      const domainName = data.domain?.name || selectedDomain?.replace('.trust', '');
+      if (domainName) {
+        // Small delay to let UI update first
+        setTimeout(() => {
+          syncToKnowledgeGraph(domainName);
+        }, 1500);
+      }
     },
     onError: (error: any) => {
       console.error("Registration mutation error:", error);
@@ -293,6 +309,71 @@ export default function RegisterPage() {
       });
     },
   });
+
+  // Knowledge Graph sync mutation
+  const syncToKnowledgeGraph = async (domainName: string) => {
+    setKgSyncState({ status: "syncing" });
+    
+    try {
+      // Prepare sync transaction
+      const prepareResponse = await apiRequest("POST", "/api/sync/prepare", { domainName });
+      const prepareData = await prepareResponse.json();
+      
+      if (prepareData.alreadySynced) {
+        setKgSyncState({ 
+          status: "synced", 
+          txHash: prepareData.txHash 
+        });
+        toast({
+          title: "Already synced!",
+          description: "This domain is already in the Knowledge Graph.",
+        });
+        return;
+      }
+      
+      // Use the exact wei value to avoid precision loss
+      const valueWei = prepareData.transaction.value.startsWith('0x') 
+        ? BigInt(prepareData.transaction.value).toString()
+        : prepareData.transaction.value;
+      
+      const txHash = await sendTransactionWithWei(
+        prepareData.transaction.to,
+        valueWei,
+        prepareData.transaction.data,
+        prepareData.transaction.gasLimit || "500000"
+      );
+      
+      // Confirm the sync
+      await apiRequest("POST", "/api/sync/confirm", {
+        domainName,
+        atomId: "0",
+        txHash,
+      });
+      
+      setKgSyncState({ status: "synced", txHash });
+      toast({
+        title: "Synced to Knowledge Graph!",
+        description: "Your domain is now discoverable by AI agents.",
+      });
+    } catch (error: any) {
+      console.error("Knowledge Graph sync error:", error);
+      
+      if (error.message?.includes("User rejected") || error.message?.includes("cancelled")) {
+        setKgSyncState({ status: "pending" });
+        toast({
+          title: "Sync cancelled",
+          description: "You can sync to the Knowledge Graph later from the Manage page.",
+        });
+      } else {
+        setKgSyncState({ status: "error", error: error.message });
+        toast({
+          title: "Sync failed",
+          description: error.message || "Failed to sync to Knowledge Graph",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const handleDomainSelect = (domain: string, pricing: any) => {
     setSelectedDomain(domain);
@@ -518,14 +599,16 @@ export default function RegisterPage() {
             {/* Registration Success */}
             {registeredDomain && (
               <Card className="trust-card border-green-200 dark:border-green-800">
-                <CardContent className="p-8 text-center">
-                  <CheckCircle className="h-16 w-16 text-trust-emerald mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Registration Successful!
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    <strong>{registeredDomain.name}</strong> is now registered to your wallet
-                  </p>
+                <CardContent className="p-6 sm:p-8">
+                  <div className="text-center mb-6">
+                    <CheckCircle className="h-16 w-16 text-trust-emerald mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      Registration Successful!
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      <strong>{registeredDomain.name}</strong> is now registered to your wallet
+                    </p>
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
                     <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
@@ -538,17 +621,92 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-4 justify-center">
-                    <Button variant="outline" onClick={() => window.open(getExplorerUrl(registeredDomain.txHash || ""), "_blank")}>
+                  {/* Knowledge Graph Sync Section */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-5 w-5 text-trust-blue" />
+                        <span className="font-medium text-gray-900 dark:text-white">Knowledge Graph Sync</span>
+                      </div>
+                      {kgSyncState.status === "synced" && (
+                        <Badge className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300">
+                          Synced
+                        </Badge>
+                      )}
+                      {kgSyncState.status === "syncing" && (
+                        <Badge className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                          Syncing...
+                        </Badge>
+                      )}
+                      {kgSyncState.status === "error" && (
+                        <Badge className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300">
+                          Failed
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      {kgSyncState.status === "pending" && "Sync your domain to Intuition's Knowledge Graph to make it discoverable by AI agents."}
+                      {kgSyncState.status === "syncing" && "Creating atom in the Knowledge Graph..."}
+                      {kgSyncState.status === "synced" && "Your domain is now part of Intuition's decentralized Knowledge Graph and can be discovered by AI agents."}
+                      {kgSyncState.status === "error" && `Sync failed: ${kgSyncState.error}. You can try again or sync later from the Manage page.`}
+                    </p>
+                    
+                    {kgSyncState.status === "pending" && (
+                      <Button
+                        onClick={() => syncToKnowledgeGraph(registeredDomain.name)}
+                        className="w-full trust-button"
+                        data-testid="sync-to-kg-button"
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Sync to Knowledge Graph
+                      </Button>
+                    )}
+                    
+                    {kgSyncState.status === "syncing" && (
+                      <Button disabled className="w-full">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Syncing...
+                      </Button>
+                    )}
+                    
+                    {kgSyncState.status === "error" && (
+                      <Button
+                        onClick={() => syncToKnowledgeGraph(registeredDomain.name)}
+                        variant="outline"
+                        className="w-full"
+                        data-testid="retry-sync-button"
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Retry Sync
+                      </Button>
+                    )}
+                    
+                    {kgSyncState.status === "synced" && kgSyncState.txHash && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => window.open(`${INTUITION_TESTNET.explorerUrl}/tx/${kgSyncState.txHash}`, "_blank")}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View Sync Transaction
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    <Button variant="outline" size="sm" onClick={() => window.open(getExplorerUrl(registeredDomain.txHash || ""), "_blank")}>
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      View Transaction
+                      View Registration TX
                     </Button>
-                    <Button variant="outline" onClick={() => window.open(`https://explorer.intuition.systems/address/${TNS_REGISTRY_ADDRESS}`, "_blank")}>
+                    <Button variant="outline" size="sm" onClick={() => window.open(`https://explorer.intuition.systems/address/${TNS_BASE_REGISTRAR_ADDRESS}`, "_blank")}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Contract
                     </Button>
                     <Button 
                       className="trust-button" 
+                      size="sm"
                       onClick={() => window.location.href = "/manage"}
                       data-testid="manage-domains-button"
                     >

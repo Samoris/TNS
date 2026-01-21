@@ -9,12 +9,11 @@ import {
   Send, 
   Crown, 
   Settings, 
-  Flame,
-  Clock,
   Link as LinkIcon,
   FileText,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database
 } from "lucide-react";
 
 export default function DocsPage() {
@@ -160,6 +159,16 @@ export default function DocsPage() {
           ]
         },
         {
+          heading: "Migrated Domains",
+          text: "Domains migrated from the legacy system may not have resolver records set. The payment system handles this automatically:",
+          items: [
+            "First checks if the domain has a resolver address set",
+            "If no resolver address, falls back to the domain owner's address from the BaseRegistrar",
+            "Uses direct transfer instead of PaymentForwarder contract for migrated domains",
+            "Both methods are secure and fully supported"
+          ]
+        },
+        {
           heading: "Security",
           items: [
             "Domain existence and expiration are validated before transfer",
@@ -243,38 +252,41 @@ export default function DocsPage() {
       ]
     },
     {
-      id: "burning",
-      title: "Burning Expired Domains",
-      icon: Flame,
+      id: "knowledge-graph",
+      title: "Knowledge Graph Sync",
+      icon: Database,
       content: [
         {
-          heading: "Permissionless Cleanup",
-          text: "Anyone can burn (permanently delete) expired domain NFTs after the grace period ends, making the domain available for re-registration."
+          heading: "What is Knowledge Graph Sync?",
+          text: "TNS integrates with Intuition's decentralized Knowledge Graph. When you update domain records, they can be synced to the Knowledge Graph as atoms and triples, making your domain identity queryable across the Intuition ecosystem."
         },
         {
-          heading: "When Can Domains Be Burned?",
+          heading: "Supported Records",
           items: [
-            "Domain must be expired (past expiration date)",
-            "Grace period (30 days) must have ended",
-            "Only expired domains can be burned - active domains are protected"
+            "Email address",
+            "Twitter/X handle",
+            "Discord username",
+            "ETH address",
+            "Avatar image",
+            "Content hash (IPFS)"
           ]
         },
         {
-          heading: "How to Burn",
+          heading: "Two-Step Sync Process",
+          text: "When you update a domain record, the Knowledge Graph sync follows a two-step process:",
           items: [
-            "Find an expired domain past its grace period",
-            "Click the 'Burn NFT' button",
-            "Confirm the transaction in MetaMask",
-            "The NFT is permanently deleted and domain becomes available"
+            "Step 1: Create atoms for your domain, the record type (predicate), and the record value",
+            "Step 2: Create a triple linking them together (domain → predicate → value)",
+            "Each step requires a blockchain transaction on Intuition's EthMultiVault"
           ]
         },
         {
-          heading: "Why Burn Domains?",
+          heading: "Benefits",
           items: [
-            "Cleanup: Removes expired domains from the registry",
-            "Availability: Frees up domain names for new registration",
-            "Fair Access: Prevents indefinite domain squatting",
-            "Gas Efficiency: Reduces blockchain state"
+            "Your domain identity becomes part of Intuition's decentralized knowledge base",
+            "Records are queryable by AI agents and other applications",
+            "Enables reputation and staking features for your domain",
+            "Creates verifiable on-chain relationships between your domain and its metadata"
           ]
         }
       ]
@@ -285,11 +297,15 @@ export default function DocsPage() {
       icon: FileText,
       content: [
         {
-          heading: "Smart Contracts",
+          heading: "Smart Contracts (ENS-Forked)",
           items: [
-            "TNS Registry: 0x7C365AF9034b00dadc616dE7f38221C678D423Fa",
-            "TNS Resolver: 0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06",
-            "Payment Forwarder: 0x640E4fD39A2f7f65BBB344988eFF7470A98E2547"
+            "TNS Registry: 0x34D7648aecc10fd86A53Cdd2436125342f3d7412",
+            "Base Registrar (ERC-721): 0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676",
+            "Registrar Controller: 0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044",
+            "Resolver: 0x17Adb57047EDe9eBA93A5855f8578A8E512592C5",
+            "Reverse Registrar: 0x5140b65d566DA2d1298fCFE75eA972850bC2E365",
+            "Price Oracle: 0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303",
+            "Payment Forwarder: 0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0"
           ]
         },
         {

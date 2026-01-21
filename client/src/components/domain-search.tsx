@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isValidDomainName, normalizeDomainName, formatPrice } from "@/lib/pricing";
-import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
 
 interface DomainSearchResult {
   name: string;
@@ -29,34 +27,15 @@ export function DomainSearch({ onDomainSelect, autoFocus = false, placeholder = 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Check blockchain availability in real-time
-  const { data: blockchainAvailable, isLoading: isCheckingBlockchain } = useQuery({
-    queryKey: ["blockchain-availability", searchTerm],
-    queryFn: async () => {
-      if (!searchTerm) return true;
-      return await web3Service.checkDomainAvailability(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, searchTerm);
-    },
-    enabled: !!searchTerm && isValidDomainName(searchTerm),
-    refetchOnWindowFocus: false,
-    staleTime: 10000, // Cache for 10 seconds for real-time feel
-  });
-
-  // Get backend data for pricing and suggestions
-  const { data: backendResult, isLoading: isLoadingBackend } = useQuery<DomainSearchResult>({
+  // Get backend data (which checks blockchain for availability)
+  const { data: searchResult, isLoading } = useQuery<DomainSearchResult>({
     queryKey: ["/api/domains/search", searchTerm],
     enabled: !!searchTerm && isValidDomainName(searchTerm),
     refetchOnWindowFocus: false,
-    staleTime: 30000,
+    staleTime: 5000, // Cache for 5 seconds
   });
 
-  // Combine blockchain and backend data
-  const searchResult = backendResult ? {
-    ...backendResult,
-    available: blockchainAvailable ?? false // Use blockchain availability as source of truth
-  } : undefined;
-
-  const isLoading = isCheckingBlockchain || isLoadingBackend;
-  const error = null; // Handle errors from blockchain check
+  const error = null;
 
   const handleSearch = () => {
     if (!searchQuery.trim()) return;

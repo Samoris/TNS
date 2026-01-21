@@ -24,14 +24,23 @@ import {
   ExternalLink,
   Copy,
   Check,
-  Flame,
+  ImageIcon,
+  Upload,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
 import type { DomainWithRecords } from "@shared/schema";
 import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI, TNS_RESOLVER_ADDRESS, TNS_RESOLVER_ABI } from "@/lib/contracts";
+import { 
+  TNS_RESOLVER_ADDRESS, 
+  TNS_RESOLVER_ABI,
+  TNS_REVERSE_REGISTRAR_ADDRESS,
+  TNS_CONTROLLER_ADDRESS
+} from "@/lib/contracts";
+import { ethers } from "ethers";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 interface DomainCardProps {
   domain: DomainWithRecords;
@@ -68,9 +77,152 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   // Extend domain states
   const [isExtending, setIsExtending] = useState(false);
   const [extendDuration, setExtendDuration] = useState(1);
+  
+  // Avatar states
+  const [isAddingAvatar, setIsAddingAvatar] = useState(false);
+  const [newAvatarUrl, setNewAvatarUrl] = useState("");
+  
+  // Knowledge Graph sync states
+  const [syncingRecord, setSyncingRecord] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Sync a domain record to the Knowledge Graph
+  const syncRecordToKnowledgeGraph = async (recordKey: string, recordValue: string) => {
+    try {
+      setSyncingRecord(true);
+      
+      if (!window.ethereum) {
+        throw new Error('MetaMask not installed');
+      }
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Step 1: Prepare the sync transaction
+      let prepareResponse = await fetch('/api/sync/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainName: domain.name,
+          recordKey,
+          recordValue
+        })
+      });
+      
+      if (!prepareResponse.ok) {
+        throw new Error('Failed to prepare Knowledge Graph sync');
+      }
+      
+      let prepareData = await prepareResponse.json();
+      console.log('Knowledge Graph sync prepared:', prepareData);
+      
+      // Step 2: If atoms need to be created first, create them
+      if (prepareData.needsAtomCreation && prepareData.transactions.length > 0) {
+        const atomTx = prepareData.transactions.find((t: any) => t.type === 'createAtoms');
+        
+        if (atomTx) {
+          toast({
+            title: "Creating atoms in Knowledge Graph...",
+            description: "Please confirm the transaction to create atoms.",
+          });
+          
+          const atomTxResponse = await signer.sendTransaction({
+            to: atomTx.to,
+            data: atomTx.data,
+            value: atomTx.value,
+            gasLimit: atomTx.gasLimit
+          });
+          
+          toast({
+            title: "Creating atoms...",
+            description: `Transaction submitted: ${atomTxResponse.hash.substring(0, 10)}...`,
+          });
+          
+          // Wait for confirmation
+          await atomTxResponse.wait();
+          
+          // Re-fetch to get the triple transaction now that atoms exist
+          prepareResponse = await fetch('/api/sync/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              domainName: domain.name,
+              recordKey,
+              recordValue
+            })
+          });
+          
+          if (!prepareResponse.ok) {
+            throw new Error('Failed to prepare triple transaction');
+          }
+          
+          prepareData = await prepareResponse.json();
+          console.log('Triple transaction prepared:', prepareData);
+        }
+      }
+      
+      // Step 3: Create the triple (relationship)
+      const tripleTx = prepareData.transactions.find((t: any) => t.type === 'createTriple');
+      
+      if (tripleTx) {
+        toast({
+          title: "Creating record relationship...",
+          description: "Please confirm the transaction to link the record.",
+        });
+        
+        const tripleTxResponse = await signer.sendTransaction({
+          to: tripleTx.to,
+          data: tripleTx.data,
+          value: tripleTx.value,
+          gasLimit: tripleTx.gasLimit
+        });
+        
+        toast({
+          title: "Creating relationship...",
+          description: `Transaction submitted: ${tripleTxResponse.hash.substring(0, 10)}...`,
+        });
+        
+        const receipt = await tripleTxResponse.wait();
+        
+        // Confirm the sync
+        await fetch('/api/sync/record/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domainName: domain.name,
+            recordKey,
+            recordValue,
+            txHash: receipt?.hash
+          })
+        });
+        
+        toast({
+          title: "Synced to Knowledge Graph!",
+          description: `${recordKey} record is now in the Intuition Knowledge Graph.`,
+        });
+      } else if (!prepareData.needsAtomCreation) {
+        // All atoms and triple already exist
+        toast({
+          title: "Already synced",
+          description: `${recordKey} record is already in the Knowledge Graph.`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Knowledge Graph sync error:', error);
+      // Don't show error toast for user rejection
+      if (error.code !== 4001) {
+        toast({
+          title: "Knowledge Graph sync skipped",
+          description: "Record saved on-chain. You can sync to the Knowledge Graph later.",
+          variant: "default",
+        });
+      }
+    } finally {
+      setSyncingRecord(false);
+    }
+  };
 
   // Add safety checks for domain properties
   const expirationDate = domain.expirationDate || new Date().toISOString();
@@ -103,41 +255,18 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     },
   });
 
-
-  const burnDomainMutation = useMutation({
-    mutationFn: async () => {
-      const txHash = await web3Service.burnExpiredDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        domain.name
-      );
-      return txHash;
-    },
-    onSuccess: (txHash) => {
-      // Invalidate both query keys to ensure all domain lists refresh
-      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
-      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
-      toast({
-        title: "Domain burned successfully!",
-        description: `${domain.name} has been burned and is now available for re-registration. Transaction: ${txHash.substring(0, 10)}...`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to burn domain",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
-    },
-  });
-
   const setPrimaryMutation = useMutation({
     mutationFn: async () => {
-      // Call blockchain transaction to set primary domain
-      const txHash = await web3Service.setPrimaryDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
-        domain.name
+      // Validate domain name before attempting to set as primary
+      const domainName = domain.name;
+      if (!domainName || domainName === 'Unknown Domain' || !domainName.includes('.trust')) {
+        throw new Error("Cannot set primary: domain name is not available. The domain may need to be re-registered through the standard flow.");
+      }
+      
+      // Use ENS-style reverse registrar to set primary name
+      const txHash = await web3Service.setPrimaryNameENS(
+        TNS_REVERSE_REGISTRAR_ADDRESS,
+        domainName
       );
       return txHash;
     },
@@ -160,11 +289,19 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const extendDomainMutation = useMutation({
     mutationFn: async (years: number) => {
-      const txHash = await web3Service.renewDomain(
-        TNS_REGISTRY_ADDRESS,
-        TNS_REGISTRY_ABI,
+      // Calculate duration in seconds
+      const durationSeconds = years * 365 * 24 * 60 * 60;
+      
+      // Calculate cost (use pricing)
+      const pricePerYear = calculateDomainPrice(domain.name.replace('.trust', ''));
+      const totalCost = parseFloat(pricePerYear.pricePerYear) * years;
+      const costWei = ethers.parseEther(totalCost.toString());
+      
+      const txHash = await web3Service.renewDomainENS(
+        TNS_CONTROLLER_ADDRESS,
         domain.name,
-        years
+        durationSeconds,
+        costWei
       );
       return txHash;
     },
@@ -196,9 +333,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         domain.name,
         address
       );
-      return txHash;
+      return { txHash, address };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, address }) => {
       setIsAddingResolverAddress(false);
       setNewResolverAddress("");
       await loadResolverData();
@@ -206,6 +343,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         title: "Address set successfully!",
         description: `Domain now resolves to the specified address. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph('address', address);
     },
     onError: (error: any) => {
       toast({
@@ -225,16 +364,19 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         record.key,
         record.value
       );
-      return txHash;
+      return { txHash, record };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, record }) => {
       setIsAddingTextRecord(false);
+      const savedRecord = { ...newTextRecord };
       setNewTextRecord({ key: "email", value: "" });
       await loadResolverData();
       toast({
         title: "Text record set successfully!",
         description: `Text record has been updated. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph(record.key, record.value);
     },
     onError: (error: any) => {
       toast({
@@ -253,9 +395,9 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         domain.name,
         contenthash
       );
-      return txHash;
+      return { txHash, contenthash };
     },
-    onSuccess: async (txHash) => {
+    onSuccess: async ({ txHash, contenthash }) => {
       setIsAddingContentHash(false);
       setNewContentHash("");
       await loadResolverData();
@@ -263,6 +405,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
         title: "Content hash set successfully!",
         description: `IPFS content hash has been updated. Transaction: ${txHash.substring(0, 10)}...`,
       });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph('contenthash', contenthash);
     },
     onError: (error: any) => {
       toast({
@@ -272,6 +416,55 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       });
     },
   });
+
+  const setAvatarMutation = useMutation({
+    mutationFn: async (avatarUrl: string) => {
+      const txHash = await web3Service.setText(
+        TNS_RESOLVER_ADDRESS,
+        TNS_RESOLVER_ABI,
+        domain.name,
+        "avatar",
+        avatarUrl
+      );
+      return { txHash, avatarUrl };
+    },
+    onSuccess: async ({ txHash, avatarUrl }) => {
+      setIsAddingAvatar(false);
+      setNewAvatarUrl("");
+      await loadResolverData();
+      toast({
+        title: "Avatar set successfully!",
+        description: `Domain avatar has been updated. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+      // Sync to Knowledge Graph
+      syncRecordToKnowledgeGraph('avatar', avatarUrl);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to set avatar",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Get current avatar from resolver data
+  const getCurrentAvatar = (): string | null => {
+    if (!resolverData || !resolverData.textKeys) return null;
+    const avatarIndex = resolverData.textKeys.indexOf("avatar");
+    if (avatarIndex === -1) return null;
+    const avatarValue = resolverData.textValues[avatarIndex];
+    return avatarValue && avatarValue.trim() !== "" ? avatarValue : null;
+  };
+
+  const isValidUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   // Load resolver data
   const loadResolverData = async () => {
@@ -473,14 +666,16 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               // Error handled by mutation's onError
                             }
                           }}
-                          disabled={setPrimaryMutation.isPending || isExpired}
+                          disabled={setPrimaryMutation.isPending || isExpired || !domain.name || domain.name === 'Unknown Domain' || !domain.name.includes('.trust')}
                           className="trust-button w-full"
                           data-testid="set-primary-button"
                         >
                           {setPrimaryMutation.isPending ? "Setting..." : "Set as Primary Domain"}
                         </Button>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                          Primary domains represent your main identity on TNS
+                          {(!domain.name || domain.name === 'Unknown Domain' || !domain.name.includes('.trust'))
+                            ? "Domain name not available - cannot set as primary"
+                            : "Primary domains represent your main identity on TNS"}
                         </p>
                       </div>
                     )}
@@ -680,6 +875,83 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                 </div>
                               </div>
                             </Card>
+                          )}
+                        </div>
+
+                        {/* Avatar/Image */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm font-medium">Domain Image</Label>
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              maxFileSize={5242880}
+                              allowedFileTypes={['image/*']}
+                              onGetUploadParameters={async () => {
+                                const response = await fetch('/api/objects/upload', { method: 'POST' });
+                                const data = await response.json();
+                                return {
+                                  method: 'PUT' as const,
+                                  url: data.uploadURL,
+                                };
+                              }}
+                              onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                                if (result.successful && result.successful.length > 0) {
+                                  const uploadURL = result.successful[0].uploadURL;
+                                  if (uploadURL) {
+                                    const url = new URL(uploadURL);
+                                    const objectPath = `/objects${url.pathname.split('/.private')[1] || url.pathname}`;
+                                    setAvatarMutation.mutate(objectPath);
+                                  }
+                                }
+                              }}
+                              buttonVariant="outline"
+                              buttonSize="sm"
+                            >
+                              {getCurrentAvatar() ? (
+                                <><Edit3 className="h-3 w-3 mr-1" /> Update</>
+                              ) : (
+                                <><Upload className="h-3 w-3 mr-1" /> Upload Image</>
+                              )}
+                            </ObjectUploader>
+                          </div>
+
+                          {getCurrentAvatar() ? (
+                            <div className="flex items-start gap-3">
+                              <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                                <img 
+                                  src={getCurrentAvatar()!} 
+                                  alt={`${domain.name} avatar`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded block font-mono break-all">
+                                  {getCurrentAvatar()}
+                                </code>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(getCurrentAvatar()!, "Avatar URL")}
+                              >
+                                {copiedField === "Avatar URL" ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="text-center">
+                                <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-xs text-gray-500">No image set</p>
+                                <p className="text-xs text-gray-400 mt-1">Click "Upload Image" to add</p>
+                              </div>
+                            </div>
                           )}
                         </div>
 
@@ -1002,24 +1274,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
             </div>
           </div>
           
-          {isExpired ? (
-            <Button 
-              variant="outline" 
-              className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
-              onClick={() => {
-                try {
-                  burnDomainMutation.mutate();
-                } catch (error) {
-                  // Error handled by mutation's onError
-                }
-              }}
-              disabled={burnDomainMutation.isPending}
-              data-testid={`burn-${domain.name}`}
-            >
-              <Flame className="h-4 w-4 mr-1" />
-              {burnDomainMutation.isPending ? "Burning..." : "Burn NFT"}
-            </Button>
-          ) : isExpiringSoon && (
+          {isExpiringSoon && (
             <Button variant="outline" className="trust-button" data-testid={`renew-${domain.name}`}>
               <Calendar className="h-4 w-4 mr-1" />
               Renew
