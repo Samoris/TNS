@@ -54,7 +54,8 @@ const TNS_BASE_REGISTRAR_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
   "event NameRegistered(uint256 indexed id, address indexed owner, uint256 expires)",
-  "event NameRenewed(uint256 indexed id, uint256 expires)"
+  "event NameRenewed(uint256 indexed id, uint256 expires)",
+  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
 ];
 
 const TNS_CONTROLLER_ABI = [
@@ -161,6 +162,46 @@ export class BlockchainService {
    */
   public labelhash(label: string): string {
     return ethers.keccak256(ethers.toUtf8Bytes(label));
+  }
+
+  /**
+   * Load migration data to map old tokenIds to domain names
+   */
+  private async loadMigrationData(): Promise<Map<string, string>> {
+    const mapping = new Map<string, string>();
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Find the latest migration data file
+      const scriptsDir = path.join(process.cwd(), 'scripts');
+      const files = fs.readdirSync(scriptsDir).filter((f: string) => f.startsWith('migration-data-'));
+      
+      if (files.length === 0) {
+        console.log("No migration data file found");
+        return mapping;
+      }
+      
+      const latestFile = files.sort().pop();
+      const migrationPath = path.join(scriptsDir, latestFile!);
+      const data = JSON.parse(fs.readFileSync(migrationPath, 'utf8'));
+      
+      // Map both old sequential tokenIds and labelhash-based tokenIds to domain names
+      for (const domain of data.domains) {
+        const cleanName = domain.name.replace(/\.trust$/, '');
+        // Old sequential tokenId (for mint transfers)
+        mapping.set(domain.tokenId.toString(), cleanName);
+        // New labelhash-based tokenId
+        const labelHash = this.labelhash(cleanName);
+        const newTokenId = ethers.getBigInt(labelHash).toString();
+        mapping.set(newTokenId, cleanName);
+      }
+      
+      console.log(`Loaded migration data: ${mapping.size} mappings`);
+    } catch (error) {
+      console.error("Error loading migration data:", error);
+    }
+    return mapping;
   }
 
   /**
@@ -472,45 +513,36 @@ export class BlockchainService {
     try {
       // Use ENS-style event scanning if new contracts are enabled
       if (USE_NEW_CONTRACTS && this.controller && this.baseRegistrar) {
-        console.log("Scanning domains from ENS-forked Controller NameRegistered events...");
+        console.log("Scanning domains from ENS-forked contracts...");
         
         const currentBlock = await this.provider.getBlockNumber();
         const fromBlock = Math.max(0, currentBlock - 1000000); // Look back 1M blocks
         
-        // Query NameRegistered events from Controller
-        const filter = this.controller.filters.NameRegistered();
-        const events = await this.controller.queryFilter(filter, fromBlock, currentBlock);
-        
-        console.log(`Found ${events.length} NameRegistered events`);
-        
         const seenDomains = new Set<string>();
+        const seenTokenIds = new Set<string>();
         
-        for (let i = 0; i < events.length; i++) {
-          if (onProgress) {
-            onProgress(i + 1, events.length);
-          }
-          
-          const event = events[i] as any;
-          const args = event.args;
-          
+        // Query NameRegistered events from Controller (domains registered via controller)
+        const controllerFilter = this.controller.filters.NameRegistered();
+        const controllerEvents = await this.controller.queryFilter(controllerFilter, fromBlock, currentBlock);
+        console.log(`Found ${controllerEvents.length} NameRegistered events from Controller`);
+        
+        for (const event of controllerEvents) {
+          const args = (event as any).args;
           if (args && args.name) {
             const domainName = args.name as string;
-            
-            // Skip if we've already seen this domain (could be renewed)
             if (seenDomains.has(domainName)) continue;
             seenDomains.add(domainName);
             
             try {
-              // Get current owner from BaseRegistrar
               const labelHash = this.labelhash(domainName);
               const tokenId = ethers.getBigInt(labelHash);
+              seenTokenIds.add(tokenId.toString());
               
               const [owner, expires] = await Promise.all([
                 this.baseRegistrar!.ownerOf(tokenId).catch(() => ethers.ZeroAddress),
                 this.baseRegistrar!.nameExpires(tokenId).catch(() => BigInt(0))
               ]);
               
-              // Only include if still owned (not expired/burned)
               if (owner !== ethers.ZeroAddress) {
                 domains.push({
                   name: domainName,
@@ -525,7 +557,51 @@ export class BlockchainService {
           }
         }
         
-        console.log(`Found ${domains.length} valid domains from ENS events`);
+        // Also scan BaseRegistrar Transfer events for migrated domains
+        // Migrated domains were imported directly without going through Controller
+        const transferFilter = this.baseRegistrar.filters.Transfer();
+        const transferEvents = await this.baseRegistrar.queryFilter(transferFilter, fromBlock, currentBlock);
+        console.log(`Found ${transferEvents.length} Transfer events from BaseRegistrar`);
+        
+        // Load migration data to map tokenIds to names for migrated domains
+        const migrationData = await this.loadMigrationData();
+        
+        for (const event of transferEvents) {
+          const args = (event as any).args;
+          if (args && args.tokenId) {
+            const tokenId = args.tokenId.toString();
+            
+            // Skip if we already have this domain from Controller events
+            if (seenTokenIds.has(tokenId)) continue;
+            seenTokenIds.add(tokenId);
+            
+            try {
+              const [owner, expires] = await Promise.all([
+                this.baseRegistrar!.ownerOf(args.tokenId).catch(() => ethers.ZeroAddress),
+                this.baseRegistrar!.nameExpires(args.tokenId).catch(() => BigInt(0))
+              ]);
+              
+              if (owner !== ethers.ZeroAddress) {
+                // Look up domain name from migration data
+                const domainName = migrationData.get(tokenId);
+                
+                if (domainName && !seenDomains.has(domainName)) {
+                  seenDomains.add(domainName);
+                  domains.push({
+                    name: domainName,
+                    owner: owner,
+                    expirationTime: new Date(Number(expires) * 1000),
+                    tokenId: tokenId
+                  });
+                }
+              }
+            } catch (error) {
+              console.error(`Error getting domain info for tokenId ${tokenId}:`, error);
+            }
+          }
+        }
+        
+        console.log(`Found ${domains.length} valid domains from ENS contracts`);
         return domains;
       }
       
