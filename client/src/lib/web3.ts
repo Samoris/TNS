@@ -1861,23 +1861,26 @@ export class Web3Service {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
+      // Compute commitment hash locally (matches contract's makeCommitment function)
+      // commitment = keccak256(abi.encode(keccak256(name), owner, secret))
+      const label = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
+      const commitment = ethers.keccak256(
+        ethers.AbiCoder.defaultAbiCoder().encode(
+          ["bytes32", "address", "bytes32"],
+          [label, ownerAddress, secret]
+        )
+      );
+
+      console.log("Generated commitment locally:", commitment);
+      console.log("Label hash:", label);
+
+      // Submit the commitment on-chain
       const controllerAbi = [
-        "function makeCommitment(string name, address owner, bytes32 secret) pure returns (bytes32)",
         "function commit(bytes32 commitment)"
       ];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
-
-      // Generate the commitment hash
-      const commitment = await contract.makeCommitment(
-        normalizedDomain,
-        ownerAddress,
-        secret
-      );
-
-      console.log("Generated commitment:", commitment);
-
-      // Submit the commitment on-chain
-      const tx = await contract.commit(commitment, { gasLimit: 60000 });
+      
+      const tx = await contract.commit(commitment, { gasLimit: 100000 });
       console.log("Commitment transaction sent:", tx.hash);
 
       const receipt = await tx.wait();
