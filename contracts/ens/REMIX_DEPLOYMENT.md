@@ -1,4 +1,5 @@
 # TNS Contracts - Remix Deployment Guide
+## ENS-Forked Architecture with Native TRUST Token Payments
 
 ## Network: Intuition Mainnet
 - **Chain ID**: 1155
@@ -9,151 +10,167 @@
 ## Treasury Address
 `0x629A5386F73283F80847154d16E359192a891f86`
 
-## Important Hashes (Pre-calculated)
+---
 
-```
-.trust TLD Label Hash:
-0xd7085b86bb87fcfd8b001f3a3bacc8c3e0b6b86d2c6b3d6f7b65b8a6d5c9e8f1
+## CONTRACT FILES (in `contracts/remix/`)
 
-.trust Node (namehash of "trust"):
-0xb75cf4f3d8bc3deb317e86b2b6a23dba4a92f8a8e9d8c6b5e9d8c6b5a4f3e2d1
-
-Actually, calculate in Remix using:
-keccak256(abi.encodePacked(bytes32(0), keccak256("trust")))
-```
+| File | Contract | Description |
+|------|----------|-------------|
+| 0_HashHelper.sol | HashHelper | Calculate node hashes (deploy first, use for values) |
+| 1_TNSRegistry.sol | TNSRegistry | Core registry - exact ENS architecture |
+| 2_TNSBaseRegistrar.sol | TNSBaseRegistrar | ERC-721 registrar - exact ENS architecture |
+| 3_TNSPriceOracle.sol | TNSPriceOracle | Tiered pricing oracle |
+| 4_TNSController.sol | TNSController | Registration controller - ENS ETHRegistrarController |
+| 5_TNSReverseRegistrar.sol | TNSReverseRegistrar | Reverse resolution - exact ENS architecture |
+| 6_TNSResolver.sol | TNSResolver | Public resolver - exact ENS architecture |
+| 7_TNSPaymentForwarder.sol | TNSPaymentForwarder | Send TRUST to .trust domains |
 
 ---
 
-## DEPLOYMENT ORDER (Must follow exactly!)
+## DEPLOYMENT ORDER
 
-### 1. TNSRegistry
-**Constructor Parameters**: None
+### Step 0: Deploy HashHelper (Optional but Recommended)
+- **Contract**: HashHelper
+- **Parameters**: None
+- **After deploying**: Call `getBaseNode()` and save the result
 
-### 2. TNSBaseRegistrar  
-**Constructor Parameters**:
-- `_tns`: TNSRegistry address from step 1
-- `_baseNode`: `0xb75cf4f3d8bc3deb317e86b2b6a23dba4a92f8a8e9d8c6b5e9d8c6b5a4f3e2d1` (or calculate fresh)
+### Step 1: Deploy TNSRegistry
+- **Contract**: TNSRegistry
+- **Parameters**: None
 
-### 3. TNSPriceOracle
-**Constructor Parameters**: None
+### Step 2: Deploy TNSBaseRegistrar
+- **Contract**: TNSBaseRegistrar
+- **Parameters**:
+  - `_tns`: TNSRegistry address
+  - `_baseNode`: Result from HashHelper.getBaseNode()
 
-### 4. TNSController
-**Constructor Parameters**:
-- `_base`: TNSBaseRegistrar address from step 2
-- `_prices`: TNSPriceOracle address from step 3
-- `_treasury`: `0x629A5386F73283F80847154d16E359192a891f86`
+### Step 3: Deploy TNSPriceOracle
+- **Contract**: TNSPriceOracle
+- **Parameters**: None
 
-### 5. TNSReverseRegistrar
-**Constructor Parameters**:
-- `_tns`: TNSRegistry address from step 1
+### Step 4: Deploy TNSController
+- **Contract**: TNSController
+- **Parameters**:
+  - `_base`: TNSBaseRegistrar address
+  - `_prices`: TNSPriceOracle address
+  - `_minCommitmentAge`: `60`
+  - `_maxCommitmentAge`: `86400`
+  - `_reverseRegistrar`: `0x0000000000000000000000000000000000000000` (set later)
+  - `_nameWrapper`: `0x0000000000000000000000000000000000000000`
+  - `_treasury`: `0x629A5386F73283F80847154d16E359192a891f86`
 
-### 6. TNSResolver
-**Constructor Parameters**:
-- `_tns`: TNSRegistry address from step 1
-- `_registrar`: TNSBaseRegistrar address from step 2
-- `_trustedController`: TNSController address from step 4
-- `_trustedReverseRegistrar`: TNSReverseRegistrar address from step 5
+### Step 5: Deploy TNSReverseRegistrar
+- **Contract**: TNSReverseRegistrar
+- **Parameters**:
+  - `_tns`: TNSRegistry address
 
-### 7. TNSPaymentForwarder
-**Constructor Parameters**:
-- `_tns`: TNSRegistry address from step 1
-- `_resolver`: TNSResolver address from step 6
-- `_baseNode`: Same as step 2
+### Step 6: Deploy TNSResolver
+- **Contract**: TNSResolver
+- **Parameters**:
+  - `_tns`: TNSRegistry address
+  - `_trustedController`: TNSController address
+  - `_trustedReverseRegistrar`: TNSReverseRegistrar address
+
+### Step 7: Deploy TNSPaymentForwarder
+- **Contract**: TNSPaymentForwarder
+- **Parameters**:
+  - `_tns`: TNSRegistry address
+  - `_resolver`: TNSResolver address
+  - `_baseNode`: Same as Step 2
 
 ---
 
-## POST-DEPLOYMENT SETUP (Execute these transactions in order!)
+## POST-DEPLOYMENT CONFIGURATION (9 Transactions)
 
-### Step A: Calculate Label Hashes (do this in Remix console first)
-```solidity
-// .trust label hash
-bytes32 trustLabel = keccak256(bytes("trust"));
-// Result: 0x...
+Execute these transactions in order after all contracts are deployed:
 
-// .reverse label hash  
-bytes32 reverseLabel = keccak256(bytes("reverse"));
-// Result: 0x...
-
-// addr label hash
-bytes32 addrLabel = keccak256(bytes("addr"));
-// Result: 0x...
+### Transaction 1: Create .reverse TLD
+**Contract**: TNSRegistry  
+**Function**: `setSubnodeOwner`
+```
+node: 0x0000000000000000000000000000000000000000000000000000000000000000
+label: [Call HashHelper.getReverseLabel()]
+owner: YOUR_DEPLOYER_ADDRESS
 ```
 
-### Step B: Set up .reverse TLD (call on TNSRegistry)
-```solidity
-// Create .reverse TLD (owned by deployer temporarily)
-setSubnodeOwner(
-    bytes32(0),  // root node
-    keccak256("reverse"),  // reverse label
-    YOUR_DEPLOYER_ADDRESS
-)
+### Transaction 2: Create addr.reverse Node
+**Contract**: TNSRegistry  
+**Function**: `setSubnodeOwner`
+```
+node: [Call HashHelper.getReverseNode()]
+label: [Call HashHelper.getAddrLabel()]
+owner: TNSReverseRegistrar ADDRESS
 ```
 
-### Step C: Set up addr.reverse node (call on TNSRegistry)
-```solidity
-// First get the reverse node
-bytes32 reverseNode = keccak256(abi.encodePacked(bytes32(0), keccak256("reverse")));
-
-// Then create addr.reverse and assign to ReverseRegistrar
-setSubnodeOwner(
-    reverseNode,
-    keccak256("addr"),
-    TNS_REVERSE_REGISTRAR_ADDRESS
-)
+### Transaction 3: Transfer .trust TLD to BaseRegistrar
+**Contract**: TNSRegistry  
+**Function**: `setSubnodeOwner`
+```
+node: 0x0000000000000000000000000000000000000000000000000000000000000000
+label: [Call HashHelper.getTrustLabel()]
+owner: TNSBaseRegistrar ADDRESS
 ```
 
-### Step D: Transfer .trust TLD to BaseRegistrar (call on TNSRegistry)
-```solidity
-setSubnodeOwner(
-    bytes32(0),  // root node
-    keccak256("trust"),  // trust label
-    TNS_BASE_REGISTRAR_ADDRESS
-)
+### Transaction 4: Add Controller to BaseRegistrar
+**Contract**: TNSBaseRegistrar  
+**Function**: `addController`
+```
+controller: TNSController ADDRESS
 ```
 
-### Step E: Add Controller to BaseRegistrar (call on TNSBaseRegistrar)
-```solidity
-addController(TNS_CONTROLLER_ADDRESS)
+### Transaction 5: Set Controller on ReverseRegistrar
+**Contract**: TNSReverseRegistrar  
+**Function**: `setController`
+```
+controller: TNSController ADDRESS
+enabled: true
 ```
 
-### Step F: Add Controller to ReverseRegistrar (call on TNSReverseRegistrar)
-```solidity
-setController(TNS_CONTROLLER_ADDRESS, true)
+### Transaction 6: Set Default Resolver on ReverseRegistrar
+**Contract**: TNSReverseRegistrar  
+**Function**: `setDefaultResolver`
+```
+resolver: TNSResolver ADDRESS
 ```
 
-### Step G: Set default resolver on ReverseRegistrar (call on TNSReverseRegistrar)
-```solidity
-setDefaultResolver(TNS_RESOLVER_ADDRESS)
+### Transaction 7: Set BaseURI for NFT Metadata
+**Contract**: TNSBaseRegistrar  
+**Function**: `setBaseURI`
+```
+baseURI: "https://tns.intuition.box/api/metadata/"
 ```
 
-### Step H: Set base URI on BaseRegistrar (call on TNSBaseRegistrar)
-```solidity
-setBaseURI("https://tns.intuition.box/api/metadata/")
+### Transaction 8: Set Resolver for .trust TLD
+**Contract**: TNSBaseRegistrar  
+**Function**: `setResolver`
+```
+resolver: TNSResolver ADDRESS
 ```
 
-### Step I: Set resolver on .trust TLD (call on TNSBaseRegistrar)
-```solidity
-setResolver(TNS_RESOLVER_ADDRESS)
+### Transaction 9: Update ReverseRegistrar in Controller
+**Contract**: TNSController  
+**Function**: `setReverseRegistrar`
+```
+_reverseRegistrar: TNSReverseRegistrar ADDRESS
 ```
 
 ---
 
 ## VERIFICATION CHECKLIST
 
-After deployment, verify:
+After all transactions, verify:
 
-1. ✅ `TNSRegistry.owner(trustNode)` returns TNSBaseRegistrar address
+1. ✅ `TNSRegistry.owner(baseNode)` returns TNSBaseRegistrar address
 2. ✅ `TNSBaseRegistrar.controllers(TNSController)` returns `true`
 3. ✅ `TNSController.available("testname")` returns `true`
 4. ✅ `TNSController.rentPrice("test", 31536000)` returns correct pricing
 
 ---
 
-## RECORD YOUR ADDRESSES
-
-After deployment, fill in these addresses:
+## RECORD YOUR DEPLOYED ADDRESSES
 
 ```
+HashHelper:            0x________________
 TNSRegistry:           0x________________
 TNSBaseRegistrar:      0x________________
 TNSPriceOracle:        0x________________
@@ -163,7 +180,11 @@ TNSResolver:           0x________________
 TNSPaymentForwarder:   0x________________
 ```
 
-Then update:
-- `client/src/lib/contracts.ts` - NEW_CONTRACTS section
-- `server/blockchain.ts` - new contract addresses
+---
+
+## AFTER DEPLOYMENT
+
+Update these files with the new contract addresses:
+- `client/src/lib/contracts.ts` - Update NEW_CONTRACTS section
+- `server/blockchain.ts` - Update contract addresses
 - Set `USE_NEW_CONTRACTS = true` in both files
