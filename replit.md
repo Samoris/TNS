@@ -28,7 +28,7 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 
 ### Feature Specifications
 - **Domain Registration**: Utilizes a commit-reveal scheme to prevent front-running.
-- **Payment Forwarding**: Allows direct TRUST token transfers to `.trust` domain names on-chain, resolving to the appropriate address via the TNSResolver.
+- **Payment Forwarding**: Allows direct TRUST token transfers to `.trust` domain names on-chain. For domains with resolver records, uses the PaymentForwarder contract. For migrated domains without resolver records, falls back to direct transfer to the BaseRegistrar owner.
 - **Reverse Resolution**: Enables users to set a primary domain that is displayed across the platform instead of their wallet address.
 - **Domain Management**: Owners can set resolver records (ETH address, IPFS hash, text records), upload domain images directly from their device, and manage primary domain status.
 - **Domain Image Upload**: Users can upload images directly from their device using Replit Object Storage. Images are stored securely and linked to domains via the resolver's avatar text record.
@@ -75,6 +75,12 @@ The smart contracts have been refactored to fork the battle-tested ENS (Ethereum
 - Deployment script: `contracts/tns-ens/scripts/deploy.ts`
 - Migration script: `contracts/tns-ens/scripts/migrate-with-names.ts`
 - See `contracts/tns-ens/README.md` for full deployment order and setup instructions
+
+#### Migrated Domains
+Domains migrated from the legacy system are registered in the BaseRegistrar but may not have resolver records set. The frontend handles this gracefully:
+- **Address Resolution**: Falls back to BaseRegistrar.ownerOf() when resolver returns zero address
+- **Payment Forwarding**: Uses direct transfer to owner when resolver is not set, instead of PaymentForwarder contract
+- **Domain Display**: Both controller-registered and migrated domains are displayed correctly in the Manage section
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS + shadcn/ui, TanStack Query, Wouter.
 - **Backend**: Express.js, TypeScript, In-memory storage (MemStorage). Provides API for domain availability, registration processing, and user account management.
@@ -134,8 +140,8 @@ Domain sync endpoints to synchronize existing .trust domains to Intuition's Know
 - `GET /api/sync/check/:domain` - Check individual domain sync status
 
 ### Domain Record Sync to Knowledge Graph
-When users update domain records (email, twitter, discord, etc.) in the Manage section, those records are automatically synced to Intuition's Knowledge Graph:
-- `POST /api/sync/record` - Prepare transaction to sync a domain record (creates atoms for domain, predicate, and value)
+When users update domain records (email, twitter, discord, etc.) in the Manage section, those records are synced to Intuition's Knowledge Graph as atoms and triples:
+- `POST /api/sync/record` - Prepare transactions to sync a domain record (creates atoms if needed, then creates triple)
 - `POST /api/sync/record/confirm` - Confirm record sync after transaction is confirmed
 - `GET /api/sync/records/:domain` - Get all synced records for a domain
 
@@ -144,11 +150,12 @@ When users update domain records (email, twitter, discord, etc.) in the Manage s
 - Predicate atom: `tns:predicate:{recordKey}` (e.g., `tns:predicate:email`)
 - Value atom: `tns:value:{recordKey}:{recordValue}` (e.g., `tns:value:email:alice@example.com`)
 
-**Automatic Sync Flow:**
+**Two-Step Sync Flow:**
 1. User sets a text record (email, twitter, discord, etc.) in the Manage Domain modal
 2. After the on-chain transaction succeeds, the system prepares Knowledge Graph sync
-3. User signs a transaction to create atoms for the domain, predicate, and value
-4. The record relationship is now queryable in Intuition's Knowledge Graph
+3. **Step 1 - Create Atoms**: If any atoms (domain, predicate, value) don't exist, user signs a transaction to create them via `createAtoms()`
+4. **Step 2 - Create Triple**: User signs a transaction to create the relationship triple via `createTriple(subjectId, predicateId, objectId)`
+5. The record relationship (domain → predicate → value) is now queryable in Intuition's Knowledge Graph
 
 ### Atom URI Format
 Domain atoms use a simple domain name format in Intuition's Knowledge Graph:
