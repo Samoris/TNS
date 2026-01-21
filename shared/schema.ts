@@ -118,10 +118,10 @@ export type DomainSyncStatus = typeof domainSyncStatus.$inferSelect;
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;
 
-// Domain with records
+// Domain with records (subdomains feature removed, kept for backwards compatibility)
 export type DomainWithRecords = Domain & {
   records: DomainRecord[];
-  subdomains: never[];
+  subdomains: unknown[];
 };
 
 // Pricing tiers - Fixed TRUST pricing

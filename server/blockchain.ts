@@ -51,6 +51,8 @@ const TNS_BASE_REGISTRAR_ABI = [
   "function available(uint256 id) view returns (bool)",
   "function GRACE_PERIOD() view returns (uint256)",
   "function baseNode() view returns (bytes32)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
   "event NameRegistered(uint256 indexed id, address indexed owner, uint256 expires)",
   "event NameRenewed(uint256 indexed id, uint256 expires)"
 ];
@@ -61,7 +63,8 @@ const TNS_CONTROLLER_ABI = [
   "function commitments(bytes32) view returns (uint256)",
   "function MIN_COMMITMENT_AGE() view returns (uint256)",
   "function MAX_COMMITMENT_AGE() view returns (uint256)",
-  "function MIN_REGISTRATION_DURATION() view returns (uint256)"
+  "function MIN_REGISTRATION_DURATION() view returns (uint256)",
+  "event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint256 baseCost, uint256 premium, uint256 expires)"
 ];
 
 const TNS_RESOLVER_ABI_NEW = [
@@ -406,6 +409,7 @@ export class BlockchainService {
 
   /**
    * Scan all registered domains from the blockchain
+   * Uses ENS-style event scanning when new contracts are enabled
    */
   async scanAllDomains(onProgress?: (current: number, total: number) => void): Promise<Array<{
     name: string;
@@ -421,8 +425,68 @@ export class BlockchainService {
     }> = [];
 
     try {
+      // Use ENS-style event scanning if new contracts are enabled
+      if (USE_NEW_CONTRACTS && this.controller && this.baseRegistrar) {
+        console.log("Scanning domains from ENS-forked Controller NameRegistered events...");
+        
+        const currentBlock = await this.provider.getBlockNumber();
+        const fromBlock = Math.max(0, currentBlock - 1000000); // Look back 1M blocks
+        
+        // Query NameRegistered events from Controller
+        const filter = this.controller.filters.NameRegistered();
+        const events = await this.controller.queryFilter(filter, fromBlock, currentBlock);
+        
+        console.log(`Found ${events.length} NameRegistered events`);
+        
+        const seenDomains = new Set<string>();
+        
+        for (let i = 0; i < events.length; i++) {
+          if (onProgress) {
+            onProgress(i + 1, events.length);
+          }
+          
+          const event = events[i] as any;
+          const args = event.args;
+          
+          if (args && args.name) {
+            const domainName = args.name as string;
+            
+            // Skip if we've already seen this domain (could be renewed)
+            if (seenDomains.has(domainName)) continue;
+            seenDomains.add(domainName);
+            
+            try {
+              // Get current owner from BaseRegistrar
+              const labelHash = this.labelhash(domainName);
+              const tokenId = ethers.getBigInt(labelHash);
+              
+              const [owner, expires] = await Promise.all([
+                this.baseRegistrar!.ownerOf(tokenId).catch(() => ethers.ZeroAddress),
+                this.baseRegistrar!.nameExpires(tokenId).catch(() => BigInt(0))
+              ]);
+              
+              // Only include if still owned (not expired/burned)
+              if (owner !== ethers.ZeroAddress) {
+                domains.push({
+                  name: domainName,
+                  owner: owner,
+                  expirationTime: new Date(Number(expires) * 1000),
+                  tokenId: tokenId.toString()
+                });
+              }
+            } catch (error) {
+              console.error(`Error getting domain info for ${domainName}:`, error);
+            }
+          }
+        }
+        
+        console.log(`Found ${domains.length} valid domains from ENS events`);
+        return domains;
+      }
+      
+      // Fall back to legacy contract scanning
       const totalSupply = await this.getTotalSupply();
-      console.log(`Scanning ${totalSupply} registered domains...`);
+      console.log(`Scanning ${totalSupply} registered domains from legacy contract...`);
 
       for (let tokenId = 1; tokenId <= totalSupply; tokenId++) {
         if (onProgress) {
