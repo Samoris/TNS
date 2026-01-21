@@ -1812,6 +1812,39 @@ export class Web3Service {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
+      // Verify the commitment is stored and ready
+      const verifyAbi = [
+        "function commitments(bytes32) view returns (uint256)",
+        "function isCommitmentReady(bytes32) view returns (bool)",
+        "function getCommitmentAge(bytes32) view returns (uint256)"
+      ];
+      const verifyContract = new ethers.Contract(controllerAddress, verifyAbi, provider);
+      
+      try {
+        const commitmentTimestamp = await verifyContract.commitments(expectedCommitment);
+        const isReady = await verifyContract.isCommitmentReady(expectedCommitment);
+        const age = await verifyContract.getCommitmentAge(expectedCommitment);
+        
+        console.log("Commitment verification:");
+        console.log("- Stored timestamp:", commitmentTimestamp.toString());
+        console.log("- Is ready:", isReady);
+        console.log("- Age (seconds):", age.toString());
+        
+        if (commitmentTimestamp.toString() === "0") {
+          throw new Error("Commitment not found in contract! The commitment hash doesn't match what's stored.");
+        }
+        
+        if (!isReady) {
+          throw new Error(`Commitment not ready yet. Age: ${age.toString()} seconds. Need to wait at least 60 seconds.`);
+        }
+      } catch (verifyError: any) {
+        console.error("Commitment verification failed:", verifyError);
+        if (verifyError.message.includes("not found") || verifyError.message.includes("not ready")) {
+          throw verifyError;
+        }
+        // If it's just a contract call error, continue anyway
+      }
+      
       // Use the correct ABI - register is payable (sends native TRUST)
       const controllerAbi = [
         "function register(string name, address owner, uint256 duration, bytes32 secret) payable"
