@@ -44,10 +44,28 @@ The frontend prioritizes a clean, intuitive user experience, similar to ENS, wit
 **Note**: Subdomain functionality has been removed from the application per user request.
 
 ### System Design Choices
-- **Smart Contracts**:
-    - **TNSRegistryERC721**: Main registry, handles domain registration (minting ERC-721 NFTs), renewal, and ownership. Inherits OpenZeppelin ERC721, Ownable, and ReentrancyGuard. Manages per-domain resolver assignment.
-    - **TNSResolver**: Stores resolution data (ETH addresses, IPFS hashes, text records) for domains. Authorization enforced by the Registry contract. Returns zero values for expired domains. Includes ReentrancyGuard.
-    - **TNSPaymentForwarder**: Enables on-chain payments to `.trust` domains, resolving addresses via the TNSResolver. Includes reentrancy protection and domain validation.
+
+#### ENS-Forked Smart Contracts (New Architecture)
+The smart contracts have been refactored to fork the battle-tested ENS (Ethereum Name Service) architecture, adapted for TRUST token payments on Intuition:
+
+- **TNSRegistry** (`contracts/ens/TNSRegistry.sol`): Core registry mapping domain namehashes to owners, resolvers, and TTLs. Forked from ENS Registry.
+- **TNSBaseRegistrar** (`contracts/ens/TNSBaseRegistrar.sol`): ERC-721 registrar that owns the `.trust` TLD. Handles domain minting, expiry tracking, and controller authorization. Forked from ENS BaseRegistrarImplementation.
+- **TNSController** (`contracts/ens/TNSController.sol`): Registration controller with commit-reveal (60s min, 24h max) and TRUST ERC-20 token payments. Forked from ETHRegistrarController.
+- **TNSResolver** (`contracts/ens/TNSResolver.sol`): Public resolver supporting addresses, text records, contenthash, and name records. Simplified from ENS PublicResolver.
+- **TNSReverseRegistrar** (`contracts/ens/TNSReverseRegistrar.sol`): Handles reverse resolution (address → name). Forked from ENS ReverseRegistrar.
+- **TNSPriceOracle** (`contracts/ens/TNSPriceOracle.sol`): Tiered pricing oracle (3 char: 100 TRUST, 4 char: 70 TRUST, 5+: 30 TRUST).
+- **TNSPaymentForwarder** (`contracts/ens/TNSPaymentForwarder.sol`): Enables on-chain payments to `.trust` domains using TRUST tokens.
+
+#### Legacy Contracts (Deployed - To Be Migrated)
+- **TNSRegistryERC721**: `0x7C365AF9034b00dadc616dE7f38221C678D423Fa`
+- **TNSResolver**: `0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06`
+- **PaymentForwarder**: `0x640E4fD39A2f7f65BBB344988eFF7470A98E2547`
+
+#### Deployment & Migration
+- Deployment script: `contracts/ens/deploy.ts`
+- Migration script: `contracts/ens/migrate.ts`
+- See `contracts/ens/README.md` for full deployment order and setup instructions
+
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS + shadcn/ui, TanStack Query, Wouter.
 - **Backend**: Express.js, TypeScript, In-memory storage (MemStorage). Provides API for domain availability, registration processing, and user account management.
 
