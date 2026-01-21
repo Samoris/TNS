@@ -160,7 +160,7 @@ export function Header() {
                     <Button variant="outline" className="flex items-center space-x-1 sm:space-x-2 min-h-[44px]" data-testid="wallet-dropdown">
                       <Wallet className="h-4 w-4" />
                       <span className="hidden sm:block">
-                        {primaryDomain ? `${primaryDomain}.trust` : formatAddress(address!)}
+                        {primaryDomain ? (primaryDomain.endsWith('.trust') ? primaryDomain : `${primaryDomain}.trust`) : formatAddress(address!)}
                       </span>
                     </Button>
                   </DropdownMenuTrigger>
@@ -170,7 +170,7 @@ export function Header() {
                         <div className="mb-2 flex items-center gap-2">
                           <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                           <div className="text-sm font-bold text-trust-blue" data-testid="text-primary-domain">
-                            {primaryDomain}.trust
+                            {primaryDomain.endsWith('.trust') ? primaryDomain : `${primaryDomain}.trust`}
                           </div>
                         </div>
                       )}

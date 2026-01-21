@@ -905,52 +905,75 @@ export class Web3Service {
       let activeUsers = 0;
       
       try {
-        // For ENS-forked contracts, use the Controller's NameRegistered events
+        // For ENS-forked contracts, count domains from BOTH Controller AND BaseRegistrar
+        // Controller events = new registrations, BaseRegistrar events = migrations
         if (USE_NEW_CONTRACTS) {
+          const currentBlock = await provider.getBlockNumber();
+          const fromBlock = Math.max(0, currentBlock - 1000000);
+          
+          // Query Controller NameRegistered events (new registrations)
           const controllerContract = new ethers.Contract(
             TNS_CONTROLLER_ADDRESS,
             ["event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint256 baseCost, uint256 premium, uint256 expires)"],
             provider
           );
-          const currentBlock = await provider.getBlockNumber();
-          const filter = controllerContract.filters.NameRegistered();
           
-          // Query in chunks to avoid timeouts
-          const blockRange = 250000;
-          const maxLookback = 1000000;
-          let allEvents: any[] = [];
+          // Query BaseRegistrar NameRegistered events (includes migrations)
+          const baseRegistrarContract = new ethers.Contract(
+            "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676",
+            ["event NameRegistered(uint256 indexed id, address indexed owner, uint256 expires)", "function ownerOf(uint256) view returns (address)"],
+            provider
+          );
           
-          for (let lookback = 0; lookback < maxLookback; lookback += blockRange) {
-            try {
-              const fromBlock = Math.max(0, currentBlock - lookback - blockRange);
-              const toBlock = Math.max(0, currentBlock - lookback);
-              
-              if (toBlock <= 0 && fromBlock === 0) break;
-              
-              const events = await controllerContract.queryFilter(filter, fromBlock, toBlock);
-              if (events.length > 0) {
-                allEvents = [...allEvents, ...events];
+          const uniqueTokenIds = new Set<string>();
+          const uniqueOwners = new Set<string>();
+          
+          try {
+            // Get Controller events (for domain names on new registrations)
+            const controllerFilter = controllerContract.filters.NameRegistered();
+            const controllerEvents = await controllerContract.queryFilter(controllerFilter, fromBlock, currentBlock);
+            
+            for (const event of controllerEvents) {
+              const args = (event as any).args;
+              if (args && args.label) {
+                const tokenId = ethers.getBigInt(args.label).toString();
+                uniqueTokenIds.add(tokenId);
+                if (args.owner) {
+                  uniqueOwners.add(args.owner.toLowerCase());
+                }
               }
-              
-              if (events.length < 25 && lookback > blockRange * 2) break;
-            } catch (chunkError) {
-              break;
             }
+            
+            // Get BaseRegistrar events (for migrated domains)
+            const registrarFilter = baseRegistrarContract.filters.NameRegistered();
+            const registrarEvents = await baseRegistrarContract.queryFilter(registrarFilter, fromBlock, currentBlock);
+            
+            for (const event of registrarEvents) {
+              const args = (event as any).args;
+              if (args && args.id) {
+                const tokenId = args.id.toString();
+                if (!uniqueTokenIds.has(tokenId)) {
+                  // Verify domain is still owned (not burned)
+                  try {
+                    const owner = await baseRegistrarContract.ownerOf(args.id);
+                    if (owner !== ethers.ZeroAddress) {
+                      uniqueTokenIds.add(tokenId);
+                      uniqueOwners.add(owner.toLowerCase());
+                    }
+                  } catch {
+                    // Domain was burned
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.log("Error querying domain events:", e);
           }
           
-          // Use event count for total domains
-          totalDomains = allEvents.length;
-          
-          // Count unique domain owners
-          const uniqueOwners = new Set();
-          allEvents.forEach(event => {
-            if (event.args && event.args.owner) {
-              uniqueOwners.add(event.args.owner.toLowerCase());
-            }
-          });
+          totalDomains = uniqueTokenIds.size;
           activeUsers = uniqueOwners.size;
           
-          console.log(`ENS contract stats: ${totalDomains} domains, ${activeUsers} users`);
+          console.log(`ENS contract stats: ${totalDomains} domains (including migrations), ${activeUsers} users`);
           
           return {
             totalDomains,
@@ -1076,59 +1099,126 @@ export class Web3Service {
       console.log("Fetching domains for owner (ENS):", ownerAddress);
       const provider = new ethers.BrowserProvider(window.ethereum);
       
-      // Query NameRegistered events and filter by owner
+      // Query Controller's NameRegistered events (includes domain name)
+      const controllerAbi = [
+        "event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint256 baseCost, uint256 premium, uint256 expires)"
+      ];
+      const controllerContract = new ethers.Contract(TNS_CONTROLLER_ADDRESS, controllerAbi, provider);
+      
+      // BaseRegistrar for ownership verification and migrated domain events
       const registrarAbi = [
         "event NameRegistered(uint256 indexed id, address indexed owner, uint256 expires)",
         "function ownerOf(uint256 tokenId) view returns (address)",
         "function nameExpires(uint256 id) view returns (uint256)"
       ];
-      const contract = new ethers.Contract(baseRegistrarAddress, registrarAbi, provider);
+      const registrarContract = new ethers.Contract(baseRegistrarAddress, registrarAbi, provider);
       
       const currentBlock = await provider.getBlockNumber();
       const fromBlock = Math.max(0, currentBlock - 1000000); // Look back 1M blocks
       
-      // Get all NameRegistered events
-      const filter = contract.filters.NameRegistered(null, ownerAddress);
-      const events = await contract.queryFilter(filter, fromBlock, currentBlock);
-      
-      console.log("Found", events.length, "registration events for owner");
-      
-      // For each event, check if the owner still owns the domain
       const domains: any[] = [];
       const seenTokenIds = new Set<string>();
       
-      for (const event of events) {
-        try {
-          const tokenId = (event as any).args[0];
-          const tokenIdStr = tokenId.toString();
-          
-          // Skip if we've already processed this token
-          if (seenTokenIds.has(tokenIdStr)) continue;
-          seenTokenIds.add(tokenIdStr);
-          
-          // Check current owner
-          const currentOwner = await contract.ownerOf(tokenId);
-          if (currentOwner.toLowerCase() !== ownerAddress.toLowerCase()) continue;
-          
-          // Get expiration
-          const expires = await contract.nameExpires(tokenId);
-          const expirationDate = new Date(Number(expires) * 1000);
-          
-          // Calculate domain name from tokenId (labelhash)
-          // Note: We can't reverse the hash, so we'll fetch from backend
-          domains.push({
-            id: tokenIdStr,
-            tokenId: tokenIdStr,
-            owner: currentOwner,
-            expirationDate: expirationDate.toISOString(),
-            exists: true,
-            pricePerYear: "30", // Default, will be updated
-            records: [],
-          });
-        } catch (err) {
-          // Token may have been burned or transferred
-          continue;
+      // 1. Get domains from Controller NameRegistered events (includes domain name)
+      try {
+        const controllerFilter = controllerContract.filters.NameRegistered(null, null, ownerAddress);
+        const controllerEvents = await controllerContract.queryFilter(controllerFilter, fromBlock, currentBlock);
+        
+        console.log("Found", controllerEvents.length, "registration events for owner from Controller");
+        
+        for (const event of controllerEvents) {
+          try {
+            const args = (event as any).args;
+            const domainName = args.name || args[0];
+            const labelHash = args.label || args[1];
+            
+            const tokenId = ethers.getBigInt(labelHash);
+            const tokenIdStr = tokenId.toString();
+            
+            if (seenTokenIds.has(tokenIdStr)) continue;
+            
+            const currentOwner = await registrarContract.ownerOf(tokenId);
+            if (currentOwner.toLowerCase() !== ownerAddress.toLowerCase()) continue;
+            
+            seenTokenIds.add(tokenIdStr);
+            
+            const expires = await registrarContract.nameExpires(tokenId);
+            const expirationDate = new Date(Number(expires) * 1000);
+            
+            const pricePerYear = domainName.length === 3 ? "100" : 
+                                domainName.length === 4 ? "70" : "30";
+            
+            domains.push({
+              id: tokenIdStr,
+              name: domainName,
+              tokenId: tokenIdStr,
+              owner: currentOwner,
+              expirationDate: expirationDate.toISOString(),
+              exists: true,
+              pricePerYear,
+              records: [],
+            });
+          } catch (err) {
+            continue;
+          }
         }
+      } catch (e) {
+        console.log("Error fetching Controller events:", e);
+      }
+      
+      // 2. Get migrated domains from BaseRegistrar events (no domain name - need backend lookup)
+      try {
+        const registrarFilter = registrarContract.filters.NameRegistered(null, ownerAddress);
+        const registrarEvents = await registrarContract.queryFilter(registrarFilter, fromBlock, currentBlock);
+        
+        console.log("Found", registrarEvents.length, "registration events for owner from BaseRegistrar");
+        
+        for (const event of registrarEvents) {
+          try {
+            const args = (event as any).args;
+            const tokenId = args.id || args[0];
+            const tokenIdStr = tokenId.toString();
+            
+            if (seenTokenIds.has(tokenIdStr)) continue;
+            
+            const currentOwner = await registrarContract.ownerOf(tokenId);
+            if (currentOwner.toLowerCase() !== ownerAddress.toLowerCase()) continue;
+            
+            seenTokenIds.add(tokenIdStr);
+            
+            const expires = await registrarContract.nameExpires(tokenId);
+            const expirationDate = new Date(Number(expires) * 1000);
+            
+            // Try to get domain name from backend
+            let domainName = "";
+            try {
+              const response = await fetch(`/api/domains/token/${tokenIdStr}`);
+              if (response.ok) {
+                const data = await response.json();
+                domainName = data.name || "";
+              }
+            } catch {
+              // Backend lookup failed
+            }
+            
+            domains.push({
+              id: tokenIdStr,
+              name: domainName,
+              tokenId: tokenIdStr,
+              owner: currentOwner,
+              expirationDate: expirationDate.toISOString(),
+              exists: true,
+              pricePerYear: domainName ? (domainName.length === 3 ? "100" : domainName.length === 4 ? "70" : "30") : "30",
+              records: [],
+              isMigrated: true,
+            });
+          } catch (err) {
+            // Token may have been burned or transferred
+            continue;
+          }
+        }
+      } catch (e) {
+        console.log("Error fetching BaseRegistrar events:", e);
       }
       
       console.log("Found", domains.length, "active domains for owner");
