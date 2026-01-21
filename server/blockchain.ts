@@ -207,6 +207,51 @@ export class BlockchainService {
   }
 
   /**
+   * Get domain info from ENS-forked BaseRegistrar (works for migrated domains)
+   */
+  async getDomainInfoENS(domainName: string): Promise<{
+    owner: string;
+    tokenId: bigint;
+    expirationTime: bigint;
+    exists: boolean;
+  } | null> {
+    try {
+      if (!USE_NEW_CONTRACTS || !this.baseRegistrar) {
+        return this.getDomainInfo(domainName);
+      }
+
+      const cleanName = domainName.replace(/\.trust$/, '');
+      const labelHash = this.labelhash(cleanName);
+      const tokenId = ethers.getBigInt(labelHash);
+      
+      // Check if domain exists in BaseRegistrar
+      const [owner, expires] = await Promise.all([
+        this.baseRegistrar.ownerOf(tokenId).catch(() => ethers.ZeroAddress),
+        this.baseRegistrar.nameExpires(tokenId).catch(() => BigInt(0))
+      ]);
+      
+      // Domain exists if owner is not zero address
+      const exists = owner !== ethers.ZeroAddress;
+      
+      if (!exists) {
+        // Fall back to legacy contract
+        return this.getDomainInfo(cleanName);
+      }
+      
+      return {
+        owner,
+        tokenId,
+        expirationTime: expires,
+        exists
+      };
+    } catch (error) {
+      console.error(`Error getting ENS domain info for ${domainName}:`, error);
+      // Fall back to legacy
+      return this.getDomainInfo(domainName.replace(/\.trust$/, ''));
+    }
+  }
+
+  /**
    * Get domain data directly from blockchain by token ID
    */
   async getDomainByTokenId(tokenId: number): Promise<{

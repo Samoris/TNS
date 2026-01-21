@@ -559,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { domain } = req.params;
       const domainName = domain.replace('.trust', '');
       
-      const domainInfo = await blockchainService.getDomainInfo(domainName);
+      const domainInfo = await blockchainService.getDomainInfoENS(domainName);
       
       if (!domainInfo || !domainInfo.exists) {
         return res.status(404).json({ error: "Domain not found" });
@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const domainName = name.replace('.trust', '');
       
       // Get owner address from blockchain for CAIP-10 URI
-      const domainInfo = await blockchainService.getDomainInfo(domainName);
+      const domainInfo = await blockchainService.getDomainInfoENS(domainName);
       if (!domainInfo || !domainInfo.exists) {
         return res.status(404).json({ error: "Domain not found" });
       }
@@ -622,7 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const domainName = name.replace('.trust', '');
       
       // Get owner address from blockchain for CAIP-10 URI
-      const domainInfo = await blockchainService.getDomainInfo(domainName);
+      const domainInfo = await blockchainService.getDomainInfoENS(domainName);
       if (!domainInfo || !domainInfo.exists) {
         return res.status(404).json({ error: "Domain not found" });
       }
@@ -845,7 +845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const metadata = JSON.parse(agentRecord.value);
       
-      const domainInfo = await blockchainService.getDomainInfo(domainName);
+      const domainInfo = await blockchainService.getDomainInfoENS(domainName);
       const resolvedAddress = domainInfo?.owner || storedDomain.owner;
       
       res.json({
@@ -1117,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cleanName = domainName.replace(/\.trust$/, '');
         
         // Get owner address from blockchain for CAIP-10 URI
-        const domainInfo = await blockchainService.getDomainInfo(cleanName);
+        const domainInfo = await blockchainService.getDomainInfoENS(cleanName);
         if (!domainInfo || !domainInfo.exists) continue;
         
         const atomUri = intuitionService.generateDomainAtomUri(cleanName);
@@ -1163,7 +1163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cleanName = fullName.replace(/\.trust$/, '');
       
       // Get owner address from blockchain for CAIP-10 URI
-      const domainInfo = await blockchainService.getDomainInfo(cleanName);
+      const domainInfo = await blockchainService.getDomainInfoENS(cleanName);
       if (!domainInfo || !domainInfo.exists) {
         return res.status(404).json({ error: "Domain not found on blockchain" });
       }
@@ -1241,7 +1241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!syncStatus) {
         const cleanName = fullName.replace(/\.trust$/, '');
         // Get owner address from blockchain for CAIP-10 URI
-        const domainInfo = await blockchainService.getDomainInfo(cleanName);
+        const domainInfo = await blockchainService.getDomainInfoENS(cleanName);
         const ownerAddress = domainInfo?.owner || '0x0000000000000000000000000000000000000000';
         
         syncStatus = await storage.createDomainSyncStatus({
@@ -1290,7 +1290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!syncStatus) {
         const cleanName = fullName.replace(/\.trust$/, '');
         // Get owner address from blockchain for CAIP-10 URI
-        const domainInfo = await blockchainService.getDomainInfo(cleanName);
+        const domainInfo = await blockchainService.getDomainInfoENS(cleanName);
         const ownerAddress = domainInfo?.owner || '0x0000000000000000000000000000000000000000';
         
         syncStatus = await storage.createDomainSyncStatus({
@@ -1325,7 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cleanName = domain.replace(/\.trust$/, '');
       
       // Get owner address from blockchain for CAIP-10 URI
-      const domainInfo = await blockchainService.getDomainInfo(cleanName);
+      const domainInfo = await blockchainService.getDomainInfoENS(cleanName);
       if (!domainInfo || !domainInfo.exists) {
         return res.status(404).json({ error: "Domain not found on blockchain" });
       }
