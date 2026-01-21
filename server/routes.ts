@@ -59,6 +59,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get domain by token ID (for migrated domains)
+  // Build a mapping of labelhash (tokenId) to domain name from migration data
+  const migratedDomainNames = [
+    "samoris", "intuition", "dsfdfsgfg", "dfhdsgd", "grdgrgdggdv", "grdgrgdggfdgdv",
+    "gfybhkgb", "jhgjfgfgdjgf", "ygytfyuhu", "gmjgfc", "sgsfgf", "sgsfgfa",
+    "gmjjjkfdhfj", "gmjjjkfdhfjfgjs", "ftvhgjdc", "hoiunljk", "dwadsadw",
+    "fsdfdesrsr", "gdfgdfgdh", "gdfgdfgdhgf", "fghkdfhdf", "ufmjfgjhf",
+    "dgjdfjffgkghdgdj", "xcxkj", "xcxjgkj", "ghjgkkj", "tfjfthfg", "dsadsadcc", "dsadsadccx"
+  ];
+  
+  // Create labelhash to name mapping (ENS tokenIds are labelhashes)
+  const labelhashToName: Record<string, string> = {};
+  for (const name of migratedDomainNames) {
+    const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
+    const tokenIdBigInt = ethers.getBigInt(labelhash);
+    labelhashToName[tokenIdBigInt.toString()] = name;
+  }
+  
+  app.get("/api/domains/token/:tokenId", async (req, res) => {
+    try {
+      const { tokenId } = req.params;
+      
+      // First check storage
+      const domain = await storage.getDomainByTokenId(parseInt(tokenId));
+      
+      if (domain) {
+        return res.json({ name: domain.name, tokenId: domain.tokenId });
+      }
+      
+      // Check migrated domains mapping (ENS-style labelhash tokenIds)
+      const migratedName = labelhashToName[tokenId];
+      if (migratedName) {
+        return res.json({ name: `${migratedName}.trust`, tokenId });
+      }
+      
+      // For legacy contracts, try to get from tokenIdToDomain
+      try {
+        const domainName = await blockchainService.getDomainNameByTokenId(parseInt(tokenId));
+        if (domainName) {
+          return res.json({ name: domainName.endsWith('.trust') ? domainName : `${domainName}.trust`, tokenId });
+        }
+      } catch (e) {
+        // Legacy contract lookup failed
+      }
+      
+      // Not found in storage or blockchain
+      return res.status(404).json({ message: "Domain not found for token ID" });
+    } catch (error) {
+      console.error("Error fetching domain by token ID:", error);
+      res.status(500).json({ message: "Failed to fetch domain" });
+    }
+  });
+
   // Get domains by owner
   app.get("/api/domains/owner/:address", async (req, res) => {
     try {
