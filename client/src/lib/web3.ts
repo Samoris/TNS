@@ -93,8 +93,9 @@ export class Web3Service {
     }
 
     try {
-      // Clear the manual disconnect flag
+      // Clear the manual disconnect flag (both in-memory and persisted)
       this.isManuallyDisconnected = false;
+      localStorage.removeItem('walletManuallyDisconnected');
       
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
@@ -150,7 +151,11 @@ export class Web3Service {
   }
 
   public async getWalletState(): Promise<WalletState> {
-    if (!window.ethereum || this.isManuallyDisconnected) {
+    // Check both in-memory flag and localStorage for disconnect state
+    const wasManuallyDisconnected = this.isManuallyDisconnected || 
+      localStorage.getItem('walletManuallyDisconnected') === 'true';
+    
+    if (!window.ethereum || wasManuallyDisconnected) {
       return {
         isConnected: false,
         address: null,
@@ -257,8 +262,9 @@ export class Web3Service {
   }
 
   public async disconnectWallet(): Promise<void> {
-    // Set manual disconnect flag to prevent auto-reconnection
+    // Set manual disconnect flag to prevent auto-reconnection (persisted)
     this.isManuallyDisconnected = true;
+    localStorage.setItem('walletManuallyDisconnected', 'true');
     
     // Clear any cached wallet data
     localStorage.removeItem('walletConnected');
@@ -276,10 +282,7 @@ export class Web3Service {
     };
     
     this.listeners.forEach(listener => listener(disconnectedState));
-    
-    // Force page refresh to ensure clean state
-    console.log("Wallet disconnected - refreshing page");
-    window.location.reload();
+    console.log("Wallet disconnected");
   }
 
   public async sendTransaction(to: string, value: string, data?: string, gasLimit?: string): Promise<string> {
