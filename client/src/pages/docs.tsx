@@ -285,11 +285,15 @@ export default function DocsPage() {
       icon: FileText,
       content: [
         {
-          heading: "Smart Contracts",
+          heading: "Smart Contracts (ENS-Forked)",
           items: [
-            "TNS Registry: 0x7C365AF9034b00dadc616dE7f38221C678D423Fa",
-            "TNS Resolver: 0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06",
-            "Payment Forwarder: 0x640E4fD39A2f7f65BBB344988eFF7470A98E2547"
+            "TNS Registry: 0x34D7648aecc10fd86A53Cdd2436125342f3d7412",
+            "Base Registrar (ERC-721): 0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676",
+            "Registrar Controller: 0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044",
+            "Resolver: 0x17Adb57047EDe9eBA93A5855f8578A8E512592C5",
+            "Reverse Registrar: 0x5140b65d566DA2d1298fCFE75eA972850bC2E365",
+            "Price Oracle: 0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303",
+            "Payment Forwarder: 0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0"
           ]
         },
         {

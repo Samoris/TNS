@@ -2,26 +2,26 @@
 // These contracts follow the ENS architecture adapted for TRUST ERC-20 token payments
 
 // ============================================
-// NEW ENS-FORKED CONTRACT ADDRESSES (UPDATE AFTER DEPLOYMENT)
+// ENS-FORKED CONTRACT ADDRESSES (DEPLOYED ON INTUITION MAINNET)
 // ============================================
-export const TNS_REGISTRY_ADDRESS = "0x0000000000000000000000000000000000000000"; // Deploy then update
-export const TNS_BASE_REGISTRAR_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const TNS_CONTROLLER_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const TNS_RESOLVER_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const TNS_REVERSE_REGISTRAR_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const TNS_PRICE_ORACLE_ADDRESS = "0x0000000000000000000000000000000000000000";
-export const TNS_PAYMENT_FORWARDER_ADDRESS = "0x0000000000000000000000000000000000000000";
+export const TNS_REGISTRY_ADDRESS = "0x34D7648aecc10fd86A53Cdd2436125342f3d7412";
+export const TNS_BASE_REGISTRAR_ADDRESS = "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676";
+export const TNS_CONTROLLER_ADDRESS = "0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044";
+export const TNS_RESOLVER_ADDRESS = "0x17Adb57047EDe9eBA93A5855f8578A8E512592C5";
+export const TNS_REVERSE_REGISTRAR_ADDRESS = "0x5140b65d566DA2d1298fCFE75eA972850bC2E365";
+export const TNS_PRICE_ORACLE_ADDRESS = "0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303";
+export const TNS_PAYMENT_FORWARDER_ADDRESS = "0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0";
 
-// TRUST Token address on Intuition mainnet (for ERC-20 approvals)
-export const TRUST_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"; // Update with actual TRUST token address
+// TRUST is the native token on Intuition (like ETH on Ethereum) - no ERC-20 address needed
+export const TRUST_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"; // Native token
 
-// Legacy contract addresses (still active until migration)
+// Legacy contract addresses (deprecated - kept for reference)
 export const LEGACY_REGISTRY_ADDRESS = "0x7C365AF9034b00dadc616dE7f38221C678D423Fa";
 export const LEGACY_RESOLVER_ADDRESS = "0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06";
 export const LEGACY_PAYMENT_FORWARDER_ADDRESS = "0x640E4fD39A2f7f65BBB344988eFF7470A98E2547";
 
-// Use new contracts by default (set to false to use legacy)
-export const USE_NEW_CONTRACTS = false; // Toggle when new contracts are deployed
+// Use new ENS-forked contracts
+export const USE_NEW_CONTRACTS = true;
 
 // ============================================
 // TRUST ERC-20 TOKEN ABI (for approvals)

@@ -56,15 +56,25 @@ The smart contracts have been refactored to fork the battle-tested ENS (Ethereum
 - **TNSPriceOracle** (`contracts/ens/TNSPriceOracle.sol`): Tiered pricing oracle (3 char: 100 TRUST, 4 char: 70 TRUST, 5+: 30 TRUST).
 - **TNSPaymentForwarder** (`contracts/ens/TNSPaymentForwarder.sol`): Enables on-chain payments to `.trust` domains using TRUST tokens.
 
-#### Legacy Contracts (Deployed - To Be Migrated)
+#### Deployed ENS-Forked Contracts (Intuition Mainnet)
+- **TNSRegistry**: `0x34D7648aecc10fd86A53Cdd2436125342f3d7412`
+- **BaseRegistrar (ERC-721)**: `0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676`
+- **TNSRegistrarController**: `0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044`
+- **Resolver**: `0x17Adb57047EDe9eBA93A5855f8578A8E512592C5`
+- **ReverseRegistrar**: `0x5140b65d566DA2d1298fCFE75eA972850bC2E365`
+- **StablePriceOracle**: `0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303`
+- **PaymentForwarder**: `0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0`
+- **Treasury**: `0x629A5386F73283F80847154d16E359192a891f86`
+
+#### Legacy Contracts (Deprecated)
 - **TNSRegistryERC721**: `0x7C365AF9034b00dadc616dE7f38221C678D423Fa`
 - **TNSResolver**: `0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06`
 - **PaymentForwarder**: `0x640E4fD39A2f7f65BBB344988eFF7470A98E2547`
 
 #### Deployment & Migration
-- Deployment script: `contracts/ens/deploy.ts`
-- Migration script: `contracts/ens/migrate.ts`
-- See `contracts/ens/README.md` for full deployment order and setup instructions
+- Deployment script: `contracts/tns-ens/scripts/deploy.ts`
+- Migration script: `contracts/tns-ens/scripts/migrate-with-names.ts`
+- See `contracts/tns-ens/README.md` for full deployment order and setup instructions
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS + shadcn/ui, TanStack Query, Wouter.
 - **Backend**: Express.js, TypeScript, In-memory storage (MemStorage). Provides API for domain availability, registration processing, and user account management.
@@ -143,10 +153,15 @@ This format:
 
 ## External Dependencies
 - **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
-- **Smart Contract Addresses**: 
-  - TNS Registry: `0x7C365AF9034b00dadc616dE7f38221C678D423Fa` (ERC-721 with NFT metadata support)
-  - TNS Resolver: `0x490a0B0EAD6B1da1C7810ACBc9574D7429880F06`
-  - Payment Forwarder: `0x640E4fD39A2f7f65BBB344988eFF7470A98E2547`
+- **Smart Contract Addresses (ENS-Forked)**: 
+  - TNS Registry: `0x34D7648aecc10fd86A53Cdd2436125342f3d7412`
+  - Base Registrar: `0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676` (ERC-721)
+  - Controller: `0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044`
+  - Resolver: `0x17Adb57047EDe9eBA93A5855f8578A8E512592C5`
+  - Reverse Registrar: `0x5140b65d566DA2d1298fCFE75eA972850bC2E365`
+  - Price Oracle: `0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303`
+  - Payment Forwarder: `0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0`
+  - Treasury: `0x629A5386F73283F80847154d16E359192a891f86`
   - Intuition EthMultiVault (Proxy): `0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e` (Knowledge Graph - TransparentUpgradeableProxy)
   - Intuition MultiVault (Implementation): `0xc6f28A5fFe30eee3fadE5080B8930C58187F4903`
 - **Wallet Integration**: MetaMask
