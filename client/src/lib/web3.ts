@@ -1192,13 +1192,17 @@ export class Web3Service {
             // Try to get domain name from backend
             let domainName = "";
             try {
+              console.log("Looking up migrated domain for tokenId:", tokenIdStr);
               const response = await fetch(`/api/domains/token/${tokenIdStr}`);
               if (response.ok) {
                 const data = await response.json();
                 domainName = data.name || "";
+                console.log("Found domain name for migrated tokenId:", domainName);
+              } else {
+                console.log("Backend lookup failed for tokenId:", tokenIdStr, "status:", response.status);
               }
-            } catch {
-              // Backend lookup failed
+            } catch (lookupErr) {
+              console.log("Backend lookup error for tokenId:", tokenIdStr, lookupErr);
             }
             
             domains.push({
