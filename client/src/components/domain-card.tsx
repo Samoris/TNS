@@ -24,7 +24,6 @@ import {
   ExternalLink,
   Copy,
   Check,
-  Flame,
   ImageIcon,
   Upload,
 } from "lucide-react";
@@ -37,10 +36,7 @@ import {
   TNS_RESOLVER_ADDRESS, 
   TNS_RESOLVER_ABI,
   TNS_REVERSE_REGISTRAR_ADDRESS,
-  TNS_CONTROLLER_ADDRESS,
-  TNS_BASE_REGISTRAR_ADDRESS,
-  LEGACY_REGISTRY_ADDRESS,
-  LEGACY_REGISTRY_ABI
+  TNS_CONTROLLER_ADDRESS
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -114,34 +110,6 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     onError: (error: any) => {
       toast({
         title: "Failed to add record",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
-    },
-  });
-
-
-  const burnDomainMutation = useMutation({
-    mutationFn: async () => {
-      const txHash = await web3Service.burnExpiredDomain(
-        LEGACY_REGISTRY_ADDRESS,
-        LEGACY_REGISTRY_ABI,
-        domain.name
-      );
-      return txHash;
-    },
-    onSuccess: (txHash) => {
-      // Invalidate both query keys to ensure all domain lists refresh
-      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
-      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
-      toast({
-        title: "Domain burned successfully!",
-        description: `${domain.name} has been burned and is now available for re-registration. Transaction: ${txHash.substring(0, 10)}...`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to burn domain",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -1150,24 +1118,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
             </div>
           </div>
           
-          {isExpired ? (
-            <Button 
-              variant="outline" 
-              className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
-              onClick={() => {
-                try {
-                  burnDomainMutation.mutate();
-                } catch (error) {
-                  // Error handled by mutation's onError
-                }
-              }}
-              disabled={burnDomainMutation.isPending}
-              data-testid={`burn-${domain.name}`}
-            >
-              <Flame className="h-4 w-4 mr-1" />
-              {burnDomainMutation.isPending ? "Burning..." : "Burn NFT"}
-            </Button>
-          ) : isExpiringSoon && (
+          {isExpiringSoon && (
             <Button variant="outline" className="trust-button" data-testid={`renew-${domain.name}`}>
               <Calendar className="h-4 w-4 mr-1" />
               Renew
