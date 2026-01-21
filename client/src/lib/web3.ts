@@ -162,7 +162,10 @@ export class Web3Service {
   }
 
   public async getWalletState(): Promise<WalletState> {
-    if (!window.ethereum || this.isManuallyDisconnected) {
+    // Always check localStorage for disconnect state
+    const isDisconnected = localStorage.getItem(Web3Service.DISCONNECT_KEY) === 'true';
+    
+    if (!window.ethereum || isDisconnected) {
       return {
         isConnected: false,
         address: null,
