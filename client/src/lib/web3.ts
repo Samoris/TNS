@@ -260,6 +260,12 @@ export class Web3Service {
     // Set manual disconnect flag to prevent auto-reconnection
     this.isManuallyDisconnected = true;
     
+    // Clear any cached wallet data
+    localStorage.removeItem('walletConnected');
+    localStorage.removeItem('walletAddress');
+    sessionStorage.removeItem('walletConnected');
+    sessionStorage.removeItem('walletAddress');
+    
     // Notify listeners with disconnected state
     const disconnectedState: WalletState = {
       isConnected: false,
@@ -270,6 +276,10 @@ export class Web3Service {
     };
     
     this.listeners.forEach(listener => listener(disconnectedState));
+    
+    // Force page refresh to ensure clean state
+    console.log("Wallet disconnected - refreshing page");
+    window.location.reload();
   }
 
   public async sendTransaction(to: string, value: string, data?: string, gasLimit?: string): Promise<string> {
