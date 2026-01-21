@@ -2,41 +2,26 @@
 pragma solidity ^0.8.17;
 
 // ============================================
+// ENS-Style Price Oracle for TNS
 // DEPLOY ORDER: 3 of 7
 // Constructor: No parameters
+//
+// IMPORTANT: Select "TNSPriceOracle" from the dropdown
 // ============================================
 
-// OpenZeppelin Ownable (inline)
 abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
+    function _msgSender() internal view virtual returns (address) { return msg.sender; }
 }
 
 abstract contract Ownable is Context {
     address private _owner;
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    constructor() {
-        _transferOwnership(_msgSender());
-    }
+    constructor() { _transferOwnership(_msgSender()); }
 
-    modifier onlyOwner() {
-        _checkOwner();
-        _;
-    }
+    modifier onlyOwner() { require(owner() == _msgSender(), "Ownable: caller is not the owner"); _; }
 
-    function owner() public view virtual returns (address) {
-        return _owner;
-    }
-
-    function _checkOwner() internal view virtual {
-        require(owner() == _msgSender(), "Ownable: caller is not the owner");
-    }
-
-    function renounceOwnership() public virtual onlyOwner {
-        _transferOwnership(address(0));
-    }
+    function owner() public view virtual returns (address) { return _owner; }
 
     function transferOwnership(address newOwner) public virtual onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
@@ -50,8 +35,12 @@ abstract contract Ownable is Context {
     }
 }
 
-// StringUtils library
 library StringUtils {
+    /**
+     * @dev Returns the length of a given string
+     * @param s The string to measure the length of
+     * @return The length of the input string
+     */
     function strlen(string memory s) internal pure returns (uint256) {
         uint256 len;
         uint256 i = 0;
@@ -76,22 +65,46 @@ library StringUtils {
     }
 }
 
-interface ITNSPriceOracle {
+interface IPriceOracle {
     struct Price {
         uint256 base;
         uint256 premium;
     }
-    function price(string calldata name, uint256 expires, uint256 duration) external view returns (Price memory);
+
+    /**
+     * @dev Returns the price to register or renew a name.
+     * @param name The name being registered or renewed.
+     * @param expires When the name presently expires (0 if this is a new registration).
+     * @param duration How long the name is being registered or extended for, in seconds.
+     * @return base premium tuple of base price + premium price
+     */
+    function price(
+        string calldata name,
+        uint256 expires,
+        uint256 duration
+    ) external view returns (Price calldata);
 }
 
-contract TNSPriceOracle is ITNSPriceOracle, Ownable {
+/**
+ * @dev A price oracle for TNS that uses tiered pricing based on name length.
+ *      Prices are in native TRUST tokens (wei).
+ *      3 char: 100 TRUST/year
+ *      4 char: 70 TRUST/year
+ *      5+ char: 30 TRUST/year
+ */
+contract TNSPriceOracle is IPriceOracle, Ownable {
     using StringUtils for string;
 
-    uint256 public price3CharPerYear = 100 ether;
-    uint256 public price4CharPerYear = 70 ether;
-    uint256 public price5PlusCharPerYear = 30 ether;
+    // Prices per year in wei (1 TRUST = 1e18 wei)
+    uint256 public price1Letter = 1000 ether;    // Premium for 1 letter (if enabled)
+    uint256 public price2Letter = 500 ether;     // Premium for 2 letters (if enabled)
+    uint256 public price3Letter = 100 ether;     // 100 TRUST per year
+    uint256 public price4Letter = 70 ether;      // 70 TRUST per year
+    uint256 public price5Letter = 30 ether;      // 30 TRUST per year
 
-    event PricesUpdated(uint256 price3Char, uint256 price4Char, uint256 price5PlusChar);
+    event RentPriceChanged(uint256[] prices);
+
+    constructor() {}
 
     function price(
         string calldata name,
@@ -101,37 +114,67 @@ contract TNSPriceOracle is ITNSPriceOracle, Ownable {
         uint256 len = name.strlen();
         uint256 basePrice;
 
-        if (len == 3) {
-            basePrice = price3CharPerYear;
+        if (len == 1) {
+            basePrice = price1Letter;
+        } else if (len == 2) {
+            basePrice = price2Letter;
+        } else if (len == 3) {
+            basePrice = price3Letter;
         } else if (len == 4) {
-            basePrice = price4CharPerYear;
+            basePrice = price4Letter;
         } else {
-            basePrice = price5PlusCharPerYear;
+            basePrice = price5Letter;
         }
 
-        uint256 years = duration / 365 days;
-        if (years == 0) years = 1;
+        // Calculate price for duration
+        // basePrice is per year, so we prorate for the actual duration
+        uint256 totalPrice = (basePrice * duration) / 365 days;
 
         return Price({
-            base: basePrice * years,
-            premium: 0
+            base: totalPrice,
+            premium: _premium(name, expires, duration)
         });
     }
 
-    function setPrices(
-        uint256 _price3Char,
-        uint256 _price4Char,
-        uint256 _price5PlusChar
-    ) external onlyOwner {
-        price3CharPerYear = _price3Char;
-        price4CharPerYear = _price4Char;
-        price5PlusCharPerYear = _price5PlusChar;
-        emit PricesUpdated(_price3Char, _price4Char, _price5PlusChar);
+    /**
+     * @dev Returns the premium price for a name.
+     *      This can be used for auction/decay pricing on recently expired names.
+     *      For now, returns 0 (no premium).
+     */
+    function _premium(
+        string memory name,
+        uint256 expires,
+        uint256 duration
+    ) internal view virtual returns (uint256) {
+        return 0;
     }
 
-    function getPricePerYear(uint256 nameLength) external view returns (uint256) {
-        if (nameLength == 3) return price3CharPerYear;
-        if (nameLength == 4) return price4CharPerYear;
-        return price5PlusCharPerYear;
+    /**
+     * @dev Sets rent prices for various name lengths.
+     * @param _prices Array of prices: [1-letter, 2-letter, 3-letter, 4-letter, 5+-letter]
+     */
+    function setPrices(uint256[] memory _prices) external onlyOwner {
+        require(_prices.length == 5, "Must provide 5 prices");
+        price1Letter = _prices[0];
+        price2Letter = _prices[1];
+        price3Letter = _prices[2];
+        price4Letter = _prices[3];
+        price5Letter = _prices[4];
+        emit RentPriceChanged(_prices);
+    }
+
+    /**
+     * @dev Returns the price per year for a given name length.
+     */
+    function getPricePerYear(uint256 len) external view returns (uint256) {
+        if (len == 1) return price1Letter;
+        if (len == 2) return price2Letter;
+        if (len == 3) return price3Letter;
+        if (len == 4) return price4Letter;
+        return price5Letter;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
+        return interfaceId == type(IPriceOracle).interfaceId;
     }
 }

@@ -2,10 +2,17 @@
 pragma solidity ^0.8.17;
 
 // ============================================
+// ENS ETHRegistrarController - Exact ENS Architecture
+// Adapted for native TRUST token payments
+// 
 // DEPLOY ORDER: 4 of 7
 // Constructor Parameters:
-//   _base: TNSBaseRegistrar address (from step 2)
-//   _prices: TNSPriceOracle address (from step 3)
+//   _base: TNSBaseRegistrar address
+//   _prices: TNSPriceOracle address
+//   _minCommitmentAge: 60 (seconds)
+//   _maxCommitmentAge: 86400 (24 hours in seconds)
+//   _reverseRegistrar: TNSReverseRegistrar address (or zero address initially)
+//   _nameWrapper: Zero address (0x0000000000000000000000000000000000000000)
 //   _treasury: 0x629A5386F73283F80847154d16E359192a891f86
 //
 // IMPORTANT: Select "TNSController" from the dropdown
@@ -20,19 +27,12 @@ library StringUtils {
         uint256 bytelength = bytes(s).length;
         for (len = 0; i < bytelength; len++) {
             bytes1 b = bytes(s)[i];
-            if (b < 0x80) {
-                i += 1;
-            } else if (b < 0xE0) {
-                i += 2;
-            } else if (b < 0xF0) {
-                i += 3;
-            } else if (b < 0xF8) {
-                i += 4;
-            } else if (b < 0xFC) {
-                i += 5;
-            } else {
-                i += 6;
-            }
+            if (b < 0x80) { i += 1; }
+            else if (b < 0xE0) { i += 2; }
+            else if (b < 0xF0) { i += 3; }
+            else if (b < 0xF8) { i += 4; }
+            else if (b < 0xFC) { i += 5; }
+            else { i += 6; }
         }
         return len;
     }
@@ -41,27 +41,18 @@ library StringUtils {
 // ========== ABSTRACT CONTRACTS ==========
 
 abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
+    function _msgSender() internal view virtual returns (address) { return msg.sender; }
 }
 
 abstract contract Ownable is Context {
     address private _owner;
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    constructor() {
-        _transferOwnership(_msgSender());
-    }
+    constructor() { _transferOwnership(_msgSender()); }
 
-    modifier onlyOwner() {
-        require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
+    modifier onlyOwner() { require(owner() == _msgSender(), "Ownable: caller is not the owner"); _; }
 
-    function owner() public view virtual returns (address) {
-        return _owner;
-    }
+    function owner() public view virtual returns (address) { return _owner; }
 
     function transferOwnership(address newOwner) public virtual onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
@@ -80,9 +71,7 @@ abstract contract ReentrancyGuard {
     uint256 private constant _ENTERED = 2;
     uint256 private _status;
 
-    constructor() {
-        _status = _NOT_ENTERED;
-    }
+    constructor() { _status = _NOT_ENTERED; }
 
     modifier nonReentrant() {
         require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
@@ -94,7 +83,7 @@ abstract contract ReentrancyGuard {
 
 // ========== INTERFACES ==========
 
-interface ITNSPriceOracle {
+interface IPriceOracle {
     struct Price {
         uint256 base;
         uint256 premium;
@@ -102,34 +91,51 @@ interface ITNSPriceOracle {
     function price(string calldata name, uint256 expires, uint256 duration) external view returns (Price memory);
 }
 
-interface ITNSBaseRegistrar {
+interface IBaseRegistrar {
     function nameExpires(uint256 id) external view returns (uint256);
     function available(uint256 id) external view returns (bool);
     function register(uint256 id, address owner, uint256 duration) external returns (uint256);
     function renew(uint256 id, uint256 duration) external returns (uint256);
+    function reclaim(uint256 id, address owner) external;
 }
 
-// ========== ERRORS ==========
+interface IReverseRegistrar {
+    function setNameForAddr(address addr, address owner, address resolver, string memory name) external returns (bytes32);
+}
+
+interface INameWrapper {
+    function registerAndWrapETH2LD(string calldata label, address wrappedOwner, uint256 duration, address resolver, uint16 ownerControlledFuses) external returns (uint256 registrarExpiry);
+    function renew(uint256 tokenId, uint256 duration) external returns (uint256 expires);
+}
+
+// ========== ERRORS - Exact ENS Errors ==========
 
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);
 error NameNotAvailable(string name);
 error DurationTooShort(uint256 duration);
+error ResolverRequiredWhenDataSupplied();
 error UnexpiredCommitmentExists(bytes32 commitment);
-error InsufficientPayment();
-error RefundFailed();
+error InsufficientValue();
+error Unauthorised(bytes32 node);
+error MaxCommitmentAgeTooLow();
+error MaxCommitmentAgeTooHigh();
 
-// ========== TNSController ==========
+// ========== TNSController - ENS ETHRegistrarController Equivalent ==========
 
 contract TNSController is Ownable, ReentrancyGuard {
-    using StringUtils for *;
+    using StringUtils for string;
 
-    uint256 public constant MIN_REGISTRATION_DURATION = 365 days;
-    uint256 public constant MIN_COMMITMENT_AGE = 60;
-    uint256 public constant MAX_COMMITMENT_AGE = 24 hours;
+    uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
+    bytes32 private constant TRUST_NODE = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    uint64 private constant MAX_EXPIRY = type(uint64).max;
 
-    ITNSBaseRegistrar public immutable base;
-    ITNSPriceOracle public immutable prices;
+    IBaseRegistrar public immutable base;
+    IPriceOracle public prices;
+    uint256 public immutable minCommitmentAge;
+    uint256 public immutable maxCommitmentAge;
+    IReverseRegistrar public reverseRegistrar;
+    INameWrapper public nameWrapper;
     address public treasury;
 
     mapping(bytes32 => uint256) public commitments;
@@ -138,10 +144,10 @@ contract TNSController is Ownable, ReentrancyGuard {
         string name,
         bytes32 indexed label,
         address indexed owner,
-        uint256 cost,
+        uint256 baseCost,
+        uint256 premium,
         uint256 expires
     );
-
     event NameRenewed(
         string name,
         bytes32 indexed label,
@@ -149,30 +155,40 @@ contract TNSController is Ownable, ReentrancyGuard {
         uint256 expires
     );
 
-    event CommitmentMade(bytes32 indexed commitment, address indexed owner);
-
     constructor(
-        ITNSBaseRegistrar _base,
-        ITNSPriceOracle _prices,
+        IBaseRegistrar _base,
+        IPriceOracle _prices,
+        uint256 _minCommitmentAge,
+        uint256 _maxCommitmentAge,
+        IReverseRegistrar _reverseRegistrar,
+        INameWrapper _nameWrapper,
         address _treasury
     ) {
+        if (_maxCommitmentAge <= _minCommitmentAge) {
+            revert MaxCommitmentAgeTooLow();
+        }
+        if (_maxCommitmentAge > block.timestamp) {
+            revert MaxCommitmentAgeTooHigh();
+        }
+
         base = _base;
         prices = _prices;
+        minCommitmentAge = _minCommitmentAge;
+        maxCommitmentAge = _maxCommitmentAge;
+        reverseRegistrar = _reverseRegistrar;
+        nameWrapper = _nameWrapper;
         treasury = _treasury;
     }
 
-    function setTreasury(address _treasury) external onlyOwner {
-        treasury = _treasury;
-    }
+    // ========== View Functions ==========
 
-    function rentPrice(string memory name, uint256 duration) public view returns (ITNSPriceOracle.Price memory) {
+    function rentPrice(string memory name, uint256 duration) public view returns (IPriceOracle.Price memory priceData) {
         bytes32 label = keccak256(bytes(name));
-        return prices.price(name, base.nameExpires(uint256(label)), duration);
+        priceData = prices.price(name, base.nameExpires(uint256(label)), duration);
     }
 
     function valid(string memory name) public pure returns (bool) {
-        uint256 len = name.strlen();
-        return len >= 3;
+        return name.strlen() >= 3;
     }
 
     function available(string memory name) public view returns (bool) {
@@ -182,83 +198,148 @@ contract TNSController is Ownable, ReentrancyGuard {
 
     function makeCommitment(
         string memory name,
-        address registrant,
-        bytes32 secret
+        address owner,
+        uint256 duration,
+        bytes32 secret,
+        address resolver,
+        bytes[] calldata data,
+        bool reverseRecord,
+        uint16 ownerControlledFuses
     ) public pure returns (bytes32) {
         bytes32 label = keccak256(bytes(name));
-        return keccak256(abi.encode(label, registrant, secret));
+        if (data.length > 0 && resolver == address(0)) {
+            revert ResolverRequiredWhenDataSupplied();
+        }
+        return keccak256(
+            abi.encode(
+                label,
+                owner,
+                duration,
+                secret,
+                resolver,
+                data,
+                reverseRecord,
+                ownerControlledFuses
+            )
+        );
     }
 
+    // ========== Mutating Functions ==========
+
     function commit(bytes32 commitment) public {
-        if (commitments[commitment] + MAX_COMMITMENT_AGE >= block.timestamp) {
+        if (commitments[commitment] + maxCommitmentAge >= block.timestamp) {
             revert UnexpiredCommitmentExists(commitment);
         }
         commitments[commitment] = block.timestamp;
-        emit CommitmentMade(commitment, msg.sender);
     }
 
     function register(
         string calldata name,
-        address registrant,
+        address owner,
         uint256 duration,
-        bytes32 secret
+        bytes32 secret,
+        address resolver,
+        bytes[] calldata data,
+        bool reverseRecord,
+        uint16 ownerControlledFuses
     ) public payable nonReentrant {
-        ITNSPriceOracle.Price memory priceInfo = rentPrice(name, duration);
-        uint256 cost = priceInfo.base + priceInfo.premium;
-
-        _consumeCommitment(name, duration, makeCommitment(name, registrant, secret));
-
-        if (msg.value < cost) {
-            revert InsufficientPayment();
+        IPriceOracle.Price memory priceData = rentPrice(name, duration);
+        if (msg.value < priceData.base + priceData.premium) {
+            revert InsufficientValue();
         }
 
+        _consumeCommitment(
+            name,
+            duration,
+            makeCommitment(
+                name,
+                owner,
+                duration,
+                secret,
+                resolver,
+                data,
+                reverseRecord,
+                ownerControlledFuses
+            )
+        );
+
+        uint256 expires = _register(name, owner, duration, resolver, data, reverseRecord);
+
+        emit NameRegistered(
+            name,
+            keccak256(bytes(name)),
+            owner,
+            priceData.base,
+            priceData.premium,
+            expires
+        );
+
+        // Send payment to treasury
+        if (priceData.base + priceData.premium > 0) {
+            (bool sent, ) = treasury.call{value: priceData.base + priceData.premium}("");
+            require(sent, "Treasury payment failed");
+        }
+
+        // Refund excess payment
+        if (msg.value > priceData.base + priceData.premium) {
+            payable(msg.sender).transfer(msg.value - priceData.base - priceData.premium);
+        }
+    }
+
+    function _register(
+        string calldata name,
+        address owner,
+        uint256 duration,
+        address resolver,
+        bytes[] calldata data,
+        bool reverseRecord
+    ) internal returns (uint256 expires) {
         bytes32 label = keccak256(bytes(name));
         uint256 tokenId = uint256(label);
-        uint256 expires = base.register(tokenId, registrant, duration);
 
-        (bool sent, ) = treasury.call{value: cost}("");
-        require(sent, "Treasury payment failed");
+        expires = base.register(tokenId, owner, duration);
 
-        if (msg.value > cost) {
-            (bool refunded, ) = msg.sender.call{value: msg.value - cost}("");
-            if (!refunded) {
-                revert RefundFailed();
+        if (resolver != address(0)) {
+            // Set resolver data if provided
+            bytes32 nodehash = keccak256(abi.encodePacked(base, label));
+            for (uint256 i = 0; i < data.length; i++) {
+                (bool success, ) = resolver.call(data[i]);
+                require(success, "Resolver data call failed");
             }
         }
 
-        emit NameRegistered(name, label, registrant, cost, expires);
+        if (reverseRecord && address(reverseRegistrar) != address(0)) {
+            reverseRegistrar.setNameForAddr(
+                msg.sender,
+                owner,
+                resolver,
+                string.concat(name, ".trust")
+            );
+        }
     }
 
     function renew(string calldata name, uint256 duration) external payable nonReentrant {
-        ITNSPriceOracle.Price memory priceInfo = rentPrice(name, duration);
-        uint256 cost = priceInfo.base;
-
-        if (msg.value < cost) {
-            revert InsufficientPayment();
-        }
-
         bytes32 labelhash = keccak256(bytes(name));
         uint256 tokenId = uint256(labelhash);
-        uint256 expires = base.renew(tokenId, duration);
+        IPriceOracle.Price memory priceData = rentPrice(name, duration);
 
-        (bool sent, ) = treasury.call{value: cost}("");
-        require(sent, "Treasury payment failed");
-
-        if (msg.value > cost) {
-            (bool refunded, ) = msg.sender.call{value: msg.value - cost}("");
-            if (!refunded) {
-                revert RefundFailed();
-            }
+        if (msg.value < priceData.base) {
+            revert InsufficientValue();
         }
 
-        emit NameRenewed(name, labelhash, cost, expires);
-    }
+        uint256 expires = base.renew(tokenId, duration);
 
-    function withdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        if (balance > 0) {
-            (bool sent, ) = treasury.call{value: balance}("");
-            require(sent, "Withdraw failed");
+        emit NameRenewed(name, labelhash, priceData.base, expires);
+
+        // Send payment to treasury
+        if (priceData.base > 0) {
+            (bool sent, ) = treasury.call{value: priceData.base}("");
+            require(sent, "Treasury payment failed");
+        }
+
+        // Refund excess payment
+        if (msg.value > priceData.base) {
+            payable(msg.sender).transfer(msg.value - priceData.base);
         }
     }
 
@@ -267,11 +348,13 @@ contract TNSController is Ownable, ReentrancyGuard {
         uint256 duration,
         bytes32 commitment
     ) internal {
-        if (commitments[commitment] + MIN_COMMITMENT_AGE > block.timestamp) {
+        // Require an old enough commitment.
+        if (commitments[commitment] + minCommitmentAge > block.timestamp) {
             revert CommitmentTooNew(commitment);
         }
 
-        if (commitments[commitment] + MAX_COMMITMENT_AGE <= block.timestamp) {
+        // If the commitment is too old, or the name is registered, stop.
+        if (commitments[commitment] + maxCommitmentAge <= block.timestamp) {
             revert CommitmentTooOld(commitment);
         }
 
@@ -286,6 +369,27 @@ contract TNSController is Ownable, ReentrancyGuard {
         }
     }
 
+    // ========== Admin Functions ==========
+
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+    }
+
+    function setPriceOracle(IPriceOracle _prices) external onlyOwner {
+        prices = _prices;
+    }
+
+    function setReverseRegistrar(IReverseRegistrar _reverseRegistrar) external onlyOwner {
+        reverseRegistrar = _reverseRegistrar;
+    }
+
+    function withdraw() external onlyOwner {
+        (bool sent, ) = treasury.call{value: address(this).balance}("");
+        require(sent, "Withdrawal failed");
+    }
+
+    // ========== Helper Functions ==========
+
     function getCommitmentAge(bytes32 commitment) external view returns (uint256) {
         if (commitments[commitment] == 0) return 0;
         return block.timestamp - commitments[commitment];
@@ -294,7 +398,11 @@ contract TNSController is Ownable, ReentrancyGuard {
     function isCommitmentReady(bytes32 commitment) external view returns (bool) {
         if (commitments[commitment] == 0) return false;
         uint256 age = block.timestamp - commitments[commitment];
-        return age >= MIN_COMMITMENT_AGE && age < MAX_COMMITMENT_AGE;
+        return age >= minCommitmentAge && age < maxCommitmentAge;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+        return interfaceId == type(IBaseRegistrar).interfaceId;
     }
 
     receive() external payable {}
