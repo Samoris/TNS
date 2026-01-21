@@ -61,7 +61,7 @@ Contracts must be deployed in this specific order:
 1. **TRUST Token Payments** - Uses ERC-20 TRUST token instead of ETH
 2. **Simplified Resolver** - Single resolver contract instead of profile-based inheritance
 3. **Tiered Pricing** - Built-in character-length based pricing
-4. **30-Day Grace Period** - Shorter grace period than ENS's 90 days
+4. **90-Day Grace Period** - Matches ENS standard for expired domain renewal
 5. **60s/24h Commit Window** - Customized for Intuition block times
 
 ## Namehash Calculation
