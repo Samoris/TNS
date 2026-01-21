@@ -186,16 +186,8 @@ export function Header() {
                     <DropdownMenuItem 
                       onSelect={(e) => {
                         e.preventDefault();
-                        console.log("Switch wallet clicked");
-                        setTimeout(async () => {
-                          try {
-                            console.log("Calling switchWallet...");
-                            await switchWallet();
-                            console.log("switchWallet completed");
-                          } catch (err) {
-                            console.error("switchWallet error:", err);
-                          }
-                        }, 100);
+                        // Disconnect and then reconnect to allow account selection
+                        disconnectWallet();
                       }} 
                       data-testid="switch-wallet"
                     >

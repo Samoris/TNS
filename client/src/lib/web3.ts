@@ -41,6 +41,7 @@ export class Web3Service {
   private static instance: Web3Service;
   private listeners: Set<(state: WalletState) => void> = new Set();
   private isManuallyDisconnected: boolean = false;
+  private static DISCONNECT_KEY = 'tns_wallet_disconnected';
 
   static getInstance(): Web3Service {
     if (!Web3Service.instance) {
@@ -50,6 +51,10 @@ export class Web3Service {
   }
 
   constructor() {
+    // Check localStorage for disconnect state on initialization
+    if (typeof window !== 'undefined') {
+      this.isManuallyDisconnected = localStorage.getItem(Web3Service.DISCONNECT_KEY) === 'true';
+    }
     this.initializeEventListeners();
   }
 
@@ -95,6 +100,13 @@ export class Web3Service {
     try {
       // Clear the manual disconnect flag
       this.isManuallyDisconnected = false;
+      localStorage.removeItem(Web3Service.DISCONNECT_KEY);
+      
+      // Always request permissions to allow user to select account
+      await window.ethereum.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
       
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
@@ -259,6 +271,7 @@ export class Web3Service {
   public async disconnectWallet(): Promise<void> {
     // Set manual disconnect flag to prevent auto-reconnection
     this.isManuallyDisconnected = true;
+    localStorage.setItem(Web3Service.DISCONNECT_KEY, 'true');
     
     // Notify listeners with disconnected state
     const disconnectedState: WalletState = {
