@@ -2336,7 +2336,7 @@ export class Web3Service {
       const reverseAbi = ["function setName(string name) returns (bytes32)"];
       const contract = new ethers.Contract(reverseRegistrarAddress, reverseAbi, signer);
 
-      const tx = await contract.setName(fullDomainName, { gasLimit: 100000 });
+      const tx = await contract.setName(fullDomainName, { gasLimit: 200000 });
 
       console.log("Set primary name transaction sent:", tx.hash);
       const receipt = await tx.wait();
