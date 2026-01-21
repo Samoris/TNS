@@ -296,23 +296,38 @@ export class Web3Service {
       localStorage.removeItem('walletManuallyDisconnected');
       
       // Request permissions again to force MetaMask to show account selector
-      await window.ethereum.request({
+      // This prompts the user to select which accounts to connect
+      const permissions = await window.ethereum.request({
         method: "wallet_requestPermissions",
         params: [{ eth_accounts: {} }],
       });
       
-      // Get the new account
+      console.log("Permissions granted:", permissions);
+      
+      // Get the new account after permission is granted
       const accounts = await window.ethereum.request({
-        method: "eth_accounts",
+        method: "eth_requestAccounts",
       });
+
+      console.log("New accounts:", accounts);
 
       if (accounts.length === 0) {
         throw new Error("No accounts selected");
       }
 
       await this.switchToIntuitionNetwork();
-      return await this.getWalletState();
-    } catch (error) {
+      const newState = await this.getWalletState();
+      
+      // Notify listeners of the change
+      this.listeners.forEach(listener => listener(newState));
+      
+      return newState;
+    } catch (error: any) {
+      // User rejected the request
+      if (error.code === 4001) {
+        console.log("User rejected account switch");
+        return await this.getWalletState();
+      }
       console.error("Failed to switch account:", error);
       throw error;
     }
