@@ -186,7 +186,16 @@ export function Header() {
                     <DropdownMenuItem 
                       onSelect={(e) => {
                         e.preventDefault();
-                        setTimeout(() => switchWallet(), 100);
+                        console.log("Switch wallet clicked");
+                        setTimeout(async () => {
+                          try {
+                            console.log("Calling switchWallet...");
+                            await switchWallet();
+                            console.log("switchWallet completed");
+                          } catch (err) {
+                            console.error("switchWallet error:", err);
+                          }
+                        }, 100);
                       }} 
                       data-testid="switch-wallet"
                     >
