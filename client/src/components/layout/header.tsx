@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X, Database } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X, Database, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +37,7 @@ export function Header() {
     error,
     connectWallet,
     switchWallet,
+    switchAccount,
     disconnectWallet,
     switchNetwork,
     formatAddress,
@@ -193,6 +194,10 @@ export function Header() {
                         Switch to Intuition Mainnet
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem onClick={switchAccount} data-testid="switch-account">
+                      <User className="mr-2 h-4 w-4" />
+                      Switch Account
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet-dropdown">
                       <LogOut className="mr-2 h-4 w-4" />
                       Disconnect

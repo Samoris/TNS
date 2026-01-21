@@ -285,6 +285,39 @@ export class Web3Service {
     console.log("Wallet disconnected");
   }
 
+  public async switchAccount(): Promise<WalletState> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      // Clear the manual disconnect flag
+      this.isManuallyDisconnected = false;
+      localStorage.removeItem('walletManuallyDisconnected');
+      
+      // Request permissions again to force MetaMask to show account selector
+      await window.ethereum.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
+      
+      // Get the new account
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+
+      if (accounts.length === 0) {
+        throw new Error("No accounts selected");
+      }
+
+      await this.switchToIntuitionNetwork();
+      return await this.getWalletState();
+    } catch (error) {
+      console.error("Failed to switch account:", error);
+      throw error;
+    }
+  }
+
   public async sendTransaction(to: string, value: string, data?: string, gasLimit?: string): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");

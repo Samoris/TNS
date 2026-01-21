@@ -93,6 +93,20 @@ export function useWallet() {
     }
   };
 
+  const switchAccount = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const state = await web3Service.switchAccount();
+      setWalletState(state);
+    } catch (error: any) {
+      console.error("Failed to switch account:", error);
+      setError(error.message || "Failed to switch account");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const sendTransaction = async (to: string, value: string, data?: string, gasLimit?: string) => {
     try {
       if (!walletState.isConnected) {
@@ -141,6 +155,7 @@ export function useWallet() {
     error,
     connectWallet,
     switchWallet,
+    switchAccount,
     disconnectWallet,
     switchNetwork,
     sendTransaction,
