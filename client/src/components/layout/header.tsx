@@ -183,7 +183,13 @@ export function Header() {
                       )}
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={switchWallet} data-testid="switch-wallet">
+                    <DropdownMenuItem 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        switchWallet();
+                      }} 
+                      data-testid="switch-wallet"
+                    >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Switch Wallet
                     </DropdownMenuItem>
