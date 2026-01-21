@@ -6,10 +6,31 @@ pragma solidity ^0.8.17;
 // Constructor Parameters:
 //   _tns: TNSRegistry address (from step 1)
 //   _resolver: TNSResolver address (from step 6)
-//   _baseNode: Same as step 2 - keccak256(abi.encodePacked(bytes32(0), keccak256("trust")))
+//   _baseNode: Same as step 2 (use HashHelper)
+//
+// IMPORTANT: Select "TNSPaymentForwarder" from the dropdown
 // ============================================
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// ========== ABSTRACT CONTRACTS ==========
+
+abstract contract ReentrancyGuard {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    uint256 private _status;
+
+    constructor() {
+        _status = _NOT_ENTERED;
+    }
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+}
+
+// ========== INTERFACES ==========
 
 interface ITNS {
     function owner(bytes32 node) external view returns (address);
@@ -18,6 +39,8 @@ interface ITNS {
 interface ITNSResolver {
     function addr(bytes32 node) external view returns (address);
 }
+
+// ========== TNSPaymentForwarder ==========
 
 contract TNSPaymentForwarder is ReentrancyGuard {
     ITNS public immutable tns;

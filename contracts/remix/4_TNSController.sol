@@ -7,12 +7,12 @@ pragma solidity ^0.8.17;
 //   _base: TNSBaseRegistrar address (from step 2)
 //   _prices: TNSPriceOracle address (from step 3)
 //   _treasury: 0x629A5386F73283F80847154d16E359192a891f86
+//
+// IMPORTANT: Select "TNSController" from the dropdown
 // ============================================
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// ========== LIBRARIES ==========
 
-// StringUtils library
 library StringUtils {
     function strlen(string memory s) internal pure returns (uint256) {
         uint256 len;
@@ -38,6 +38,62 @@ library StringUtils {
     }
 }
 
+// ========== ABSTRACT CONTRACTS ==========
+
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+}
+
+abstract contract Ownable is Context {
+    address private _owner;
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    constructor() {
+        _transferOwnership(_msgSender());
+    }
+
+    modifier onlyOwner() {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        _transferOwnership(newOwner);
+    }
+
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+}
+
+abstract contract ReentrancyGuard {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    uint256 private _status;
+
+    constructor() {
+        _status = _NOT_ENTERED;
+    }
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+}
+
+// ========== INTERFACES ==========
+
 interface ITNSPriceOracle {
     struct Price {
         uint256 base;
@@ -53,6 +109,8 @@ interface ITNSBaseRegistrar {
     function renew(uint256 id, uint256 duration) external returns (uint256);
 }
 
+// ========== ERRORS ==========
+
 error CommitmentTooNew(bytes32 commitment);
 error CommitmentTooOld(bytes32 commitment);
 error NameNotAvailable(string name);
@@ -60,6 +118,8 @@ error DurationTooShort(uint256 duration);
 error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientPayment();
 error RefundFailed();
+
+// ========== TNSController ==========
 
 contract TNSController is Ownable, ReentrancyGuard {
     using StringUtils for *;
@@ -122,11 +182,11 @@ contract TNSController is Ownable, ReentrancyGuard {
 
     function makeCommitment(
         string memory name,
-        address owner,
+        address registrant,
         bytes32 secret
     ) public pure returns (bytes32) {
         bytes32 label = keccak256(bytes(name));
-        return keccak256(abi.encode(label, owner, secret));
+        return keccak256(abi.encode(label, registrant, secret));
     }
 
     function commit(bytes32 commitment) public {
@@ -139,14 +199,14 @@ contract TNSController is Ownable, ReentrancyGuard {
 
     function register(
         string calldata name,
-        address owner,
+        address registrant,
         uint256 duration,
         bytes32 secret
     ) public payable nonReentrant {
         ITNSPriceOracle.Price memory priceInfo = rentPrice(name, duration);
         uint256 cost = priceInfo.base + priceInfo.premium;
 
-        _consumeCommitment(name, duration, makeCommitment(name, owner, secret));
+        _consumeCommitment(name, duration, makeCommitment(name, registrant, secret));
 
         if (msg.value < cost) {
             revert InsufficientPayment();
@@ -154,7 +214,7 @@ contract TNSController is Ownable, ReentrancyGuard {
 
         bytes32 label = keccak256(bytes(name));
         uint256 tokenId = uint256(label);
-        uint256 expires = base.register(tokenId, owner, duration);
+        uint256 expires = base.register(tokenId, registrant, duration);
 
         (bool sent, ) = treasury.call{value: cost}("");
         require(sent, "Treasury payment failed");
@@ -166,7 +226,7 @@ contract TNSController is Ownable, ReentrancyGuard {
             }
         }
 
-        emit NameRegistered(name, label, owner, cost, expires);
+        emit NameRegistered(name, label, registrant, cost, expires);
     }
 
     function renew(string calldata name, uint256 duration) external payable nonReentrant {

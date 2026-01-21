@@ -8,9 +8,30 @@ pragma solidity ^0.8.17;
 //   _registrar: TNSBaseRegistrar address (from step 2)
 //   _trustedController: TNSController address (from step 4)
 //   _trustedReverseRegistrar: TNSReverseRegistrar address (from step 5)
+//
+// IMPORTANT: Select "TNSResolver" from the dropdown
 // ============================================
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// ========== ABSTRACT CONTRACTS ==========
+
+abstract contract ReentrancyGuard {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    uint256 private _status;
+
+    constructor() {
+        _status = _NOT_ENTERED;
+    }
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+}
+
+// ========== INTERFACES ==========
 
 interface ITNS {
     function owner(bytes32 node) external view returns (address);
@@ -19,6 +40,8 @@ interface ITNS {
 interface ITNSBaseRegistrar {
     function owner() external view returns (address);
 }
+
+// ========== TNSResolver ==========
 
 contract TNSResolver is ReentrancyGuard {
     ITNS public immutable tns;
@@ -38,8 +61,8 @@ contract TNSResolver is ReentrancyGuard {
     event ContenthashChanged(bytes32 indexed node, bytes hash);
     event TextChanged(bytes32 indexed node, string indexed indexedKey, string key, string value);
     event NameChanged(bytes32 indexed node, string name);
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
-    event Approved(address owner, bytes32 indexed node, address indexed delegate, bool indexed approved);
+    event ApprovalForAll(address indexed account, address indexed operator, bool approved);
+    event Approved(address account, bytes32 indexed node, address indexed delegate, bool indexed approved);
 
     constructor(
         ITNS _tns,
@@ -84,8 +107,8 @@ contract TNSResolver is ReentrancyGuard {
         emit Approved(msg.sender, node, delegate, approved);
     }
 
-    function isApprovedFor(address owner, bytes32 node, address delegate) public view returns (bool) {
-        return _tokenApprovals[owner][node][delegate];
+    function isApprovedFor(address account, bytes32 node, address delegate) public view returns (bool) {
+        return _tokenApprovals[account][node][delegate];
     }
 
     function setAddr(bytes32 node, address addr) external authorised(node) {
