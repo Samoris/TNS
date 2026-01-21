@@ -183,14 +183,7 @@ export function Header() {
                       )}
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        // Disconnect and then reconnect to allow account selection
-                        disconnectWallet();
-                      }} 
-                      data-testid="switch-wallet"
-                    >
+                    <DropdownMenuItem onClick={switchWallet} data-testid="switch-wallet">
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Switch Wallet
                     </DropdownMenuItem>
