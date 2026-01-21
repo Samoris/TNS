@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { TNS_RESOLVER_ADDRESS } from "./contracts";
+import { TNS_RESOLVER_ADDRESS, TNS_CONTROLLER_ADDRESS, USE_NEW_CONTRACTS } from "./contracts";
 
 export interface NetworkConfig {
   chainId: number;
@@ -905,6 +905,61 @@ export class Web3Service {
       let activeUsers = 0;
       
       try {
+        // For ENS-forked contracts, use the Controller's NameRegistered events
+        if (USE_NEW_CONTRACTS) {
+          const controllerContract = new ethers.Contract(
+            TNS_CONTROLLER_ADDRESS,
+            ["event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint256 baseCost, uint256 premium, uint256 expires)"],
+            provider
+          );
+          const currentBlock = await provider.getBlockNumber();
+          const filter = controllerContract.filters.NameRegistered();
+          
+          // Query in chunks to avoid timeouts
+          const blockRange = 250000;
+          const maxLookback = 1000000;
+          let allEvents: any[] = [];
+          
+          for (let lookback = 0; lookback < maxLookback; lookback += blockRange) {
+            try {
+              const fromBlock = Math.max(0, currentBlock - lookback - blockRange);
+              const toBlock = Math.max(0, currentBlock - lookback);
+              
+              if (toBlock <= 0 && fromBlock === 0) break;
+              
+              const events = await controllerContract.queryFilter(filter, fromBlock, toBlock);
+              if (events.length > 0) {
+                allEvents = [...allEvents, ...events];
+              }
+              
+              if (events.length < 25 && lookback > blockRange * 2) break;
+            } catch (chunkError) {
+              break;
+            }
+          }
+          
+          // Use event count for total domains
+          totalDomains = allEvents.length;
+          
+          // Count unique domain owners
+          const uniqueOwners = new Set();
+          allEvents.forEach(event => {
+            if (event.args && event.args.owner) {
+              uniqueOwners.add(event.args.owner.toLowerCase());
+            }
+          });
+          activeUsers = uniqueOwners.size;
+          
+          console.log(`ENS contract stats: ${totalDomains} domains, ${activeUsers} users`);
+          
+          return {
+            totalDomains,
+            totalValueLocked,
+            activeUsers,
+          };
+        }
+        
+        // Legacy contract path
         const contract = new ethers.Contract(contractAddress, abi, provider);
         const currentBlock = await provider.getBlockNumber();
         
