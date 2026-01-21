@@ -223,12 +223,12 @@ export const TNS_BASE_REGISTRAR_ABI = [
 ];
 
 // ============================================
-// TNS CONTROLLER ABI (Registration with Commit-Reveal + TRUST ERC-20 Payments)
-// Note: This controller uses ERC-20 TRUST tokens, not native ETH
-// Users must approve TRUST tokens before calling register/renew
+// TNS CONTROLLER ABI (Registration with Commit-Reveal + Native TRUST Payments)
+// Note: TRUST is the native token on Intuition (like ETH on Ethereum)
+// Users send TRUST directly with the transaction (payable functions)
 // ============================================
 export const TNS_CONTROLLER_ABI = [
-  // Commit-reveal registration (uses ERC-20 transferFrom, NOT payable)
+  // Commit-reveal registration (payable - sends native TRUST)
   {
     inputs: [{ name: "commitment", type: "bytes32" }],
     name: "commit",
@@ -241,13 +241,11 @@ export const TNS_CONTROLLER_ABI = [
       { name: "name", type: "string" },
       { name: "owner", type: "address" },
       { name: "duration", type: "uint256" },
-      { name: "secret", type: "bytes32" },
-      { name: "resolver", type: "address" },
-      { name: "setAsPrimary", type: "bool" }
+      { name: "secret", type: "bytes32" }
     ],
     name: "register",
     outputs: [],
-    stateMutability: "nonpayable", // Uses ERC-20 transferFrom internally
+    stateMutability: "payable", // Accepts native TRUST
     type: "function"
   },
   {
@@ -257,7 +255,7 @@ export const TNS_CONTROLLER_ABI = [
     ],
     name: "renew",
     outputs: [],
-    stateMutability: "nonpayable", // Uses ERC-20 transferFrom internally
+    stateMutability: "payable", // Accepts native TRUST
     type: "function"
   },
   // View functions
@@ -265,10 +263,7 @@ export const TNS_CONTROLLER_ABI = [
     inputs: [
       { name: "name", type: "string" },
       { name: "owner", type: "address" },
-      { name: "duration", type: "uint256" },
-      { name: "secret", type: "bytes32" },
-      { name: "resolver", type: "address" },
-      { name: "setAsPrimary", type: "bool" }
+      { name: "secret", type: "bytes32" }
     ],
     name: "makeCommitment",
     outputs: [{ name: "", type: "bytes32" }],

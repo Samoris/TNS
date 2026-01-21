@@ -1578,22 +1578,19 @@ export class Web3Service {
   }
 
   /**
-   * Register domain using new ENS-forked controller with ERC-20 token
+   * Register domain using new ENS-forked controller with native TRUST token
    * This is the Step 2 (reveal) of commit-reveal for ENS-forked contracts
    * 
-   * IMPORTANT: Before calling this, the user MUST:
-   * 1. Have sufficient TRUST token balance
-   * 2. Have approved the controller to spend TRUST tokens (via ensureTokenAllowance)
-   * 
-   * The controller uses ERC-20 transferFrom internally - it is NOT payable.
+   * IMPORTANT: TRUST is the native token on Intuition (like ETH on Ethereum)
+   * The user sends TRUST directly with the transaction (payable function)
+   * No ERC-20 approval is needed.
    */
   public async registerDomainENS(
     controllerAddress: string,
-    resolverAddress: string,
     domainName: string,
     durationSeconds: number,
     secret: string,
-    setAsPrimary: boolean = false
+    cost: bigint
   ): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -1607,31 +1604,27 @@ export class Web3Service {
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
-      console.log("Registering domain via ENS-forked controller (ERC-20 payment):");
+      console.log("Registering domain via ENS-forked controller (native TRUST payment):");
       console.log("- Domain:", normalizedDomain);
       console.log("- Duration:", durationSeconds, "seconds");
-      console.log("- Resolver:", resolverAddress);
-      console.log("- Set as primary:", setAsPrimary);
-      console.log("- Note: Controller uses ERC-20 transferFrom (not payable)");
+      console.log("- Cost:", ethers.formatEther(cost), "TRUST");
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
-      // Use the correct ABI - register is nonpayable (uses ERC-20 transferFrom)
+      // Use the correct ABI - register is payable (sends native TRUST)
       const controllerAbi = [
-        "function register(string name, address owner, uint256 duration, bytes32 secret, address resolver, bool setAsPrimary)"
+        "function register(string name, address owner, uint256 duration, bytes32 secret) payable"
       ];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
 
-      // No value field - controller pulls TRUST tokens via transferFrom
+      // Send native TRUST with the transaction
       const tx = await contract.register(
         normalizedDomain,
         state.address,
         durationSeconds,
         secret,
-        resolverAddress,
-        setAsPrimary,
-        { gasLimit: 400000 }
+        { value: cost, gasLimit: 400000 }
       );
 
       console.log("Registration transaction sent:", tx.hash);
@@ -1652,10 +1645,8 @@ export class Web3Service {
         throw new Error("Please wait at least 1 minute after making commitment");
       } else if (error.message?.includes('Commitment expired')) {
         throw new Error("Commitment expired - please make a new commitment");
-      } else if (error.message?.includes('Insufficient allowance')) {
-        throw new Error("Insufficient TRUST token allowance - please approve token spending first");
-      } else if (error.message?.includes('Insufficient balance')) {
-        throw new Error("Insufficient TRUST token balance for registration");
+      } else if (error.message?.includes('insufficient funds')) {
+        throw new Error("Insufficient TRUST balance for registration");
       }
       
       throw new Error(error.message || "Failed to register domain");
@@ -1669,10 +1660,7 @@ export class Web3Service {
     controllerAddress: string,
     domainName: string,
     ownerAddress: string,
-    durationSeconds: number,
-    secret: string,
-    resolverAddress: string,
-    setAsPrimary: boolean = false
+    secret: string
   ): Promise<{ commitment: string; txHash: string }> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
@@ -1690,7 +1678,7 @@ export class Web3Service {
       const signer = await provider.getSigner();
       
       const controllerAbi = [
-        "function makeCommitment(string name, address owner, uint256 duration, bytes32 secret, address resolver, bool setAsPrimary) view returns (bytes32)",
+        "function makeCommitment(string name, address owner, bytes32 secret) pure returns (bytes32)",
         "function commit(bytes32 commitment)"
       ];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
@@ -1699,10 +1687,7 @@ export class Web3Service {
       const commitment = await contract.makeCommitment(
         normalizedDomain,
         ownerAddress,
-        durationSeconds,
-        secret,
-        resolverAddress,
-        setAsPrimary
+        secret
       );
 
       console.log("Generated commitment:", commitment);
@@ -1725,9 +1710,9 @@ export class Web3Service {
   }
 
   /**
-   * Renew domain using ENS-forked controller with ERC-20 token
+   * Renew domain using ENS-forked controller with native TRUST token
    */
-  public async renewDomainENS(controllerAddress: string, domainName: string, durationSeconds: number): Promise<string> {
+  public async renewDomainENS(controllerAddress: string, domainName: string, durationSeconds: number, cost: bigint): Promise<string> {
     if (!window.ethereum) {
       throw new Error("MetaMask not installed");
     }
@@ -1740,17 +1725,19 @@ export class Web3Service {
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
-      console.log("Renewing domain via ENS-forked controller:");
+      console.log("Renewing domain via ENS-forked controller (native TRUST payment):");
       console.log("- Domain:", normalizedDomain);
       console.log("- Duration:", durationSeconds, "seconds");
+      console.log("- Cost:", ethers.formatEther(cost), "TRUST");
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
-      const controllerAbi = ["function renew(string name, uint256 duration)"];
+      const controllerAbi = ["function renew(string name, uint256 duration) payable"];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
 
-      const tx = await contract.renew(normalizedDomain, durationSeconds, { gasLimit: 150000 });
+      // Send native TRUST with the transaction
+      const tx = await contract.renew(normalizedDomain, durationSeconds, { value: cost, gasLimit: 150000 });
 
       console.log("Renewal transaction sent:", tx.hash);
       const receipt = await tx.wait();
@@ -1763,6 +1750,9 @@ export class Web3Service {
       return receipt.hash;
     } catch (error: any) {
       console.error("ENS renewal error:", error);
+      if (error.message?.includes('insufficient funds')) {
+        throw new Error("Insufficient TRUST balance for renewal");
+      }
       throw new Error(error.message || "Failed to renew domain");
     }
   }
@@ -1828,6 +1818,36 @@ export class Web3Service {
    */
   public labelhash(label: string): string {
     return ethers.keccak256(ethers.toUtf8Bytes(label));
+  }
+
+  /**
+   * Get rent price from ENS-forked controller
+   * Returns the cost in native TRUST (wei units)
+   */
+  public async getRentPriceENS(controllerAddress: string, domainName: string, durationSeconds: number): Promise<bigint> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      const controllerAbi = [
+        "function rentPrice(string name, uint256 duration) view returns (tuple(uint256 base, uint256 premium))"
+      ];
+      const contract = new ethers.Contract(controllerAddress, controllerAbi, provider);
+
+      const priceInfo = await contract.rentPrice(normalizedDomain, durationSeconds);
+      const totalCost = priceInfo.base + priceInfo.premium;
+      
+      console.log("Rent price for", normalizedDomain, ":", ethers.formatEther(totalCost), "TRUST");
+      return totalCost;
+    } catch (error: any) {
+      console.error("Error getting rent price:", error);
+      throw new Error(error.message || "Failed to get rent price");
+    }
   }
 }
 

@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import "./TNSBaseRegistrar.sol";
 import "./ITNSPriceOracle.sol";
 import "./StringUtils.sol";
-import "./IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -14,8 +13,7 @@ error NameNotAvailable(string name);
 error DurationTooShort(uint256 duration);
 error UnexpiredCommitmentExists(bytes32 commitment);
 error InsufficientPayment();
-error InsufficientAllowance();
-error TransferFailed();
+error RefundFailed();
 
 contract TNSController is Ownable, ReentrancyGuard {
     using StringUtils for *;
@@ -26,7 +24,6 @@ contract TNSController is Ownable, ReentrancyGuard {
 
     TNSBaseRegistrar public immutable base;
     ITNSPriceOracle public immutable prices;
-    IERC20 public immutable trustToken;
     address public treasury;
 
     mapping(bytes32 => uint256) public commitments;
@@ -51,12 +48,10 @@ contract TNSController is Ownable, ReentrancyGuard {
     constructor(
         TNSBaseRegistrar _base,
         ITNSPriceOracle _prices,
-        IERC20 _trustToken,
         address _treasury
     ) {
         base = _base;
         prices = _prices;
-        trustToken = _trustToken;
         treasury = _treasury;
     }
 
@@ -101,60 +96,67 @@ contract TNSController is Ownable, ReentrancyGuard {
         address owner,
         uint256 duration,
         bytes32 secret
-    ) public nonReentrant {
+    ) public payable nonReentrant {
         ITNSPriceOracle.Price memory priceInfo = rentPrice(name, duration);
         uint256 cost = priceInfo.base + priceInfo.premium;
 
         _consumeCommitment(name, duration, makeCommitment(name, owner, secret));
 
-        if (trustToken.allowance(msg.sender, address(this)) < cost) {
-            revert InsufficientAllowance();
-        }
-
-        if (trustToken.balanceOf(msg.sender) < cost) {
+        if (msg.value < cost) {
             revert InsufficientPayment();
-        }
-
-        bool success = trustToken.transferFrom(msg.sender, treasury, cost);
-        if (!success) {
-            revert TransferFailed();
         }
 
         bytes32 label = keccak256(bytes(name));
         uint256 tokenId = uint256(label);
         uint256 expires = base.register(tokenId, owner, duration);
 
+        // Send payment to treasury
+        (bool sent, ) = treasury.call{value: cost}("");
+        require(sent, "Treasury payment failed");
+
+        // Refund excess payment
+        if (msg.value > cost) {
+            (bool refunded, ) = msg.sender.call{value: msg.value - cost}("");
+            if (!refunded) {
+                revert RefundFailed();
+            }
+        }
+
         emit NameRegistered(name, label, owner, cost, expires);
     }
 
-    function renew(string calldata name, uint256 duration) external nonReentrant {
+    function renew(string calldata name, uint256 duration) external payable nonReentrant {
         ITNSPriceOracle.Price memory priceInfo = rentPrice(name, duration);
         uint256 cost = priceInfo.base;
 
-        if (trustToken.allowance(msg.sender, address(this)) < cost) {
-            revert InsufficientAllowance();
-        }
-
-        if (trustToken.balanceOf(msg.sender) < cost) {
+        if (msg.value < cost) {
             revert InsufficientPayment();
-        }
-
-        bool success = trustToken.transferFrom(msg.sender, treasury, cost);
-        if (!success) {
-            revert TransferFailed();
         }
 
         bytes32 labelhash = keccak256(bytes(name));
         uint256 tokenId = uint256(labelhash);
         uint256 expires = base.renew(tokenId, duration);
 
+        // Send payment to treasury
+        (bool sent, ) = treasury.call{value: cost}("");
+        require(sent, "Treasury payment failed");
+
+        // Refund excess payment
+        if (msg.value > cost) {
+            (bool refunded, ) = msg.sender.call{value: msg.value - cost}("");
+            if (!refunded) {
+                revert RefundFailed();
+            }
+        }
+
         emit NameRenewed(name, labelhash, cost, expires);
     }
 
     function withdraw() external onlyOwner {
-        uint256 balance = trustToken.balanceOf(address(this));
+        uint256 balance = address(this).balance;
         if (balance > 0) {
-            trustToken.transfer(treasury, balance);
+            (bool sent, ) = treasury.call{value: balance}("");
+            require(sent, "Withdraw failed");
         }
     }
 
@@ -192,4 +194,7 @@ contract TNSController is Ownable, ReentrancyGuard {
         uint256 age = block.timestamp - commitments[commitment];
         return age >= MIN_COMMITMENT_AGE && age < MAX_COMMITMENT_AGE;
     }
+
+    // Allow contract to receive native TRUST
+    receive() external payable {}
 }

@@ -1,20 +1,19 @@
 // TNS ENS Fork Deployment Script
 // Deploy order: Registry → BaseRegistrar → PriceOracle → Controller → Resolver → ReverseRegistrar → PaymentForwarder
+// Note: TRUST is a native token (like ETH), not an ERC-20 token
 
 import { ethers } from "hardhat";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
+  console.log("Account balance:", ethers.utils.formatEther(await deployer.getBalance()), "TRUST");
 
   // Configuration
-  const TRUST_TOKEN_ADDRESS = process.env.TRUST_TOKEN_ADDRESS || "";
-  const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || deployer.address;
+  const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || "0x629A5386F73283F80847154d16E359192a891f86";
   const BASE_URI = process.env.BASE_URI || "https://tns.intuition.box/api/metadata/";
 
-  if (!TRUST_TOKEN_ADDRESS) {
-    throw new Error("TRUST_TOKEN_ADDRESS environment variable required");
-  }
+  console.log("Treasury address:", TREASURY_ADDRESS);
 
   // Calculate .trust namehash
   const TRUST_LABEL = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("trust"));
@@ -46,13 +45,12 @@ async function main() {
   await priceOracle.deployed();
   console.log("TNSPriceOracle deployed to:", priceOracle.address);
 
-  // 4. Deploy TNSController
+  // 4. Deploy TNSController (native TRUST payments, no ERC-20)
   console.log("\n4. Deploying TNSController...");
   const TNSController = await ethers.getContractFactory("TNSController");
   const controller = await TNSController.deploy(
     baseRegistrar.address,
     priceOracle.address,
-    TRUST_TOKEN_ADDRESS,
     TREASURY_ADDRESS
   );
   await controller.deployed();
@@ -77,13 +75,12 @@ async function main() {
   await resolver.deployed();
   console.log("TNSResolver deployed to:", resolver.address);
 
-  // 7. Deploy TNSPaymentForwarder
+  // 7. Deploy TNSPaymentForwarder (native TRUST payments, no ERC-20)
   console.log("\n7. Deploying TNSPaymentForwarder...");
   const TNSPaymentForwarder = await ethers.getContractFactory("TNSPaymentForwarder");
   const paymentForwarder = await TNSPaymentForwarder.deploy(
     registry.address,
     resolver.address,
-    TRUST_TOKEN_ADDRESS,
     TRUST_NODE
   );
   await paymentForwarder.deployed();
@@ -157,6 +154,7 @@ async function main() {
   console.log("TNSReverseRegistrar:", reverseRegistrar.address);
   console.log("TNSResolver:", resolver.address);
   console.log("TNSPaymentForwarder:", paymentForwarder.address);
+  console.log("Treasury:", TREASURY_ADDRESS);
   console.log("==========================================");
 
   // Return addresses for verification

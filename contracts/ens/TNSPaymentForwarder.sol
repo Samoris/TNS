@@ -2,13 +2,11 @@
 pragma solidity ^0.8.17;
 
 import "./TNSResolver.sol";
-import "./IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract TNSPaymentForwarder is ReentrancyGuard {
     ITNS public immutable tns;
     TNSResolver public immutable resolver;
-    IERC20 public immutable trustToken;
     bytes32 public immutable baseNode;
 
     event PaymentForwarded(
@@ -21,17 +19,15 @@ contract TNSPaymentForwarder is ReentrancyGuard {
     constructor(
         ITNS _tns,
         TNSResolver _resolver,
-        IERC20 _trustToken,
         bytes32 _baseNode
     ) {
         tns = _tns;
         resolver = _resolver;
-        trustToken = _trustToken;
         baseNode = _baseNode;
     }
 
-    function sendPayment(string calldata domainName, uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount must be greater than 0");
+    function sendPayment(string calldata domainName) external payable nonReentrant {
+        require(msg.value > 0, "Amount must be greater than 0");
         require(bytes(domainName).length > 0, "Domain name required");
 
         bytes32 labelHash = keccak256(bytes(domainName));
@@ -40,12 +36,10 @@ contract TNSPaymentForwarder is ReentrancyGuard {
         address recipient = resolver.addr(node);
         require(recipient != address(0), "Domain has no address set");
 
-        require(
-            trustToken.transferFrom(msg.sender, recipient, amount),
-            "Transfer failed"
-        );
+        (bool sent, ) = recipient.call{value: msg.value}("");
+        require(sent, "Transfer failed");
 
-        emit PaymentForwarded(domainName, msg.sender, recipient, amount);
+        emit PaymentForwarded(domainName, msg.sender, recipient, msg.value);
     }
 
     function resolveAddress(string calldata domainName) external view returns (address) {
@@ -53,4 +47,7 @@ contract TNSPaymentForwarder is ReentrancyGuard {
         bytes32 node = keccak256(abi.encodePacked(baseNode, labelHash));
         return resolver.addr(node);
     }
+
+    // Allow contract to receive native TRUST
+    receive() external payable {}
 }

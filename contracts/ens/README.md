@@ -58,7 +58,7 @@ Contracts must be deployed in this specific order:
 
 ## Key Differences from ENS
 
-1. **TRUST Token Payments** - Uses ERC-20 TRUST token instead of ETH
+1. **Native TRUST Payments** - Uses native TRUST token (like ETH on Ethereum) - payable functions
 2. **Simplified Resolver** - Single resolver contract instead of profile-based inheritance
 3. **Tiered Pricing** - Built-in character-length based pricing
 4. **90-Day Grace Period** - Matches ENS standard for expired domain renewal
