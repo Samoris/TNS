@@ -9,8 +9,6 @@ import {
   Send, 
   Crown, 
   Settings, 
-  Flame,
-  Clock,
   Link as LinkIcon,
   FileText,
   CheckCircle2,
@@ -289,43 +287,6 @@ export default function DocsPage() {
             "Records are queryable by AI agents and other applications",
             "Enables reputation and staking features for your domain",
             "Creates verifiable on-chain relationships between your domain and its metadata"
-          ]
-        }
-      ]
-    },
-    {
-      id: "burning",
-      title: "Burning Expired Domains",
-      icon: Flame,
-      content: [
-        {
-          heading: "Permissionless Cleanup",
-          text: "Anyone can burn (permanently delete) expired domain NFTs after the grace period ends, making the domain available for re-registration."
-        },
-        {
-          heading: "When Can Domains Be Burned?",
-          items: [
-            "Domain must be expired (past expiration date)",
-            "Grace period (30 days) must have ended",
-            "Only expired domains can be burned - active domains are protected"
-          ]
-        },
-        {
-          heading: "How to Burn",
-          items: [
-            "Find an expired domain past its grace period",
-            "Click the 'Burn NFT' button",
-            "Confirm the transaction in MetaMask",
-            "The NFT is permanently deleted and domain becomes available"
-          ]
-        },
-        {
-          heading: "Why Burn Domains?",
-          items: [
-            "Cleanup: Removes expired domains from the registry",
-            "Availability: Frees up domain names for new registration",
-            "Fair Access: Prevents indefinite domain squatting",
-            "Gas Efficiency: Reduces blockchain state"
           ]
         }
       ]
