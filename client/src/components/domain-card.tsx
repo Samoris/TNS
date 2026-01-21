@@ -257,10 +257,16 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const setPrimaryMutation = useMutation({
     mutationFn: async () => {
+      // Validate domain name before attempting to set as primary
+      const domainName = domain.name;
+      if (!domainName || domainName === 'Unknown Domain' || !domainName.includes('.trust')) {
+        throw new Error("Cannot set primary: domain name is not available. The domain may need to be re-registered through the standard flow.");
+      }
+      
       // Use ENS-style reverse registrar to set primary name
       const txHash = await web3Service.setPrimaryNameENS(
         TNS_REVERSE_REGISTRAR_ADDRESS,
-        domain.name
+        domainName
       );
       return txHash;
     },
@@ -660,14 +666,16 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               // Error handled by mutation's onError
                             }
                           }}
-                          disabled={setPrimaryMutation.isPending || isExpired}
+                          disabled={setPrimaryMutation.isPending || isExpired || !domain.name || domain.name === 'Unknown Domain' || !domain.name.includes('.trust')}
                           className="trust-button w-full"
                           data-testid="set-primary-button"
                         >
                           {setPrimaryMutation.isPending ? "Setting..." : "Set as Primary Domain"}
                         </Button>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                          Primary domains represent your main identity on TNS
+                          {(!domain.name || domain.name === 'Unknown Domain' || !domain.name.includes('.trust'))
+                            ? "Domain name not available - cannot set as primary"
+                            : "Primary domains represent your main identity on TNS"}
                         </p>
                       </div>
                     )}
