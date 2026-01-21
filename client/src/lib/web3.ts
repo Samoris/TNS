@@ -1465,6 +1465,370 @@ export class Web3Service {
       throw new Error(error.message || "Failed to send payment");
     }
   }
+
+  // ============================================
+  // ERC-20 TOKEN FUNCTIONS (for ENS-forked contracts)
+  // ============================================
+
+  /**
+   * Get ERC-20 token balance for an address
+   */
+  public async getTokenBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const tokenAbi = ["function balanceOf(address) view returns (uint256)"];
+      const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
+      const balance = await contract.balanceOf(ownerAddress);
+      return balance;
+    } catch (error: any) {
+      console.error("Error getting token balance:", error);
+      return BigInt(0);
+    }
+  }
+
+  /**
+   * Get ERC-20 token allowance for a spender
+   */
+  public async getTokenAllowance(tokenAddress: string, ownerAddress: string, spenderAddress: string): Promise<bigint> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const tokenAbi = ["function allowance(address owner, address spender) view returns (uint256)"];
+      const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
+      const allowance = await contract.allowance(ownerAddress, spenderAddress);
+      return allowance;
+    } catch (error: any) {
+      console.error("Error getting token allowance:", error);
+      return BigInt(0);
+    }
+  }
+
+  /**
+   * Approve ERC-20 token spending for a contract
+   */
+  public async approveToken(tokenAddress: string, spenderAddress: string, amount: bigint): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      console.log("Approving TRUST token spending:");
+      console.log("- Token:", tokenAddress);
+      console.log("- Spender:", spenderAddress);
+      console.log("- Amount:", ethers.formatEther(amount), "TRUST");
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const tokenAbi = ["function approve(address spender, uint256 amount) returns (bool)"];
+      const contract = new ethers.Contract(tokenAddress, tokenAbi, signer);
+
+      const tx = await contract.approve(spenderAddress, amount, {
+        gasLimit: 60000
+      });
+
+      console.log("Approval transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      
+      if (!receipt) {
+        throw new Error("Approval transaction receipt not received");
+      }
+
+      console.log("Token approval confirmed:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Token approval error:", error);
+      throw new Error(error.message || "Failed to approve token spending");
+    }
+  }
+
+  /**
+   * Check if sufficient allowance exists, and approve if not
+   */
+  public async ensureTokenAllowance(tokenAddress: string, spenderAddress: string, requiredAmount: bigint): Promise<boolean> {
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.address) {
+      throw new Error("Wallet not connected");
+    }
+
+    const currentAllowance = await this.getTokenAllowance(tokenAddress, state.address, spenderAddress);
+    console.log("Current allowance:", ethers.formatEther(currentAllowance), "TRUST");
+    console.log("Required amount:", ethers.formatEther(requiredAmount), "TRUST");
+
+    if (currentAllowance >= requiredAmount) {
+      console.log("Sufficient allowance already exists");
+      return true;
+    }
+
+    // Approve a larger amount (10x required) to reduce future approval transactions
+    const approvalAmount = requiredAmount * BigInt(10);
+    await this.approveToken(tokenAddress, spenderAddress, approvalAmount);
+    return true;
+  }
+
+  /**
+   * Register domain using new ENS-forked controller with ERC-20 token
+   * This is the Step 2 (reveal) of commit-reveal for ENS-forked contracts
+   * 
+   * IMPORTANT: Before calling this, the user MUST:
+   * 1. Have sufficient TRUST token balance
+   * 2. Have approved the controller to spend TRUST tokens (via ensureTokenAllowance)
+   * 
+   * The controller uses ERC-20 transferFrom internally - it is NOT payable.
+   */
+  public async registerDomainENS(
+    controllerAddress: string,
+    resolverAddress: string,
+    domainName: string,
+    durationSeconds: number,
+    secret: string,
+    setAsPrimary: boolean = false
+  ): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork || !state.address) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      console.log("Registering domain via ENS-forked controller (ERC-20 payment):");
+      console.log("- Domain:", normalizedDomain);
+      console.log("- Duration:", durationSeconds, "seconds");
+      console.log("- Resolver:", resolverAddress);
+      console.log("- Set as primary:", setAsPrimary);
+      console.log("- Note: Controller uses ERC-20 transferFrom (not payable)");
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Use the correct ABI - register is nonpayable (uses ERC-20 transferFrom)
+      const controllerAbi = [
+        "function register(string name, address owner, uint256 duration, bytes32 secret, address resolver, bool setAsPrimary)"
+      ];
+      const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
+
+      // No value field - controller pulls TRUST tokens via transferFrom
+      const tx = await contract.register(
+        normalizedDomain,
+        state.address,
+        durationSeconds,
+        secret,
+        resolverAddress,
+        setAsPrimary,
+        { gasLimit: 400000 }
+      );
+
+      console.log("Registration transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      
+      if (!receipt) {
+        throw new Error("Registration transaction receipt not received");
+      }
+
+      console.log("Domain registration confirmed:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("ENS registration error:", error);
+      
+      if (error.message?.includes('Commitment not found')) {
+        throw new Error("Commitment not found - please make commitment first and wait 1 minute");
+      } else if (error.message?.includes('Commitment too new')) {
+        throw new Error("Please wait at least 1 minute after making commitment");
+      } else if (error.message?.includes('Commitment expired')) {
+        throw new Error("Commitment expired - please make a new commitment");
+      } else if (error.message?.includes('Insufficient allowance')) {
+        throw new Error("Insufficient TRUST token allowance - please approve token spending first");
+      } else if (error.message?.includes('Insufficient balance')) {
+        throw new Error("Insufficient TRUST token balance for registration");
+      }
+      
+      throw new Error(error.message || "Failed to register domain");
+    }
+  }
+
+  /**
+   * Make commitment for ENS-forked controller (Step 1 of commit-reveal)
+   */
+  public async makeCommitmentENS(
+    controllerAddress: string,
+    domainName: string,
+    ownerAddress: string,
+    durationSeconds: number,
+    secret: string,
+    resolverAddress: string,
+    setAsPrimary: boolean = false
+  ): Promise<{ commitment: string; txHash: string }> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const controllerAbi = [
+        "function makeCommitment(string name, address owner, uint256 duration, bytes32 secret, address resolver, bool setAsPrimary) view returns (bytes32)",
+        "function commit(bytes32 commitment)"
+      ];
+      const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
+
+      // Generate the commitment hash
+      const commitment = await contract.makeCommitment(
+        normalizedDomain,
+        ownerAddress,
+        durationSeconds,
+        secret,
+        resolverAddress,
+        setAsPrimary
+      );
+
+      console.log("Generated commitment:", commitment);
+
+      // Submit the commitment on-chain
+      const tx = await contract.commit(commitment, { gasLimit: 60000 });
+      console.log("Commitment transaction sent:", tx.hash);
+
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("Commitment transaction receipt not received");
+      }
+
+      console.log("Commitment confirmed:", receipt.hash);
+      return { commitment, txHash: receipt.hash };
+    } catch (error: any) {
+      console.error("ENS commitment error:", error);
+      throw new Error(error.message || "Failed to make commitment");
+    }
+  }
+
+  /**
+   * Renew domain using ENS-forked controller with ERC-20 token
+   */
+  public async renewDomainENS(controllerAddress: string, domainName: string, durationSeconds: number): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+      
+      console.log("Renewing domain via ENS-forked controller:");
+      console.log("- Domain:", normalizedDomain);
+      console.log("- Duration:", durationSeconds, "seconds");
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const controllerAbi = ["function renew(string name, uint256 duration)"];
+      const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
+
+      const tx = await contract.renew(normalizedDomain, durationSeconds, { gasLimit: 150000 });
+
+      console.log("Renewal transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      
+      if (!receipt) {
+        throw new Error("Renewal transaction receipt not received");
+      }
+
+      console.log("Domain renewal confirmed:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("ENS renewal error:", error);
+      throw new Error(error.message || "Failed to renew domain");
+    }
+  }
+
+  /**
+   * Set primary name via reverse registrar (ENS-forked)
+   */
+  public async setPrimaryNameENS(reverseRegistrarAddress: string, domainName: string): Promise<string> {
+    if (!window.ethereum) {
+      throw new Error("MetaMask not installed");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    try {
+      const fullDomainName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+      
+      console.log("Setting primary name via reverse registrar:", fullDomainName);
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const reverseAbi = ["function setName(string name) returns (bytes32)"];
+      const contract = new ethers.Contract(reverseRegistrarAddress, reverseAbi, signer);
+
+      const tx = await contract.setName(fullDomainName, { gasLimit: 100000 });
+
+      console.log("Set primary name transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      
+      if (!receipt) {
+        throw new Error("Set primary name transaction receipt not received");
+      }
+
+      console.log("Primary name set successfully:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Set primary name error:", error);
+      throw new Error(error.message || "Failed to set primary name");
+    }
+  }
+
+  /**
+   * Calculate namehash for a domain (ENS-style)
+   */
+  public namehash(domain: string): string {
+    let node = ethers.ZeroHash;
+    if (domain === "") return node;
+
+    const labels = domain.split(".").reverse();
+    for (const label of labels) {
+      const labelHash = ethers.keccak256(ethers.toUtf8Bytes(label));
+      node = ethers.keccak256(ethers.concat([node, labelHash]));
+    }
+    return node;
+  }
+
+  /**
+   * Calculate labelhash for a single label
+   */
+  public labelhash(label: string): string {
+    return ethers.keccak256(ethers.toUtf8Bytes(label));
+  }
 }
 
 export const web3Service = Web3Service.getInstance();

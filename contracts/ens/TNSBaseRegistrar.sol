@@ -13,7 +13,7 @@ contract TNSBaseRegistrar is ERC721, IBaseRegistrar, Ownable, ReentrancyGuard {
     bytes32 public baseNode;
     mapping(address => bool) public controllers;
     
-    uint256 public constant GRACE_PERIOD = 30 days;
+    uint256 public constant GRACE_PERIOD = 90 days;
     
     string private _baseTokenURI;
 
