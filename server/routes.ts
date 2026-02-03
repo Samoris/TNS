@@ -43,8 +43,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const domain = await storage.createDomain({
         name: cleanName,
         owner: owner.toLowerCase(),
+        registrant: owner.toLowerCase(),
         expirationDate: expirationDate ? new Date(expirationDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        price: "30",
+        pricePerYear: "30",
       });
       
       res.json({ 
@@ -735,6 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentType, 
         capabilities, 
         endpoint,
+        mcpEndpoint,
         publicKey,
         owner 
       } = req.body;
@@ -744,14 +746,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const cleanDomainName = domainName.replace(/\.trust$/, '');
+      const fullDomainName = `${cleanDomainName}.trust`;
       
-      const domain = await storage.getDomainByName(`${cleanDomainName}.trust`);
-      if (!domain) {
-        return res.status(404).json({ error: "Domain not found. Register the domain first." });
+      // First check blockchain for domain ownership (primary source of truth)
+      const domainInfo = await blockchainService.getDomainInfoENS(cleanDomainName);
+      
+      if (!domainInfo || !domainInfo.exists) {
+        return res.status(404).json({ error: "Domain not found on blockchain. Register the domain first." });
       }
       
-      if (domain.owner.toLowerCase() !== owner.toLowerCase()) {
+      if (domainInfo.owner.toLowerCase() !== owner.toLowerCase()) {
         return res.status(403).json({ error: "Not domain owner" });
+      }
+      
+      // Get or create domain in storage for storing agent metadata
+      let domain = await storage.getDomainByName(fullDomainName);
+      
+      if (!domain) {
+        // Create domain entry in storage for blockchain-only domains
+        domain = await storage.createDomain({
+          name: fullDomainName,
+          owner: domainInfo.owner,
+          registrant: domainInfo.owner,
+          resolver: "",
+          expirationDate: domainInfo.expirationTime ? new Date(Number(domainInfo.expirationTime) * 1000) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          pricePerYear: "0"
+        });
       }
       
       const agentMetadata = {
@@ -759,21 +779,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentType,
         capabilities,
         endpoint: endpoint || null,
+        mcpEndpoint: mcpEndpoint || null,
         publicKey: publicKey || null,
         version: '1.0',
         registeredAt: Date.now()
       };
       
-      await storage.createDomainRecord({
-        domainId: domain.id,
-        recordType: 'text',
-        key: 'agent.metadata',
-        value: JSON.stringify(agentMetadata)
-      });
+      // Check if agent.metadata record already exists
+      const existingRecords = await storage.getDomainRecords(domain.id);
+      const existingAgentRecord = existingRecords.find(r => r.key === 'agent.metadata');
+      
+      if (existingAgentRecord) {
+        // Update existing record
+        await storage.updateDomainRecord(existingAgentRecord.id, { value: JSON.stringify(agentMetadata) });
+      } else {
+        // Create new record
+        await storage.createDomainRecord({
+          domainId: domain.id,
+          recordType: 'text',
+          key: 'agent.metadata',
+          value: JSON.stringify(agentMetadata)
+        });
+      }
       
       res.json({
         success: true,
-        domain: `${cleanDomainName}.trust`,
+        domain: fullDomainName,
         atomUri: intuitionService.generateAgentAtomUri(cleanDomainName),
         message: 'Agent registered successfully'
       });
