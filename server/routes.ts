@@ -18,6 +18,46 @@ import { ethers } from "ethers";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Seed domain for testing (development only)
+  app.post("/api/domains/seed", async (req, res) => {
+    try {
+      const { name, owner, expirationDate } = req.body;
+      
+      if (!name || !owner) {
+        return res.status(400).json({ error: "name and owner are required" });
+      }
+      
+      const cleanName = name.replace(/\.trust$/, '') + '.trust';
+      
+      // Check if domain already exists
+      const existing = await storage.getDomainByName(cleanName);
+      if (existing) {
+        return res.json({ 
+          success: true, 
+          message: "Domain already exists", 
+          domain: existing 
+        });
+      }
+      
+      // Create the domain
+      const domain = await storage.createDomain({
+        name: cleanName,
+        owner: owner.toLowerCase(),
+        expirationDate: expirationDate ? new Date(expirationDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        price: "30",
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Domain seeded successfully", 
+        domain 
+      });
+    } catch (error) {
+      console.error("Seed domain error:", error);
+      res.status(500).json({ error: "Failed to seed domain" });
+    }
+  });
+
   // Domain search and availability
   app.get("/api/domains/search/:name", async (req, res) => {
     try {
