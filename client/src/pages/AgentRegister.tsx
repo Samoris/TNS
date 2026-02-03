@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, Wallet, CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import { web3Service } from '@/lib/web3';
+import { TNS_BASE_REGISTRAR_ADDRESS } from '@/lib/contracts';
 
 const AGENT_TYPES = [
   { value: 'assistant', label: 'Assistant', description: 'General-purpose AI assistant' },
@@ -72,22 +73,38 @@ export default function AgentRegister() {
   const loadUserDomains = async (address: string) => {
     setIsLoadingDomains(true);
     try {
+      // First try backend API
       const res = await fetch(`/api/domains/owner/${address}`);
       if (res.ok) {
         const data = await res.json();
         const domainNames = data.domains?.map((d: { name: string }) => d.name) || [];
-        setUserDomains(domainNames);
-        
-        if (domainNames.length === 0) {
-          toast({ 
-            title: 'No Domains Found', 
-            description: 'You need to own a .trust domain to register an agent',
-            variant: 'destructive'
-          });
+        if (domainNames.length > 0) {
+          setUserDomains(domainNames);
+          setIsLoadingDomains(false);
+          return;
         }
+      }
+      
+      // Fallback: Query blockchain directly via ENS BaseRegistrar
+      console.log('Falling back to blockchain query for domains...');
+      const blockchainDomains = await web3Service.getOwnerDomainsENS(TNS_BASE_REGISTRAR_ADDRESS, address);
+      const domainNames = blockchainDomains.map(d => d.name);
+      setUserDomains(domainNames);
+      
+      if (domainNames.length === 0) {
+        toast({ 
+          title: 'No Domains Found', 
+          description: 'You need to own a .trust domain to register an agent',
+          variant: 'destructive'
+        });
       }
     } catch (error) {
       console.error('Failed to load domains:', error);
+      toast({ 
+        title: 'Error Loading Domains', 
+        description: 'Failed to fetch your domains from the blockchain',
+        variant: 'destructive'
+      });
     }
     setIsLoadingDomains(false);
   };
