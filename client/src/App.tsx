@@ -15,6 +15,7 @@ import Docs from "@/pages/docs";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Support from "@/pages/support";
+import AgentTest from "@/pages/AgentTest";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -34,6 +35,7 @@ function Router() {
           <Route path="/privacy" component={Privacy} />
           <Route path="/terms" component={Terms} />
           <Route path="/support" component={Support} />
+          <Route path="/agent-test" component={AgentTest} />
           <Route component={NotFound} />
         </Switch>
       </main>
