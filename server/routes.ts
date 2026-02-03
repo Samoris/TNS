@@ -826,6 +826,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get available agent types and capabilities (static route - must come before dynamic :domain)
+  app.get("/api/agents/schema", async (_req, res) => {
+    res.json({
+      agentTypes: ['assistant', 'analyzer', 'trader', 'validator', 'orchestrator'],
+      capabilities: [
+        'text-generation',
+        'code-review',
+        'code-generation',
+        'data-analysis',
+        'image-analysis',
+        'document-processing',
+        'web-search',
+        'api-integration',
+        'task-orchestration',
+        'smart-contract-analysis',
+        'trading',
+        'risk-assessment',
+        'identity-verification',
+        'reputation-scoring'
+      ],
+      reputationTiers: [
+        { tier: 'bronze', minScore: 0 },
+        { tier: 'silver', minScore: 20 },
+        { tier: 'gold', minScore: 50 },
+        { tier: 'platinum', minScore: 100 }
+      ]
+    });
+  });
+
   // Resolve agent identity (dynamic route - MUST come after static routes)
   app.get("/api/agents/:domain", async (req, res) => {
     try {
@@ -1303,34 +1332,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get available agent types and capabilities
-  app.get("/api/agents/schema", async (_req, res) => {
-    res.json({
-      agentTypes: ['assistant', 'analyzer', 'trader', 'validator', 'orchestrator'],
-      capabilities: [
-        'text-generation',
-        'code-review',
-        'code-generation',
-        'data-analysis',
-        'image-analysis',
-        'document-processing',
-        'web-search',
-        'api-integration',
-        'task-orchestration',
-        'smart-contract-analysis',
-        'trading',
-        'risk-assessment',
-        'identity-verification',
-        'reputation-scoring'
-      ],
-      reputationTiers: [
-        { tier: 'bronze', minScore: 0 },
-        { tier: 'silver', minScore: 20 },
-        { tier: 'gold', minScore: 50 },
-        { tier: 'platinum', minScore: 100 }
-      ]
-    });
-  });
 
   // ============================================
   // KNOWLEDGE GRAPH SYNC ENDPOINTS
