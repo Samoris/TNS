@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { blockchainService, INTUITION_MULTIVAULT_ADDRESS, INTUITION_MULTIVAULT_ABI } from "./blockchain";
 import { intuitionService } from "./intuition";
+import { agentService } from "./agent-service";
 import { 
   domainSearchSchema, 
   domainRegistrationSchema, 
@@ -894,6 +895,441 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Agent records update error:", error);
       res.status(500).json({ error: "Failed to update agent records" });
     }
+  });
+
+  // ============================================
+  // ENHANCED AGENT INFRASTRUCTURE
+  // ============================================
+
+  // Get authentication challenge for agent
+  app.post("/api/agents/auth/challenge", async (req, res) => {
+    try {
+      const { domain } = req.body;
+      
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+      
+      const cleanDomain = domain.replace(/\.trust$/, '') + '.trust';
+      const challenge = agentService.generateChallenge(cleanDomain);
+      
+      res.json({
+        domain: cleanDomain,
+        challenge: challenge.challenge,
+        message: `TNS Agent Authentication\nDomain: ${cleanDomain}\nChallenge: ${challenge.challenge}\nTimestamp: ${challenge.timestamp}`,
+        expiresAt: challenge.expiresAt
+      });
+    } catch (error) {
+      console.error("Challenge generation error:", error);
+      res.status(500).json({ error: "Failed to generate challenge" });
+    }
+  });
+
+  // Verify agent authentication
+  app.post("/api/agents/auth/verify", async (req, res) => {
+    try {
+      const { domain, signature, address } = req.body;
+      
+      if (!domain || !signature || !address) {
+        return res.status(400).json({ error: "Domain, signature, and address are required" });
+      }
+      
+      const cleanDomain = domain.replace(/\.trust$/, '') + '.trust';
+      
+      // Verify domain ownership
+      const storedDomain = await storage.getDomainByName(cleanDomain);
+      if (!storedDomain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      if (storedDomain.owner.toLowerCase() !== address.toLowerCase()) {
+        return res.status(403).json({ error: "Address does not own this domain" });
+      }
+      
+      const result = await agentService.verifyAgentChallenge(cleanDomain, signature, address);
+      
+      if (result.valid) {
+        agentService.updateAgentLastSeen(cleanDomain);
+        res.json({ 
+          authenticated: true, 
+          domain: cleanDomain,
+          address
+        });
+      } else {
+        res.status(401).json({ authenticated: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Auth verification error:", error);
+      res.status(500).json({ error: "Failed to verify authentication" });
+    }
+  });
+
+  // Get signable payload for a message (helper for clients)
+  app.post("/api/agents/messages/prepare", async (req, res) => {
+    try {
+      const { from, to, type, method, payload } = req.body;
+      
+      if (!from || !to || !type || !payload) {
+        return res.status(400).json({ error: "Required fields: from, to, type, payload" });
+      }
+      
+      const cleanFrom = from.replace(/\.trust$/, '') + '.trust';
+      const cleanTo = to.replace(/\.trust$/, '') + '.trust';
+      const nonce = Date.now().toString() + '-' + ethers.hexlify(ethers.randomBytes(8));
+      
+      const signablePayload = agentService.createSignableMessagePayload(
+        cleanFrom, cleanTo, type, method, payload, nonce
+      );
+      
+      res.json({
+        from: cleanFrom,
+        to: cleanTo,
+        type,
+        method: method || null,
+        payload,
+        nonce,
+        signablePayload,
+        hint: "Sign the signablePayload string with the domain owner's private key"
+      });
+    } catch (error) {
+      console.error("Message prepare error:", error);
+      res.status(500).json({ error: "Failed to prepare message" });
+    }
+  });
+
+  // Send message to another agent
+  app.post("/api/agents/messages/send", async (req, res) => {
+    try {
+      const { from, to, type, method, payload, signature, nonce } = req.body;
+      
+      if (!from || !to || !type || !payload || !signature || !nonce) {
+        return res.status(400).json({ 
+          error: "Required fields: from, to, type, payload, signature, nonce",
+          hint: "Use POST /api/agents/messages/prepare to get the signable payload first"
+        });
+      }
+      
+      const message = {
+        id: ethers.hexlify(ethers.randomBytes(16)),
+        from: from.replace(/\.trust$/, '') + '.trust',
+        to: to.replace(/\.trust$/, '') + '.trust',
+        type,
+        method,
+        payload,
+        timestamp: Date.now(),
+        signature,
+        nonce
+      };
+      
+      // Verify sender owns the from domain
+      const fromDomain = await storage.getDomainByName(message.from);
+      if (!fromDomain) {
+        return res.status(404).json({ error: "Sender domain not found" });
+      }
+      
+      // Verify signature over client-controlled fields only
+      const isValid = await agentService.verifyMessageSignature(message, fromDomain.owner);
+      if (!isValid) {
+        return res.status(401).json({ 
+          error: "Invalid message signature",
+          hint: "Sign the exact output from /api/agents/messages/prepare signablePayload"
+        });
+      }
+      
+      const result = await agentService.sendMessage(message);
+      
+      if (result.success) {
+        res.json({ success: true, messageId: message.id });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Message send error:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // Get messages for an agent (requires authentication)
+  app.get("/api/agents/messages/:domain", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const { limit = '50', signature, timestamp } = req.query;
+      
+      const cleanDomain = domain.replace(/\.trust$/, '') + '.trust';
+      
+      // Authentication is REQUIRED for message retrieval
+      if (!signature || !timestamp) {
+        return res.status(401).json({ 
+          error: "Authentication required. Provide signature and timestamp query parameters.",
+          hint: "Sign message: 'Get messages for {domain} at {timestamp}' with domain owner's key"
+        });
+      }
+      
+      const storedDomain = await storage.getDomainByName(cleanDomain);
+      if (!storedDomain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      // Verify timestamp is recent (within 5 minutes) and not in the future
+      const ts = parseInt(timestamp as string, 10);
+      const now = Date.now();
+      const maxSkew = 30 * 1000; // 30 second clock skew allowance
+      
+      if (ts > now + maxSkew) {
+        return res.status(401).json({ error: "Timestamp is in the future. Check your system clock." });
+      }
+      if (now - ts > 5 * 60 * 1000) {
+        return res.status(401).json({ error: "Timestamp expired. Must be within 5 minutes." });
+      }
+      
+      const message = `Get messages for ${cleanDomain} at ${timestamp}`;
+      const isValid = await agentService.verifyAgentSignature(
+        cleanDomain, 
+        message, 
+        signature as string, 
+        storedDomain.owner
+      );
+      
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+      
+      const messages = agentService.getMessages(cleanDomain, parseInt(limit as string, 10));
+      
+      res.json({ 
+        domain: cleanDomain,
+        messages,
+        count: messages.length 
+      });
+    } catch (error) {
+      console.error("Get messages error:", error);
+      res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+
+  // MCP discovery endpoint
+  app.get("/api/agents/mcp/discover", async (req, res) => {
+    try {
+      const { capability, type, minReputation, hasEndpoint } = req.query;
+      
+      const agents = await agentService.discoverAgents({
+        capability: capability as string,
+        type: type as string,
+        minReputation: minReputation ? parseFloat(minReputation as string) : undefined,
+        hasEndpoint: hasEndpoint === 'true',
+        hasMcpEndpoint: true
+      });
+      
+      const mcpAgents = await Promise.all(
+        agents.map(async agent => {
+          const mcpInfo = await agentService.getMcpDiscoveryInfo(agent.domain);
+          return {
+            ...agent,
+            mcp: mcpInfo
+          };
+        })
+      );
+      
+      res.json({ 
+        agents: mcpAgents,
+        total: mcpAgents.length 
+      });
+    } catch (error) {
+      console.error("MCP discover error:", error);
+      res.status(500).json({ error: "Failed to discover MCP agents" });
+    }
+  });
+
+  // Get MCP info for specific agent
+  app.get("/api/agents/:domain/mcp", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const cleanDomain = domain.replace(/\.trust$/, '') + '.trust';
+      
+      const mcpInfo = await agentService.getMcpDiscoveryInfo(cleanDomain);
+      
+      if (!mcpInfo) {
+        return res.status(404).json({ error: "Agent does not have MCP endpoint configured" });
+      }
+      
+      res.json(mcpInfo);
+    } catch (error) {
+      console.error("Get MCP info error:", error);
+      res.status(500).json({ error: "Failed to get MCP info" });
+    }
+  });
+
+  // Get agent manifest (Schema.org format)
+  app.get("/api/agents/:domain/manifest", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const cleanDomain = domain.replace(/\.trust$/, '') + '.trust';
+      const domainName = cleanDomain.replace('.trust', '');
+      
+      const storedDomain = await storage.getDomainByName(cleanDomain);
+      if (!storedDomain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      const records = await storage.getDomainRecords(storedDomain.id);
+      const agentRecord = records.find(r => r.key === 'agent.metadata');
+      
+      if (!agentRecord) {
+        return res.status(404).json({ error: "Not registered as an agent" });
+      }
+      
+      const metadata = JSON.parse(agentRecord.value);
+      const reputation = await agentService.getAgentReputation(domainName);
+      
+      const manifest = agentService.generateAgentManifest({
+        domain: cleanDomain,
+        address: storedDomain.owner,
+        publicKey: metadata.publicKey || '',
+        agentType: metadata.agentType,
+        capabilities: metadata.capabilities,
+        endpoint: metadata.endpoint,
+        mcpEndpoint: metadata.mcpEndpoint,
+        version: metadata.version || '1.0',
+        registeredAt: metadata.registeredAt,
+        reputation: reputation || undefined
+      });
+      
+      res.json(manifest);
+    } catch (error) {
+      console.error("Get manifest error:", error);
+      res.status(500).json({ error: "Failed to get agent manifest" });
+    }
+  });
+
+  // ============================================
+  // REPUTATION STAKING ENDPOINTS
+  // ============================================
+
+  // Get staking info for an agent
+  app.get("/api/agents/:domain/reputation", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const domainName = domain.replace(/\.trust$/, '');
+      
+      const reputation = await agentService.getAgentReputation(domainName);
+      const atomCost = await agentService.getAtomCost();
+      
+      res.json({
+        domain: `${domainName}.trust`,
+        reputation: reputation || {
+          totalStaked: '0',
+          stakeholders: 0,
+          score: 0,
+          tier: 'bronze'
+        },
+        staking: {
+          minStake: atomCost,
+          currency: 'TRUST'
+        }
+      });
+    } catch (error) {
+      console.error("Get reputation error:", error);
+      res.status(500).json({ error: "Failed to get reputation" });
+    }
+  });
+
+  // Prepare stake transaction
+  app.post("/api/agents/:domain/stake", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const { amount, stakerAddress } = req.body;
+      
+      if (!amount || !stakerAddress) {
+        return res.status(400).json({ error: "Amount and stakerAddress are required" });
+      }
+      
+      const domainName = domain.replace(/\.trust$/, '');
+      
+      const tx = await agentService.prepareStakeTransaction(
+        domainName,
+        amount,
+        stakerAddress
+      );
+      
+      if (!tx) {
+        return res.status(404).json({ 
+          error: "Agent atom not found. Domain may not be synced to Knowledge Graph." 
+        });
+      }
+      
+      res.json({
+        transaction: tx,
+        domain: `${domainName}.trust`,
+        amount,
+        stakerAddress
+      });
+    } catch (error) {
+      console.error("Prepare stake error:", error);
+      res.status(500).json({ error: "Failed to prepare stake transaction" });
+    }
+  });
+
+  // Prepare unstake transaction
+  app.post("/api/agents/:domain/unstake", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const { shares, receiverAddress } = req.body;
+      
+      if (!shares || !receiverAddress) {
+        return res.status(400).json({ error: "Shares and receiverAddress are required" });
+      }
+      
+      const domainName = domain.replace(/\.trust$/, '');
+      
+      const tx = await agentService.prepareUnstakeTransaction(
+        domainName,
+        shares,
+        receiverAddress
+      );
+      
+      if (!tx) {
+        return res.status(404).json({ error: "Agent atom not found" });
+      }
+      
+      res.json({
+        transaction: tx,
+        domain: `${domainName}.trust`,
+        shares,
+        receiverAddress
+      });
+    } catch (error) {
+      console.error("Prepare unstake error:", error);
+      res.status(500).json({ error: "Failed to prepare unstake transaction" });
+    }
+  });
+
+  // Get available agent types and capabilities
+  app.get("/api/agents/schema", async (_req, res) => {
+    res.json({
+      agentTypes: ['assistant', 'analyzer', 'trader', 'validator', 'orchestrator'],
+      capabilities: [
+        'text-generation',
+        'code-review',
+        'code-generation',
+        'data-analysis',
+        'image-analysis',
+        'document-processing',
+        'web-search',
+        'api-integration',
+        'task-orchestration',
+        'smart-contract-analysis',
+        'trading',
+        'risk-assessment',
+        'identity-verification',
+        'reputation-scoring'
+      ],
+      reputationTiers: [
+        { tier: 'bronze', minScore: 0 },
+        { tier: 'silver', minScore: 20 },
+        { tier: 'gold', minScore: 50 },
+        { tier: 'platinum', minScore: 100 }
+      ]
+    });
   });
 
   // ============================================

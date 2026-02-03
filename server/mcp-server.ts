@@ -199,6 +199,112 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['uri'],
         },
       },
+      {
+        name: 'register_agent',
+        description: 'Register an AI agent with a .trust domain identity',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            domain: {
+              type: 'string',
+              description: 'The .trust domain for the agent (e.g., myagent.trust)',
+            },
+            agentType: {
+              type: 'string',
+              enum: ['assistant', 'analyzer', 'trader', 'validator', 'orchestrator'],
+              description: 'Type of AI agent',
+            },
+            capabilities: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of agent capabilities (e.g., text-generation, code-review)',
+            },
+            endpoint: {
+              type: 'string',
+              description: 'API endpoint URL for the agent',
+            },
+            mcpEndpoint: {
+              type: 'string',
+              description: 'MCP protocol endpoint URL',
+            },
+            owner: {
+              type: 'string',
+              description: 'Ethereum address of the domain owner',
+            },
+          },
+          required: ['domain', 'agentType', 'capabilities', 'owner'],
+        },
+      },
+      {
+        name: 'send_agent_message',
+        description: 'Send a message from one agent to another using their .trust identities',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            from: {
+              type: 'string',
+              description: 'Sender agent domain (e.g., sender.trust)',
+            },
+            to: {
+              type: 'string',
+              description: 'Recipient agent domain (e.g., receiver.trust)',
+            },
+            type: {
+              type: 'string',
+              enum: ['request', 'response', 'notification'],
+              description: 'Message type',
+            },
+            method: {
+              type: 'string',
+              description: 'Method name for request messages',
+            },
+            payload: {
+              type: 'object',
+              description: 'Message payload data',
+            },
+          },
+          required: ['from', 'to', 'type', 'payload'],
+        },
+      },
+      {
+        name: 'get_agent_reputation',
+        description: 'Get reputation score and staking information for an agent',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            domain: {
+              type: 'string',
+              description: 'Agent domain (e.g., myagent.trust)',
+            },
+          },
+          required: ['domain'],
+        },
+      },
+      {
+        name: 'discover_mcp_agents',
+        description: 'Discover agents that support MCP protocol, optionally filtered by capability',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            capability: {
+              type: 'string',
+              description: 'Filter by specific capability',
+            },
+            minReputation: {
+              type: 'number',
+              description: 'Minimum reputation score required',
+            },
+          },
+        },
+      },
+      {
+        name: 'get_agent_schema',
+        description: 'Get available agent types, capabilities, and reputation tiers',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -326,6 +432,108 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(atoms, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'register_agent': {
+        const result = await fetchFromAPI('/api/agents/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            domainName: args?.domain,
+            agentType: args?.agentType,
+            capabilities: args?.capabilities,
+            endpoint: args?.endpoint,
+            mcpEndpoint: args?.mcpEndpoint,
+            owner: args?.owner,
+          }),
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: result.success
+                ? `Agent registered successfully at ${result.domain}\nAtom URI: ${result.atomUri}`
+                : `Registration failed: ${result.error}`,
+            },
+          ],
+        };
+      }
+
+      case 'send_agent_message': {
+        // Prepare the message for signing
+        const prepareResult = await fetchFromAPI('/api/agents/messages/prepare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: args?.from,
+            to: args?.to,
+            type: args?.type,
+            method: args?.method,
+            payload: args?.payload,
+          }),
+        });
+        
+        // Return the prepared message with signing instructions
+        // The caller needs to sign and submit via /api/agents/messages/send
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Message prepared for sending.\n\n` +
+                `From: ${prepareResult.from}\n` +
+                `To: ${prepareResult.to}\n` +
+                `Type: ${prepareResult.type}\n` +
+                `Nonce: ${prepareResult.nonce}\n\n` +
+                `To send this message, the domain owner must:\n` +
+                `1. Sign this exact string with their wallet: ${prepareResult.signablePayload}\n` +
+                `2. Submit to POST /api/agents/messages/send with the signature\n\n` +
+                `This ensures cryptographic proof of sender identity.`,
+            },
+          ],
+        };
+      }
+
+      case 'get_agent_reputation': {
+        const domain = (args?.domain as string).replace(/\.trust$/, '');
+        const reputation = await fetchFromAPI(`/api/agents/${domain}/reputation`);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(reputation, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'discover_mcp_agents': {
+        const params = new URLSearchParams();
+        if (args?.capability) params.set('capability', args.capability as string);
+        if (args?.minReputation) params.set('minReputation', args.minReputation.toString());
+        const queryString = params.toString();
+        const result = await fetchFromAPI(`/api/agents/mcp/discover${queryString ? `?${queryString}` : ''}`);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: result.agents?.length > 0
+                ? JSON.stringify(result, null, 2)
+                : 'No MCP-enabled agents found matching the criteria.',
+            },
+          ],
+        };
+      }
+
+      case 'get_agent_schema': {
+        const schema = await fetchFromAPI('/api/agents/schema');
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(schema, null, 2),
             },
           ],
         };
