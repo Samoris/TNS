@@ -177,7 +177,7 @@ async function interactiveTest() {
   
   if (!privateKey || !testDomain) {
     console.log('\nTo run interactive tests, set environment variables:');
-    console.log('  TEST_PRIVATE_KEY=0x... (domain owner private key)');
+    console.log('  TEST_PRIVATE_KEY=0x88b8627f4abae387df00fa6588eb67f5d5b002377a59de5d9bc1318f5c7eceaa (domain owner private key)');
     console.log('  TEST_DOMAIN=yourdomain.trust');
     return;
   }
