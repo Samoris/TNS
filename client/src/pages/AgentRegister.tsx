@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ethers } from 'ethers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, Wallet, CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import { Bot, Wallet, CheckCircle, Loader2, Sparkles, Link2, ExternalLink } from 'lucide-react';
 import { web3Service } from '@/lib/web3';
 import { TNS_BASE_REGISTRAR_ADDRESS } from '@/lib/contracts';
 
@@ -35,6 +36,8 @@ const CAPABILITIES = [
   { value: 'reputation-scoring', label: 'Reputation Scoring' },
 ];
 
+type RegistrationStep = 'configure' | 'signing' | 'complete';
+
 export default function AgentRegister() {
   const { toast } = useToast();
   const [walletAddress, setWalletAddress] = useState<string>('');
@@ -42,7 +45,9 @@ export default function AgentRegister() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoadingDomains, setIsLoadingDomains] = useState(false);
-  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('configure');
+  const [txHash, setTxHash] = useState<string>('');
+  const [atomAlreadyExists, setAtomAlreadyExists] = useState(false);
 
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [agentType, setAgentType] = useState<string>('');
@@ -73,7 +78,6 @@ export default function AgentRegister() {
   const loadUserDomains = async (address: string) => {
     setIsLoadingDomains(true);
     try {
-      // First try backend API
       const res = await fetch(`/api/domains/owner/${address}`);
       if (res.ok) {
         const data = await res.json();
@@ -85,7 +89,6 @@ export default function AgentRegister() {
         }
       }
       
-      // Fallback: Query blockchain directly via ENS BaseRegistrar
       console.log('Falling back to blockchain query for domains...');
       const blockchainDomains = await web3Service.getOwnerDomainsENS(TNS_BASE_REGISTRAR_ADDRESS, address);
       const domainNames = blockchainDomains.map(d => d.name);
@@ -145,25 +148,134 @@ export default function AgentRegister() {
       const data = await res.json();
 
       if (data.success || data.domain) {
-        setRegistrationComplete(true);
         toast({ 
-          title: 'Agent Registered!', 
-          description: `${selectedDomain} is now registered as an agent`
+          title: 'Agent Metadata Saved', 
+          description: 'Now syncing to Knowledge Graph...'
         });
+        
+        await syncToKnowledgeGraph();
       } else {
         toast({ 
           title: 'Registration Failed', 
           description: data.error || 'Unknown error',
           variant: 'destructive'
         });
+        setIsRegistering(false);
       }
     } catch (error) {
       toast({ title: 'Error', description: String(error), variant: 'destructive' });
+      setIsRegistering(false);
+    }
+  };
+
+  const syncToKnowledgeGraph = async () => {
+    try {
+      const cleanName = selectedDomain.replace(/\.trust$/, '');
+      
+      const syncRes = await fetch(`/api/sync/user/${walletAddress}`);
+      if (!syncRes.ok) {
+        throw new Error('Failed to get sync status');
+      }
+      
+      const syncData = await syncRes.json();
+      const domainToSync = syncData.domains?.find((d: { name: string }) => 
+        d.name === selectedDomain || d.name === cleanName
+      );
+      
+      if (domainToSync?.synced) {
+        setAtomAlreadyExists(true);
+        setRegistrationStep('complete');
+        toast({ 
+          title: 'Agent Registered!', 
+          description: 'Domain already synced to Knowledge Graph'
+        });
+        setIsRegistering(false);
+        return;
+      }
+      
+      const prepareRes = await fetch('/api/sync/prepare-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domains: [cleanName]
+        })
+      });
+      
+      if (!prepareRes.ok) {
+        throw new Error('Failed to prepare sync transaction');
+      }
+      
+      const prepareData = await prepareRes.json();
+      
+      if (!prepareData.transaction) {
+        setAtomAlreadyExists(true);
+        setRegistrationStep('complete');
+        toast({ 
+          title: 'Agent Registered!', 
+          description: 'Agent is now discoverable'
+        });
+        setIsRegistering(false);
+        return;
+      }
+      
+      setRegistrationStep('signing');
+      
+      if (!window.ethereum) {
+        throw new Error('MetaMask not found');
+      }
+      
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const tx = await signer.sendTransaction({
+        to: prepareData.transaction.to,
+        data: prepareData.transaction.data,
+        value: prepareData.transaction.value
+      });
+      
+      toast({ 
+        title: 'Transaction Sent', 
+        description: 'Waiting for confirmation...'
+      });
+      
+      const receipt = await tx.wait();
+      setTxHash(receipt?.hash || tx.hash);
+      
+      await fetch('/api/sync/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domain: cleanName,
+          txHash: receipt?.hash || tx.hash
+        })
+      });
+      
+      setRegistrationStep('complete');
+      toast({ 
+        title: 'Agent Registered On-Chain!', 
+        description: 'Your agent is now in the Knowledge Graph'
+      });
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
+        toast({ 
+          title: 'Transaction Cancelled', 
+          description: 'You cancelled the transaction',
+          variant: 'destructive'
+        });
+        setRegistrationStep('configure');
+      } else {
+        toast({ 
+          title: 'Sync Failed', 
+          description: error.message || 'Failed to sync to Knowledge Graph',
+          variant: 'destructive'
+        });
+      }
     }
     setIsRegistering(false);
   };
 
-  if (registrationComplete) {
+  if (registrationStep === 'complete') {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <Card className="max-w-md w-full">
@@ -175,13 +287,63 @@ export default function AgentRegister() {
             <p className="text-muted-foreground">
               <span className="font-mono font-semibold">{selectedDomain}</span> is now discoverable as a {agentType} agent.
             </p>
+            {txHash && (
+              <a 
+                href={`https://explorer.intuition.systems/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View Transaction
+              </a>
+            )}
+            {atomAlreadyExists && !txHash && (
+              <p className="text-sm text-muted-foreground">
+                <Link2 className="w-4 h-4 inline mr-1" />
+                Already synced to Knowledge Graph
+              </p>
+            )}
             <div className="pt-4 space-y-2">
               <Button onClick={() => window.location.href = '/agent-test'} className="w-full">
                 Test Your Agent
               </Button>
-              <Button variant="outline" onClick={() => setRegistrationComplete(false)} className="w-full">
+              <Button variant="outline" onClick={() => {
+                setRegistrationStep('configure');
+                setTxHash('');
+                setAtomAlreadyExists(false);
+                setSelectedDomain('');
+                setAgentType('');
+                setSelectedCapabilities([]);
+              }} className="w-full">
                 Register Another
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (registrationStep === 'signing') {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
+            <h2 className="text-xl font-bold">Confirm Transaction</h2>
+            <p className="text-muted-foreground">
+              Please confirm the transaction in your wallet to register your agent on the Knowledge Graph.
+            </p>
+            <div className="p-4 bg-muted rounded-lg text-left space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Domain:</span>
+                <span className="font-mono">{selectedDomain}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Action:</span>
+                <span>Create Atom</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -198,7 +360,7 @@ export default function AgentRegister() {
             <h1 className="text-3xl font-bold">Register Your Agent</h1>
           </div>
           <p className="text-muted-foreground">
-            Give your AI agent a verifiable .trust identity
+            Give your AI agent a verifiable .trust identity on the Knowledge Graph
           </p>
         </div>
 
@@ -337,8 +499,11 @@ export default function AgentRegister() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                Step 4: Register
+                Step 4: Register On-Chain
               </CardTitle>
+              <CardDescription>
+                This will save your agent metadata and create an atom in Intuition's Knowledge Graph
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-4 bg-muted rounded-lg space-y-2">
@@ -354,6 +519,10 @@ export default function AgentRegister() {
                   <span className="text-muted-foreground">Capabilities:</span>
                   <span>{selectedCapabilities.length} selected</span>
                 </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+                <strong>Note:</strong> You'll need to sign a transaction to register your agent on the Knowledge Graph. This requires a small amount of ETH for gas.
               </div>
 
               <Button onClick={handleRegister} disabled={isRegistering} className="w-full" size="lg">
