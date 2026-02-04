@@ -246,7 +246,7 @@ export default function AgentRegister() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          domains: [cleanName]
+          domainNames: [cleanName]
         })
       });
       
@@ -708,7 +708,7 @@ export default function AgentRegister() {
               </div>
 
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200">
-                <strong>Note:</strong> You'll need to sign a transaction to register your agent on the Knowledge Graph. This requires a small amount of ETH for gas.
+                <strong>Note:</strong> You'll need to sign a transaction to register your agent on the Knowledge Graph. This requires a small amount of TRUST for gas.
               </div>
 
               <Button onClick={handleRegister} disabled={isRegistering} className="w-full" size="lg">
