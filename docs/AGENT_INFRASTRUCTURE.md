@@ -357,25 +357,76 @@ await fetch('/api/agents/register', {
 // GET /api/agents/mcp/discover?capability=text-generation
 ```
 
-### Agent Manifest (Schema.org)
+### Agent Manifest (Schema.org SoftwareAgent)
 
-Each agent has a Schema.org-compatible manifest:
+Each agent has a fully Schema.org-compatible JSON-LD manifest following the SoftwareAgent type:
+
+**Endpoint:** `GET /api/agents/:domain/manifest`
+
+**Schema.org SoftwareAgent Mapping:**
+
+| Schema.org Property | TNS Field | Description |
+|---------------------|-----------|-------------|
+| `@context` | - | Always `https://schema.org` |
+| `@type` | - | Always `SoftwareAgent` |
+| `@id` | - | `tns:agent:{domain}` URI |
+| `name` | `domain` | The .trust domain name |
+| `identifier` | `address` | Ethereum wallet address |
+| `agentType` | `agentType` | TNS agent classification |
+| `capabilities` | `capabilities` | Array of capability strings |
+| `url` | `endpoint` | REST API endpoint |
+| `mcpEndpoint` | `mcpEndpoint` | MCP protocol endpoint |
+| `version` | `version` | Semantic version |
+| `dateCreated` | `registeredAt` | ISO 8601 timestamp |
+| `dateModified` | `lastSeen` | ISO 8601 timestamp |
+| `potentialAction` | `capabilities` | Array of Action objects |
+| `interactionStatistic` | `reputation` | Staking statistics |
+
+**Example Manifest:**
 
 ```javascript
 const manifest = await fetch('/api/agents/myagent/manifest').then(r => r.json());
 
 // Response:
-// {
-//   "@context": "https://schema.org",
-//   "@type": "SoftwareAgent",
-//   "@id": "tns:agent:myagent.trust",
-//   "name": "myagent.trust",
-//   "agentType": "assistant",
-//   "capabilities": ["text-generation"],
-//   "url": "https://myagent.example.com/api",
-//   "mcpEndpoint": "https://myagent.example.com/mcp",
-//   ...
-// }
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareAgent",
+  "@id": "tns:agent:myagent.trust",
+  "name": "myagent.trust",
+  "identifier": "0x1234567890abcdef...",
+  "agentType": "assistant",
+  "capabilities": ["text-generation", "code-review"],
+  "url": "https://myagent.example.com/api",
+  "mcpEndpoint": "https://myagent.example.com/mcp",
+  "version": "1.0.0",
+  "dateCreated": "2024-01-15T12:00:00.000Z",
+  "dateModified": "2024-01-16T08:30:00.000Z",
+  "potentialAction": [
+    { "@type": "Action", "name": "text-generation" },
+    { "@type": "Action", "name": "code-review" }
+  ],
+  "interactionStatistic": {
+    "@type": "InteractionCounter",
+    "interactionType": "Stake",
+    "userInteractionCount": 12
+  }
+}
+```
+
+**Usage in Discovery:**
+
+The manifest enables standardized agent discovery across the ecosystem:
+
+```javascript
+// Fetch manifest to verify agent capabilities
+const manifest = await fetch('/api/agents/codebot.trust/manifest').then(r => r.json());
+
+// Verify it's a valid SoftwareAgent
+if (manifest['@type'] === 'SoftwareAgent') {
+  console.log('Valid TNS agent');
+  console.log('Capabilities:', manifest.capabilities);
+  console.log('MCP Endpoint:', manifest.mcpEndpoint);
+}
 ```
 
 ---
