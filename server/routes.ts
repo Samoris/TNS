@@ -1165,14 +1165,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nonce
       };
       
-      // Verify sender owns the from domain
+      // Verify sender owns the from domain - check storage first, then blockchain
+      let senderOwner: string | null = null;
       const fromDomain = await storage.getDomainByName(message.from);
-      if (!fromDomain) {
+      if (fromDomain) {
+        senderOwner = fromDomain.owner;
+      } else {
+        // Fallback to blockchain check for migrated domains
+        const cleanName = message.from.replace(/\.trust$/, '');
+        const domainInfo = await blockchainService.getDomainInfoENS(cleanName);
+        if (domainInfo && domainInfo.exists) {
+          senderOwner = domainInfo.owner;
+        }
+      }
+      
+      if (!senderOwner) {
         return res.status(404).json({ error: "Sender domain not found" });
       }
       
       // Verify signature over client-controlled fields only
-      const isValid = await agentService.verifyMessageSignature(message, fromDomain.owner);
+      const isValid = await agentService.verifyMessageSignature(message, senderOwner);
       if (!isValid) {
         return res.status(401).json({ 
           error: "Invalid message signature",
@@ -1209,8 +1221,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check storage first, then blockchain for migrated domains
+      let domainOwner: string | null = null;
       const storedDomain = await storage.getDomainByName(cleanDomain);
-      if (!storedDomain) {
+      if (storedDomain) {
+        domainOwner = storedDomain.owner;
+      } else {
+        const domainInfo = await blockchainService.getDomainInfoENS(cleanDomain.replace(/\.trust$/, ''));
+        if (domainInfo && domainInfo.exists) {
+          domainOwner = domainInfo.owner;
+        }
+      }
+      
+      if (!domainOwner) {
         return res.status(404).json({ error: "Domain not found" });
       }
       
@@ -1231,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cleanDomain, 
         message, 
         signature as string, 
-        storedDomain.owner
+        domainOwner
       );
       
       if (!isValid) {
@@ -1267,8 +1290,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check storage first, then blockchain for migrated domains
+      let domainOwner: string | null = null;
       const storedDomain = await storage.getDomainByName(cleanDomain);
-      if (!storedDomain) {
+      if (storedDomain) {
+        domainOwner = storedDomain.owner;
+      } else {
+        const domainInfo = await blockchainService.getDomainInfoENS(cleanDomain.replace(/\.trust$/, ''));
+        if (domainInfo && domainInfo.exists) {
+          domainOwner = domainInfo.owner;
+        }
+      }
+      
+      if (!domainOwner) {
         return res.status(404).json({ error: "Domain not found" });
       }
       
@@ -1289,7 +1323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cleanDomain, 
         message, 
         signature as string, 
-        storedDomain.owner
+        domainOwner
       );
       
       if (!isValid) {
