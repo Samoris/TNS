@@ -256,7 +256,8 @@ export default function AgentRegister() {
       
       const prepareData = await prepareRes.json();
       
-      if (!prepareData.transaction) {
+      // API returns transactions array, not single transaction
+      if (!prepareData.transactions || prepareData.transactions.length === 0) {
         setAtomAlreadyExists(true);
         setPageView('complete');
         toast({ 
@@ -266,6 +267,8 @@ export default function AgentRegister() {
         setIsRegistering(false);
         return;
       }
+      
+      const txData = prepareData.transactions[0].transaction;
       
       setPageView('signing');
       
@@ -277,9 +280,9 @@ export default function AgentRegister() {
       const signer = await provider.getSigner();
       
       const tx = await signer.sendTransaction({
-        to: prepareData.transaction.to,
-        data: prepareData.transaction.data,
-        value: prepareData.transaction.value
+        to: txData.to,
+        data: txData.data,
+        value: txData.value
       });
       
       toast({ 
