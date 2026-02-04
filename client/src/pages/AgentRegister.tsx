@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, Wallet, CheckCircle, Loader2, Sparkles, Link2, ExternalLink } from 'lucide-react';
+import { Bot, Wallet, CheckCircle, Loader2, Sparkles, Link2, ExternalLink, Plus, Settings, Zap } from 'lucide-react';
 import { web3Service } from '@/lib/web3';
 import { TNS_BASE_REGISTRAR_ADDRESS } from '@/lib/contracts';
 
@@ -36,16 +37,27 @@ const CAPABILITIES = [
   { value: 'reputation-scoring', label: 'Reputation Scoring' },
 ];
 
-type RegistrationStep = 'configure' | 'signing' | 'complete';
+type PageView = 'loading' | 'dashboard' | 'register' | 'signing' | 'complete';
+
+interface RegisteredAgent {
+  domain: string;
+  agentType: string;
+  capabilities: string[];
+  endpoint?: string;
+  mcpEndpoint?: string;
+  registeredAt: number;
+  synced?: boolean;
+}
 
 export default function AgentRegister() {
   const { toast } = useToast();
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [userDomains, setUserDomains] = useState<string[]>([]);
+  const [registeredAgents, setRegisteredAgents] = useState<RegisteredAgent[]>([]);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoadingDomains, setIsLoadingDomains] = useState(false);
-  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('configure');
+  const [pageView, setPageView] = useState<PageView>('loading');
   const [txHash, setTxHash] = useState<string>('');
   const [atomAlreadyExists, setAtomAlreadyExists] = useState(false);
 
@@ -54,6 +66,51 @@ export default function AgentRegister() {
   const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
   const [endpoint, setEndpoint] = useState<string>('');
   const [mcpEndpoint, setMcpEndpoint] = useState<string>('');
+
+  useEffect(() => {
+    checkExistingConnection();
+  }, []);
+
+  const checkExistingConnection = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          const address = accounts[0];
+          setWalletAddress(address);
+          await loadUserAgents(address);
+        } else {
+          setPageView('register');
+        }
+      } catch (error) {
+        console.error('Error checking connection:', error);
+        setPageView('register');
+      }
+    } else {
+      setPageView('register');
+    }
+  };
+
+  const loadUserAgents = async (address: string) => {
+    try {
+      const res = await fetch(`/api/agents/owner/${address}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.agents && data.agents.length > 0) {
+          setRegisteredAgents(data.agents);
+          setPageView('dashboard');
+          await loadUserDomains(address);
+          return;
+        }
+      }
+      await loadUserDomains(address);
+      setPageView('register');
+    } catch (error) {
+      console.error('Error loading agents:', error);
+      await loadUserDomains(address);
+      setPageView('register');
+    }
+  };
 
   const connectWallet = async () => {
     if (!window.ethereum) {
@@ -68,7 +125,7 @@ export default function AgentRegister() {
       setWalletAddress(address);
       toast({ title: 'Wallet Connected', description: `${address.slice(0, 8)}...${address.slice(-6)}` });
       
-      await loadUserDomains(address);
+      await loadUserAgents(address);
     } catch (error) {
       toast({ title: 'Connection Failed', description: String(error), variant: 'destructive' });
     }
@@ -93,23 +150,15 @@ export default function AgentRegister() {
       const blockchainDomains = await web3Service.getOwnerDomainsENS(TNS_BASE_REGISTRAR_ADDRESS, address);
       const domainNames = blockchainDomains.map(d => d.name);
       setUserDomains(domainNames);
-      
-      if (domainNames.length === 0) {
-        toast({ 
-          title: 'No Domains Found', 
-          description: 'You need to own a .trust domain to register an agent',
-          variant: 'destructive'
-        });
-      }
     } catch (error) {
       console.error('Failed to load domains:', error);
-      toast({ 
-        title: 'Error Loading Domains', 
-        description: 'Failed to fetch your domains from the blockchain',
-        variant: 'destructive'
-      });
     }
     setIsLoadingDomains(false);
+  };
+
+  const getUnregisteredDomains = () => {
+    const registeredDomainNames = registeredAgents.map(a => a.domain);
+    return userDomains.filter(d => !registeredDomainNames.includes(d));
   };
 
   const toggleCapability = (capability: string) => {
@@ -184,7 +233,7 @@ export default function AgentRegister() {
       
       if (domainToSync?.synced) {
         setAtomAlreadyExists(true);
-        setRegistrationStep('complete');
+        setPageView('complete');
         toast({ 
           title: 'Agent Registered!', 
           description: 'Domain already synced to Knowledge Graph'
@@ -209,7 +258,7 @@ export default function AgentRegister() {
       
       if (!prepareData.transaction) {
         setAtomAlreadyExists(true);
-        setRegistrationStep('complete');
+        setPageView('complete');
         toast({ 
           title: 'Agent Registered!', 
           description: 'Agent is now discoverable'
@@ -218,7 +267,7 @@ export default function AgentRegister() {
         return;
       }
       
-      setRegistrationStep('signing');
+      setPageView('signing');
       
       if (!window.ethereum) {
         throw new Error('MetaMask not found');
@@ -250,7 +299,7 @@ export default function AgentRegister() {
         })
       });
       
-      setRegistrationStep('complete');
+      setPageView('complete');
       toast({ 
         title: 'Agent Registered On-Chain!', 
         description: 'Your agent is now in the Knowledge Graph'
@@ -263,7 +312,7 @@ export default function AgentRegister() {
           description: 'You cancelled the transaction',
           variant: 'destructive'
         });
-        setRegistrationStep('configure');
+        setPageView('register');
       } else {
         toast({ 
           title: 'Sync Failed', 
@@ -275,7 +324,136 @@ export default function AgentRegister() {
     setIsRegistering(false);
   };
 
-  if (registrationStep === 'complete') {
+  const goToDashboard = async () => {
+    setPageView('loading');
+    await loadUserAgents(walletAddress);
+  };
+
+  const startNewRegistration = () => {
+    setSelectedDomain('');
+    setAgentType('');
+    setSelectedCapabilities([]);
+    setEndpoint('');
+    setMcpEndpoint('');
+    setTxHash('');
+    setAtomAlreadyExists(false);
+    setPageView('register');
+  };
+
+  if (pageView === 'loading') {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (pageView === 'dashboard') {
+    const unregisteredDomains = getUnregisteredDomains();
+    
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Bot className="w-8 h-8 text-primary" />
+                My Agents
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Manage your registered AI agents
+              </p>
+            </div>
+            {unregisteredDomains.length > 0 && (
+              <Button onClick={startNewRegistration}>
+                <Plus className="w-4 h-4 mr-2" />
+                Register New Agent
+              </Button>
+            )}
+          </div>
+
+          <div className="grid gap-4">
+            {registeredAgents.map((agent) => (
+              <Card key={agent.domain}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold font-mono">{agent.domain}</h3>
+                        <Badge variant="secondary" className="capitalize">{agent.agentType}</Badge>
+                        {agent.synced !== false && (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            <Link2 className="w-3 h-3 mr-1" />
+                            On-Chain
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {agent.capabilities.map((cap) => (
+                          <Badge key={cap} variant="outline" className="text-xs">
+                            {cap}
+                          </Badge>
+                        ))}
+                      </div>
+                      {agent.endpoint && (
+                        <p className="text-sm text-muted-foreground">
+                          <Zap className="w-3 h-3 inline mr-1" />
+                          {agent.endpoint}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => window.location.href = '/agent-test'}>
+                        Test
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {registeredAgents.length === 0 && (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Bot className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Agents Registered</h3>
+                <p className="text-muted-foreground mb-4">
+                  Register your first AI agent to get started
+                </p>
+                <Button onClick={startNewRegistration}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Register Agent
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {unregisteredDomains.length > 0 && registeredAgents.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Available Domains</CardTitle>
+                <CardDescription>
+                  You have {unregisteredDomains.length} domain{unregisteredDomains.length > 1 ? 's' : ''} that can be registered as agents
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {unregisteredDomains.map((domain) => (
+                    <Badge key={domain} variant="secondary" className="font-mono">
+                      {domain}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (pageView === 'complete') {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <Card className="max-w-md w-full">
@@ -305,17 +483,10 @@ export default function AgentRegister() {
               </p>
             )}
             <div className="pt-4 space-y-2">
-              <Button onClick={() => window.location.href = '/agent-test'} className="w-full">
-                Test Your Agent
+              <Button onClick={goToDashboard} className="w-full">
+                Go to Dashboard
               </Button>
-              <Button variant="outline" onClick={() => {
-                setRegistrationStep('configure');
-                setTxHash('');
-                setAtomAlreadyExists(false);
-                setSelectedDomain('');
-                setAgentType('');
-                setSelectedCapabilities([]);
-              }} className="w-full">
+              <Button variant="outline" onClick={startNewRegistration} className="w-full">
                 Register Another
               </Button>
             </div>
@@ -325,7 +496,7 @@ export default function AgentRegister() {
     );
   }
 
-  if (registrationStep === 'signing') {
+  if (pageView === 'signing') {
     return (
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <Card className="max-w-md w-full">
@@ -354,14 +525,21 @@ export default function AgentRegister() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <Bot className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Register Your Agent</h1>
+        <div className="flex items-center justify-between">
+          <div className="text-center flex-1 space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <Bot className="w-8 h-8 text-primary" />
+              <h1 className="text-3xl font-bold">Register Your Agent</h1>
+            </div>
+            <p className="text-muted-foreground">
+              Give your AI agent a verifiable .trust identity on the Knowledge Graph
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            Give your AI agent a verifiable .trust identity on the Knowledge Graph
-          </p>
+          {registeredAgents.length > 0 && (
+            <Button variant="outline" onClick={goToDashboard}>
+              Back to Dashboard
+            </Button>
+          )}
         </div>
 
         <Card>
@@ -398,17 +576,25 @@ export default function AgentRegister() {
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
-              ) : userDomains.length > 0 ? (
+              ) : getUnregisteredDomains().length > 0 ? (
                 <Select value={selectedDomain} onValueChange={setSelectedDomain}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your domain" />
                   </SelectTrigger>
                   <SelectContent>
-                    {userDomains.map(domain => (
+                    {getUnregisteredDomains().map(domain => (
                       <SelectItem key={domain} value={domain}>{domain}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              ) : userDomains.length > 0 ? (
+                <div className="text-center p-4 space-y-2">
+                  <CheckCircle className="w-8 h-8 mx-auto text-green-500" />
+                  <p className="text-muted-foreground">All your domains are already registered as agents!</p>
+                  <Button variant="outline" onClick={goToDashboard}>
+                    Go to Dashboard
+                  </Button>
+                </div>
               ) : (
                 <div className="text-center p-4 space-y-2">
                   <p className="text-muted-foreground">No domains found for this wallet</p>

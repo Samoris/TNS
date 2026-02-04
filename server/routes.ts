@@ -814,6 +814,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get agents owned by a specific address (MUST come before :domain route)
+  app.get("/api/agents/owner/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      if (!address) {
+        return res.status(400).json({ error: "Address required" });
+      }
+      
+      const allDomains = await storage.getAllDomains();
+      const ownerDomains = allDomains.filter(d => 
+        d.owner.toLowerCase() === address.toLowerCase()
+      );
+      
+      const agents = [];
+      for (const domain of ownerDomains) {
+        const records = await storage.getDomainRecords(domain.id);
+        const agentRecord = records.find(r => r.key === 'agent.metadata');
+        
+        if (agentRecord) {
+          try {
+            const metadata = JSON.parse(agentRecord.value);
+            agents.push({
+              domain: domain.name,
+              agentType: metadata.agentType,
+              capabilities: metadata.capabilities || [],
+              endpoint: metadata.endpoint,
+              mcpEndpoint: metadata.mcpEndpoint,
+              registeredAt: metadata.registeredAt,
+              synced: true
+            });
+          } catch (e) {
+            console.error(`Error parsing agent metadata for ${domain.name}:`, e);
+          }
+        }
+      }
+      
+      res.json({ agents });
+    } catch (error) {
+      console.error("Error getting agents by owner:", error);
+      res.status(500).json({ error: "Failed to get agents" });
+    }
+  });
+
   // Discover agents by capability (MUST come before :domain route)
   app.get("/api/agents/discover", async (req, res) => {
     try {
