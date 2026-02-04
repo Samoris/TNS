@@ -17,6 +17,7 @@ import Terms from "@/pages/terms";
 import Support from "@/pages/support";
 import AgentTest from "@/pages/AgentTest";
 import AgentRegister from "@/pages/AgentRegister";
+import Agents from "@/pages/Agents";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -36,6 +37,7 @@ function Router() {
           <Route path="/privacy" component={Privacy} />
           <Route path="/terms" component={Terms} />
           <Route path="/support" component={Support} />
+          <Route path="/agents" component={Agents} />
           <Route path="/agent-test" component={AgentTest} />
           <Route path="/agent-register" component={AgentRegister} />
           <Route component={NotFound} />
