@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Loader2, Shield, Send, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Shield, Send, MessageSquare, History } from 'lucide-react';
 
 async function connectWallet(): Promise<string> {
   if (!window.ethereum) {
@@ -41,6 +41,7 @@ export default function AgentTest() {
   
   const [messagePayload, setMessagePayload] = useState<string>('{"greeting": "Hello from agent!"}');
   const [targetDomain, setTargetDomain] = useState<string>('testing.trust');
+  const [messageHistory, setMessageHistory] = useState<any[]>([]);
 
   const updateResult = (name: string, update: Partial<TestResult>) => {
     setResults(prev => prev.map(r => r.name === name ? { ...r, ...update } : r));
@@ -286,6 +287,35 @@ export default function AgentTest() {
     setIsRunning(false);
   };
 
+  const fetchMessageHistory = async () => {
+    if (!walletAddress) {
+      toast({ title: 'Connect Wallet First', variant: 'destructive' });
+      return;
+    }
+
+    setIsRunning(true);
+    try {
+      const timestamp = Date.now().toString();
+      const message = `Get message history for ${domain} at ${timestamp}`;
+      const signature = await signMessage(message);
+      
+      const res = await fetch(
+        `/api/agents/messages/${encodeURIComponent(domain)}/history?signature=${encodeURIComponent(signature)}&timestamp=${timestamp}`
+      );
+      const data = await res.json();
+      
+      if (data.error) {
+        toast({ title: 'History Error', description: data.error, variant: 'destructive' });
+      } else {
+        setMessageHistory(data.messages || []);
+        toast({ title: 'History Loaded', description: `${data.count} messages found` });
+      }
+    } catch (error) {
+      toast({ title: 'History Failed', description: String(error), variant: 'destructive' });
+    }
+    setIsRunning(false);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -390,11 +420,53 @@ export default function AgentTest() {
             </CardTitle>
             <CardDescription>Get messages for your domain (requires signed authentication)</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Button onClick={testRetrieveMessages} disabled={isRunning || !walletAddress} className="w-full">
               {isRunning ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <MessageSquare className="w-4 h-4 mr-2" />}
-              Retrieve My Messages
+              Retrieve New Messages
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Message History
+            </CardTitle>
+            <CardDescription>View all sent and received messages (persistent history)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={fetchMessageHistory} disabled={isRunning || !walletAddress} className="w-full">
+              {isRunning ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <History className="w-4 h-4 mr-2" />}
+              Load Message History
+            </Button>
+            
+            {messageHistory.length > 0 && (
+              <div className="space-y-3 mt-4">
+                <div className="text-sm font-medium text-muted-foreground">{messageHistory.length} messages</div>
+                {messageHistory.map((msg, i) => (
+                  <div key={msg.id || i} className={`p-3 rounded-lg border ${msg.from === domain ? 'bg-primary/10 border-primary/20' : 'bg-muted/50'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-sm">
+                        <span className="font-medium">{msg.from}</span>
+                        <span className="text-muted-foreground mx-2">→</span>
+                        <span className="font-medium">{msg.to}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(msg.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Type: {msg.type} {msg.method && `| Method: ${msg.method}`}
+                    </div>
+                    <pre className="text-xs bg-background/50 p-2 rounded overflow-auto max-h-24">
+                      {JSON.stringify(msg.payload, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

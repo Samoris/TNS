@@ -81,6 +81,7 @@ const VALID_CAPABILITIES = [
 
 const challenges = new Map<string, AgentChallenge>();
 const messageQueue = new Map<string, AgentMessage[]>();
+const messageHistory = new Map<string, AgentMessage[]>(); // Persistent history
 const agentRegistry = new Map<string, AgentIdentity>();
 
 export class AgentService {
@@ -242,9 +243,19 @@ export class AgentService {
       return { success: false, error: 'Message timestamp too old' };
     }
 
+    // Add to queue for recipient
     const queue = messageQueue.get(message.to) || [];
     queue.push(message);
     messageQueue.set(message.to, queue);
+
+    // Add to persistent history for both sender and recipient
+    const senderHistory = messageHistory.get(message.from) || [];
+    senderHistory.push(message);
+    messageHistory.set(message.from, senderHistory);
+
+    const recipientHistory = messageHistory.get(message.to) || [];
+    recipientHistory.push(message);
+    messageHistory.set(message.to, recipientHistory);
 
     return { success: true };
   }
@@ -254,6 +265,11 @@ export class AgentService {
     const messages = queue.slice(0, limit);
     messageQueue.set(domain, queue.slice(limit));
     return messages;
+  }
+
+  getMessageHistory(domain: string, limit: number = 100): AgentMessage[] {
+    const history = messageHistory.get(domain) || [];
+    return history.slice(-limit); // Return most recent messages
   }
 
   async discoverAgents(filters: {

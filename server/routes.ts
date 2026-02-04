@@ -1251,6 +1251,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get message history for a domain (persistent, not consumed)
+  app.get("/api/agents/messages/:domain/history", async (req, res) => {
+    try {
+      const { domain } = req.params;
+      const { limit = '100', signature, timestamp } = req.query;
+      
+      const cleanDomain = domain.replace(/\.trust$/, '') + '.trust';
+      
+      // Authentication is REQUIRED for message history
+      if (!signature || !timestamp) {
+        return res.status(401).json({ 
+          error: "Authentication required. Provide signature and timestamp query parameters.",
+          hint: "Sign message: 'Get message history for {domain} at {timestamp}' with domain owner's key"
+        });
+      }
+      
+      const storedDomain = await storage.getDomainByName(cleanDomain);
+      if (!storedDomain) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+      
+      // Verify timestamp is recent (within 5 minutes)
+      const ts = parseInt(timestamp as string, 10);
+      const now = Date.now();
+      const maxSkew = 30 * 1000;
+      
+      if (ts > now + maxSkew) {
+        return res.status(401).json({ error: "Timestamp is in the future." });
+      }
+      if (now - ts > 5 * 60 * 1000) {
+        return res.status(401).json({ error: "Timestamp expired." });
+      }
+      
+      const message = `Get message history for ${cleanDomain} at ${timestamp}`;
+      const isValid = await agentService.verifyAgentSignature(
+        cleanDomain, 
+        message, 
+        signature as string, 
+        storedDomain.owner
+      );
+      
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+      
+      const messages = agentService.getMessageHistory(cleanDomain, parseInt(limit as string, 10));
+      
+      res.json({ 
+        domain: cleanDomain,
+        messages,
+        count: messages.length,
+        isHistory: true
+      });
+    } catch (error) {
+      console.error("Get message history error:", error);
+      res.status(500).json({ error: "Failed to get message history" });
+    }
+  });
+
   // MCP discovery endpoint
   app.get("/api/agents/mcp/discover", async (req, res) => {
     try {
