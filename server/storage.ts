@@ -12,9 +12,17 @@ import {
   type DomainWithRecords,
   type Agent,
   type InsertAgent,
+  users,
+  domains,
+  domainRecords,
+  domainCommits,
+  domainSyncStatus,
+  agents,
   PRICING_TIERS
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, and, like, gte } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -404,4 +412,204 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async getDomain(id: string): Promise<Domain | undefined> {
+    const [domain] = await db.select().from(domains).where(eq(domains.id, id));
+    return domain;
+  }
+
+  async getDomainByName(name: string): Promise<Domain | undefined> {
+    const [domain] = await db.select().from(domains).where(eq(domains.name, name));
+    return domain;
+  }
+
+  async getDomainByTokenId(tokenId: number): Promise<Domain | undefined> {
+    const [domain] = await db.select().from(domains).where(eq(domains.tokenId, tokenId.toString()));
+    return domain;
+  }
+
+  async getDomainWithRecords(name: string): Promise<DomainWithRecords | undefined> {
+    const domain = await this.getDomainByName(name);
+    if (!domain) return undefined;
+    
+    const records = await this.getDomainRecords(domain.id);
+    return { ...domain, records, subdomains: [] };
+  }
+
+  async createDomain(insertDomain: InsertDomain): Promise<Domain> {
+    const [domain] = await db.insert(domains).values(insertDomain).returning();
+    return domain;
+  }
+
+  async updateDomain(id: string, updates: Partial<Domain>): Promise<Domain | undefined> {
+    const [domain] = await db.update(domains).set(updates).where(eq(domains.id, id)).returning();
+    return domain;
+  }
+
+  async getDomainsByOwner(owner: string): Promise<Domain[]> {
+    return db.select().from(domains).where(eq(domains.owner, owner));
+  }
+
+  async searchDomains(query: string): Promise<Domain[]> {
+    return db.select().from(domains).where(like(domains.name, `%${query}%`));
+  }
+
+  async getAllDomains(): Promise<Domain[]> {
+    return db.select().from(domains);
+  }
+
+  async getDomainRecords(domainId: string): Promise<DomainRecord[]> {
+    return db.select().from(domainRecords).where(eq(domainRecords.domainId, domainId));
+  }
+
+  async createDomainRecord(record: InsertDomainRecord): Promise<DomainRecord> {
+    const [result] = await db.insert(domainRecords).values(record).returning();
+    return result;
+  }
+
+  async updateDomainRecord(id: string, updates: Partial<DomainRecord>): Promise<DomainRecord | undefined> {
+    const [result] = await db.update(domainRecords).set({ ...updates, updatedAt: new Date() }).where(eq(domainRecords.id, id)).returning();
+    return result;
+  }
+
+  async deleteDomainRecord(id: string): Promise<boolean> {
+    const result = await db.delete(domainRecords).where(eq(domainRecords.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async createDomainCommit(commit: InsertDomainCommit): Promise<DomainCommit> {
+    const [result] = await db.insert(domainCommits).values(commit).returning();
+    return result;
+  }
+
+  async getDomainCommit(commitment: string): Promise<DomainCommit | undefined> {
+    const [result] = await db.select().from(domainCommits).where(eq(domainCommits.commitment, commitment));
+    return result;
+  }
+
+  async revealDomainCommit(commitment: string): Promise<DomainCommit | undefined> {
+    const [result] = await db.update(domainCommits)
+      .set({ isRevealed: true, revealedAt: new Date() })
+      .where(eq(domainCommits.commitment, commitment))
+      .returning();
+    return result;
+  }
+
+  async setPrimaryDomain(owner: string, domainName: string): Promise<void> {
+    await db.update(domains).set({ isPrimary: false }).where(eq(domains.owner, owner));
+    await db.update(domains).set({ isPrimary: true }).where(eq(domains.name, domainName));
+  }
+
+  async isDomainAvailable(name: string): Promise<boolean> {
+    const domain = await this.getDomainByName(name);
+    return !domain;
+  }
+
+  calculateDomainPrice(name: string): { pricePerYear: string; tier: string } {
+    const length = name.length;
+    if (length === 3) {
+      return { pricePerYear: PRICING_TIERS.THREE_CHAR.pricePerYear, tier: "3 characters" };
+    } else if (length === 4) {
+      return { pricePerYear: PRICING_TIERS.FOUR_CHAR.pricePerYear, tier: "4 characters" };
+    } else {
+      return { pricePerYear: PRICING_TIERS.FIVE_PLUS_CHAR.pricePerYear, tier: "5+ characters" };
+    }
+  }
+
+  async getDomainSyncStatus(domainName: string): Promise<DomainSyncStatus | undefined> {
+    const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+    const [result] = await db.select().from(domainSyncStatus).where(eq(domainSyncStatus.domainName, fullName));
+    return result;
+  }
+
+  async getAllSyncStatuses(): Promise<DomainSyncStatus[]> {
+    return db.select().from(domainSyncStatus);
+  }
+
+  async createDomainSyncStatus(insertStatus: InsertDomainSyncStatus): Promise<DomainSyncStatus> {
+    const [result] = await db.insert(domainSyncStatus).values(insertStatus).returning();
+    return result;
+  }
+
+  async updateDomainSyncStatus(domainName: string, updates: Partial<DomainSyncStatus>): Promise<DomainSyncStatus | undefined> {
+    const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+    const [result] = await db.update(domainSyncStatus).set(updates).where(eq(domainSyncStatus.domainName, fullName)).returning();
+    return result;
+  }
+
+  async getUnsyncedDomains(): Promise<DomainSyncStatus[]> {
+    return db.select().from(domainSyncStatus).where(
+      eq(domainSyncStatus.syncStatus, 'pending')
+    );
+  }
+
+  async getAgent(domain: string): Promise<Agent | undefined> {
+    const fullName = domain.endsWith('.trust') ? domain : `${domain}.trust`;
+    const [result] = await db.select().from(agents).where(eq(agents.domain, fullName));
+    return result;
+  }
+
+  async getAllAgents(): Promise<Agent[]> {
+    return db.select().from(agents);
+  }
+
+  async getAgentsByOwner(address: string): Promise<Agent[]> {
+    return db.select().from(agents).where(eq(agents.address, address));
+  }
+
+  async createAgent(insertAgent: InsertAgent): Promise<Agent> {
+    const fullDomain = insertAgent.domain.endsWith('.trust') 
+      ? insertAgent.domain 
+      : `${insertAgent.domain}.trust`;
+    const [result] = await db.insert(agents).values({ ...insertAgent, domain: fullDomain }).returning();
+    return result;
+  }
+
+  async updateAgent(domain: string, updates: Partial<Agent>): Promise<Agent | undefined> {
+    const fullName = domain.endsWith('.trust') ? domain : `${domain}.trust`;
+    const [result] = await db.update(agents).set({ ...updates, lastSeen: new Date() }).where(eq(agents.domain, fullName)).returning();
+    return result;
+  }
+
+  async deleteAgent(domain: string): Promise<boolean> {
+    const fullName = domain.endsWith('.trust') ? domain : `${domain}.trust`;
+    const result = await db.delete(agents).where(eq(agents.domain, fullName));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async discoverAgents(filters: { capability?: string; type?: string; minReputation?: number }): Promise<Agent[]> {
+    let results = await db.select().from(agents);
+    
+    if (filters.capability) {
+      results = results.filter(a => a.capabilities.includes(filters.capability!));
+    }
+    if (filters.type) {
+      results = results.filter(a => a.agentType === filters.type);
+    }
+    if (filters.minReputation) {
+      results = results.filter(a => 
+        a.reputationScore !== null && 
+        parseFloat(a.reputationScore) >= filters.minReputation!
+      );
+    }
+    
+    return results;
+  }
+}
+
+export const storage = new DatabaseStorage();

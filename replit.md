@@ -31,6 +31,21 @@ Core features include domain registration with a 2-step commit-reveal process, a
 The smart contracts are forked from ENS, adapted for TRUST token payments on Intuition. This includes `TNSRegistry`, `TNSBaseRegistrar` (ERC-721), `TNSController` (with commit-reveal and TRUST payments), `TNSResolver`, `TNSReverseRegistrar`, `TNSPriceOracle` (tiered pricing), and `TNSPaymentForwarder`. Migrated domains are handled gracefully, ensuring address resolution and payment forwarding work even without resolver records.
 The frontend is built with React, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query, and Wouter. The backend uses Express.js and TypeScript, providing APIs for domain availability, registration, and user account management.
 
+### Data Persistence
+TNS uses a **PostgreSQL database** for permanent storage of:
+- **Agent registrations** - All registered AI agents with their metadata, capabilities, endpoints
+- **Domain records** - Domain ownership, resolver records, commit-reveal data
+- **Sync status** - Knowledge Graph synchronization state
+
+The database is managed via Drizzle ORM with schema defined in `shared/schema.ts`. Key tables:
+- `agents` - Stores agent domain, address, type, capabilities, endpoints, reputation
+- `domains` - Domain ownership and registration data
+- `domainRecords` - Resolver records (addresses, text records, avatar)
+- `domainCommits` - Commit-reveal registration data
+- `domainSyncStatus` - Knowledge Graph sync tracking
+
+Agent registrations persist permanently across server restarts.
+
 ### Intuition Knowledge Graph Integration
 TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastructure using the `@0xintuition/graphql` SDK.
 - **API Endpoints**: Provide access to domain atom metadata, knowledge graph relationships, domain reputation, and agent registry functionalities like registration, discovery, and record updates.
