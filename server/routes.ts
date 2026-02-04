@@ -802,6 +802,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Also persist to agents table for directory/discovery
+      const existingAgent = await storage.getAgent(fullDomainName);
+      if (existingAgent) {
+        await storage.updateAgent(fullDomainName, {
+          agentType,
+          capabilities,
+          endpoint: endpoint || null,
+          mcpEndpoint: mcpEndpoint || null,
+          publicKey: publicKey || null,
+          version: '1.0.0',
+        });
+      } else {
+        await storage.createAgent({
+          domain: fullDomainName,
+          address: owner,
+          agentType,
+          capabilities,
+          endpoint: endpoint || null,
+          mcpEndpoint: mcpEndpoint || null,
+          publicKey: publicKey || null,
+          version: '1.0.0',
+        });
+      }
+      
       res.json({
         success: true,
         domain: fullDomainName,
@@ -905,26 +929,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
       
-      const allDomains = await storage.getAllDomains();
+      // Get agents from the persistent agents table
+      const allAgents = await storage.getAllAgents();
       
-      const agents = [];
-      for (const domain of allDomains) {
-        const records = await storage.getDomainRecords(domain.id);
-        const agentRecord = records.find(r => r.key === 'agent.metadata');
-        
-        if (agentRecord) {
-          try {
-            const metadata = JSON.parse(agentRecord.value);
-            agents.push({
-              domain: domain.name,
-              owner: domain.owner,
-              atomUri: intuitionService.generateAgentAtomUri(domain.name.replace(/\.trust$/, '')),
-              ...metadata
-            });
-          } catch (e) {
-          }
-        }
-      }
+      const agents = allAgents.map(agent => ({
+        domain: agent.domain,
+        owner: agent.address,
+        atomUri: intuitionService.generateAgentAtomUri(agent.domain.replace(/\.trust$/, '')),
+        type: 'ai-agent',
+        agentType: agent.agentType,
+        capabilities: agent.capabilities,
+        endpoint: agent.endpoint,
+        mcpEndpoint: agent.mcpEndpoint,
+        publicKey: agent.publicKey,
+        version: agent.version,
+        registeredAt: agent.registeredAt?.getTime() || Date.now(),
+        lastSeen: agent.lastSeen?.getTime(),
+        reputationScore: agent.reputationScore,
+        reputationTier: agent.reputationTier,
+      }));
       
       const start = (pageNum - 1) * limitNum;
       const paginatedAgents = agents.slice(start, start + limitNum);

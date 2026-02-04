@@ -221,8 +221,6 @@ async function interactiveTest() {
   console.log('\n2. Message Send Flow');
   console.log('-'.repeat(40));
 
-  const testPayload = { test: true, message: 'Hello from agent test!' };
-  
   const prepareRes = await fetch(`${API_BASE}/api/agents/messages/prepare`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -230,7 +228,7 @@ async function interactiveTest() {
       from: testDomain,
       to: testDomain, // send to self for testing
       type: 'notification',
-      payload: testPayload
+      payload: { test: true, timestamp: Date.now() }
     })
   });
   const prepared = await prepareRes.json();
@@ -238,16 +236,14 @@ async function interactiveTest() {
 
   const msgSignature = await wallet.signMessage(prepared.signablePayload);
   
-  // IMPORTANT: Use the exact same payload that was signed
   const sendRes = await fetch(`${API_BASE}/api/agents/messages/send`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: prepared.from,
       to: prepared.to,
-      type: prepared.type,
-      method: prepared.method,
-      payload: prepared.payload, // Use prepared.payload, not a new one!
+      type: 'notification',
+      payload: { test: true, timestamp: Date.now() },
       nonce: prepared.nonce,
       signature: msgSignature
     })

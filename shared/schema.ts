@@ -57,6 +57,25 @@ export const domainSyncStatus = pgTable("domain_sync_status", {
   errorMessage: text("error_message"),
 });
 
+// AI Agent registrations
+export const agents = pgTable("agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  domain: text("domain").notNull().unique(),
+  address: text("address").notNull(),
+  publicKey: text("public_key"),
+  agentType: text("agent_type").notNull(),
+  capabilities: text("capabilities").array().notNull(),
+  endpoint: text("endpoint"),
+  mcpEndpoint: text("mcp_endpoint"),
+  version: text("version").notNull().default("1.0.0"),
+  registeredAt: timestamp("registered_at").notNull().defaultNow(),
+  lastSeen: timestamp("last_seen"),
+  reputationScore: decimal("reputation_score", { precision: 10, scale: 2 }),
+  reputationTier: text("reputation_tier"),
+  totalStaked: text("total_staked"),
+  stakeholders: integer("stakeholders"),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -84,6 +103,12 @@ export const insertDomainCommitSchema = createInsertSchema(domainCommits).omit({
 export const insertDomainSyncStatusSchema = createInsertSchema(domainSyncStatus).omit({
   id: true,
   syncedAt: true,
+});
+
+export const insertAgentSchema = createInsertSchema(agents).omit({
+  id: true,
+  registeredAt: true,
+  lastSeen: true,
 });
 
 
@@ -114,6 +139,9 @@ export type DomainCommit = typeof domainCommits.$inferSelect;
 
 export type InsertDomainSyncStatus = z.infer<typeof insertDomainSyncStatusSchema>;
 export type DomainSyncStatus = typeof domainSyncStatus.$inferSelect;
+
+export type InsertAgent = z.infer<typeof insertAgentSchema>;
+export type Agent = typeof agents.$inferSelect;
 
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;

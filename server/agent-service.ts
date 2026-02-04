@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { intuitionService } from './intuition';
+import { storage } from './storage';
 
 const INTUITION_RPC = 'https://intuition.calderachain.xyz';
 const MULTIVAULT_ADDRESS = '0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e';
@@ -82,7 +83,6 @@ const VALID_CAPABILITIES = [
 const challenges = new Map<string, AgentChallenge>();
 const messageQueue = new Map<string, AgentMessage[]>();
 const messageHistory = new Map<string, AgentMessage[]>(); // Persistent history
-const agentRegistry = new Map<string, AgentIdentity>();
 
 export class AgentService {
   private provider: ethers.JsonRpcProvider;
@@ -279,7 +279,24 @@ export class AgentService {
     hasEndpoint?: boolean;
     hasMcpEndpoint?: boolean;
   }): Promise<AgentIdentity[]> {
-    const agents = Array.from(agentRegistry.values());
+    const dbAgents = await storage.getAllAgents();
+    
+    const agents: AgentIdentity[] = await Promise.all(dbAgents.map(async (a) => {
+      const reputation = await this.getAgentReputation(a.domain);
+      return {
+        domain: a.domain,
+        address: a.address,
+        publicKey: a.publicKey || '',
+        agentType: a.agentType as AgentIdentity['agentType'],
+        capabilities: a.capabilities,
+        endpoint: a.endpoint || undefined,
+        mcpEndpoint: a.mcpEndpoint || undefined,
+        version: a.version || '1.0.0',
+        registeredAt: a.registeredAt?.getTime() || Date.now(),
+        lastSeen: a.lastSeen?.getTime(),
+        reputation: reputation || undefined,
+      };
+    }));
 
     return agents.filter(agent => {
       if (filters.capability && !agent.capabilities.includes(filters.capability)) {
@@ -308,7 +325,7 @@ export class AgentService {
     tools: Array<{ name: string; description: string }>;
     resources: Array<{ uri: string; name: string }>;
   } | null> {
-    const agent = agentRegistry.get(domain);
+    const agent = await storage.getAgent(domain);
     if (!agent || !agent.mcpEndpoint) {
       return null;
     }
@@ -331,19 +348,36 @@ export class AgentService {
     };
   }
 
-  registerAgent(agent: AgentIdentity): void {
-    agentRegistry.set(agent.domain, {
-      ...agent,
-      lastSeen: Date.now(),
-    });
+  async registerAgent(agent: AgentIdentity): Promise<void> {
+    const existing = await storage.getAgent(agent.domain);
+    
+    if (existing) {
+      await storage.updateAgent(agent.domain, {
+        address: agent.address,
+        publicKey: agent.publicKey || null,
+        agentType: agent.agentType,
+        capabilities: agent.capabilities,
+        endpoint: agent.endpoint || null,
+        mcpEndpoint: agent.mcpEndpoint || null,
+        version: agent.version,
+        lastSeen: new Date(),
+      });
+    } else {
+      await storage.createAgent({
+        domain: agent.domain,
+        address: agent.address,
+        publicKey: agent.publicKey || null,
+        agentType: agent.agentType,
+        capabilities: agent.capabilities,
+        endpoint: agent.endpoint || null,
+        mcpEndpoint: agent.mcpEndpoint || null,
+        version: agent.version,
+      });
+    }
   }
 
-  updateAgentLastSeen(domain: string): void {
-    const agent = agentRegistry.get(domain);
-    if (agent) {
-      agent.lastSeen = Date.now();
-      agentRegistry.set(domain, agent);
-    }
+  async updateAgentLastSeen(domain: string): Promise<void> {
+    await storage.updateAgent(domain, { lastSeen: new Date() });
   }
 
   async getAgentReputation(domain: string): Promise<AgentReputation | null> {

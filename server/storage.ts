@@ -10,6 +10,8 @@ import {
   type DomainSyncStatus,
   type InsertDomainSyncStatus,
   type DomainWithRecords,
+  type Agent,
+  type InsertAgent,
   PRICING_TIERS
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -58,6 +60,15 @@ export interface IStorage {
   createDomainSyncStatus(status: InsertDomainSyncStatus): Promise<DomainSyncStatus>;
   updateDomainSyncStatus(domainName: string, updates: Partial<DomainSyncStatus>): Promise<DomainSyncStatus | undefined>;
   getUnsyncedDomains(): Promise<DomainSyncStatus[]>;
+
+  // Agents
+  getAgent(domain: string): Promise<Agent | undefined>;
+  getAllAgents(): Promise<Agent[]>;
+  getAgentsByOwner(address: string): Promise<Agent[]>;
+  createAgent(agent: InsertAgent): Promise<Agent>;
+  updateAgent(domain: string, updates: Partial<Agent>): Promise<Agent | undefined>;
+  deleteAgent(domain: string): Promise<boolean>;
+  discoverAgents(filters: { capability?: string; type?: string; minReputation?: number }): Promise<Agent[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -66,6 +77,7 @@ export class MemStorage implements IStorage {
   private domainRecords: Map<string, DomainRecord>;
   private domainCommits: Map<string, DomainCommit>;
   private domainSyncStatuses: Map<string, DomainSyncStatus>;
+  private agents: Map<string, Agent>;
 
   constructor() {
     this.users = new Map();
@@ -73,6 +85,7 @@ export class MemStorage implements IStorage {
     this.domainRecords = new Map();
     this.domainCommits = new Map();
     this.domainSyncStatuses = new Map();
+    this.agents = new Map();
   }
 
   // Users
@@ -311,6 +324,83 @@ export class MemStorage implements IStorage {
     return Array.from(this.domainSyncStatuses.values()).filter(
       status => status.syncStatus === 'pending' || status.syncStatus === 'failed'
     );
+  }
+
+  // Agent methods
+  async getAgent(domain: string): Promise<Agent | undefined> {
+    const fullName = domain.endsWith('.trust') ? domain : `${domain}.trust`;
+    return this.agents.get(fullName);
+  }
+
+  async getAllAgents(): Promise<Agent[]> {
+    return Array.from(this.agents.values());
+  }
+
+  async getAgentsByOwner(address: string): Promise<Agent[]> {
+    return Array.from(this.agents.values()).filter(
+      agent => agent.address.toLowerCase() === address.toLowerCase()
+    );
+  }
+
+  async createAgent(insertAgent: InsertAgent): Promise<Agent> {
+    const id = randomUUID();
+    const fullDomain = insertAgent.domain.endsWith('.trust') 
+      ? insertAgent.domain 
+      : `${insertAgent.domain}.trust`;
+    
+    const agent: Agent = {
+      id,
+      domain: fullDomain,
+      address: insertAgent.address,
+      publicKey: insertAgent.publicKey ?? null,
+      agentType: insertAgent.agentType,
+      capabilities: insertAgent.capabilities,
+      endpoint: insertAgent.endpoint ?? null,
+      mcpEndpoint: insertAgent.mcpEndpoint ?? null,
+      version: insertAgent.version ?? '1.0.0',
+      registeredAt: new Date(),
+      lastSeen: null,
+      reputationScore: insertAgent.reputationScore ?? null,
+      reputationTier: insertAgent.reputationTier ?? null,
+      totalStaked: insertAgent.totalStaked ?? null,
+      stakeholders: insertAgent.stakeholders ?? null,
+    };
+    this.agents.set(fullDomain, agent);
+    return agent;
+  }
+
+  async updateAgent(domain: string, updates: Partial<Agent>): Promise<Agent | undefined> {
+    const fullName = domain.endsWith('.trust') ? domain : `${domain}.trust`;
+    const agent = this.agents.get(fullName);
+    if (!agent) return undefined;
+
+    const updatedAgent = { ...agent, ...updates, lastSeen: new Date() };
+    this.agents.set(fullName, updatedAgent);
+    return updatedAgent;
+  }
+
+  async deleteAgent(domain: string): Promise<boolean> {
+    const fullName = domain.endsWith('.trust') ? domain : `${domain}.trust`;
+    return this.agents.delete(fullName);
+  }
+
+  async discoverAgents(filters: { capability?: string; type?: string; minReputation?: number }): Promise<Agent[]> {
+    let agents = Array.from(this.agents.values());
+
+    if (filters.capability) {
+      agents = agents.filter(a => a.capabilities.includes(filters.capability!));
+    }
+    if (filters.type) {
+      agents = agents.filter(a => a.agentType === filters.type);
+    }
+    if (filters.minReputation) {
+      agents = agents.filter(a => 
+        a.reputationScore !== null && 
+        parseFloat(a.reputationScore) >= filters.minReputation!
+      );
+    }
+
+    return agents;
   }
 }
 
