@@ -46,6 +46,19 @@ The database is managed via Drizzle ORM with schema defined in `shared/schema.ts
 
 Agent registrations persist permanently across server restarts.
 
+### Automatic Blockchain Sync
+When agents register, the system automatically:
+1. Saves agent metadata to the PostgreSQL database (permanent storage)
+2. Checks if an on-chain "atom" already exists for the agent
+3. If not, prepares a blockchain transaction for the user to sign
+4. The transaction creates a permanent atom on Intuition's Knowledge Graph
+5. Costs ~0.1 TRUST to create an atom on-chain
+
+This dual storage approach ensures:
+- **Immediate availability**: Agent is discoverable instantly via database
+- **Permanent identity**: On-chain atom provides immutable blockchain proof
+- **Graceful degradation**: If user declines signing, agent still works off-chain
+
 ### Intuition Knowledge Graph Integration
 TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastructure using the `@0xintuition/graphql` SDK.
 - **API Endpoints**: Provide access to domain atom metadata, knowledge graph relationships, domain reputation, and agent registry functionalities like registration, discovery, and record updates.

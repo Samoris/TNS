@@ -197,12 +197,83 @@ export default function AgentRegister() {
       const data = await res.json();
 
       if (data.success || data.domain) {
-        toast({ 
-          title: 'Agent Metadata Saved', 
-          description: 'Now syncing to Knowledge Graph...'
-        });
-        
-        await syncToKnowledgeGraph();
+        // Check if blockchain sync is needed
+        if (data.atomExists) {
+          // Already synced to blockchain
+          setAtomAlreadyExists(true);
+          setPageView('complete');
+          toast({ 
+            title: 'Agent Registered!', 
+            description: 'Already synced to blockchain'
+          });
+          setIsRegistering(false);
+          await loadUserAgents(walletAddress);
+        } else if (data.blockchainTx) {
+          // Sign transaction to sync to blockchain
+          toast({ 
+            title: 'Agent Saved to Database', 
+            description: 'Sign transaction to sync to blockchain...'
+          });
+          setPageView('signing');
+          
+          try {
+            if (!window.ethereum) {
+              throw new Error('MetaMask not found');
+            }
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            
+            const tx = await signer.sendTransaction({
+              to: data.blockchainTx.to,
+              data: data.blockchainTx.data,
+              value: data.blockchainTx.value
+            });
+            
+            toast({ 
+              title: 'Transaction Sent', 
+              description: 'Waiting for confirmation...'
+            });
+            
+            const receipt = await tx.wait();
+            setTxHash(receipt?.hash || tx.hash);
+            
+            // Confirm sync
+            await fetch('/api/sync/confirm', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                domainName: selectedDomain,
+                atomId: '1',
+                txHash: receipt?.hash || tx.hash
+              })
+            });
+            
+            setAtomAlreadyExists(false);
+            setPageView('complete');
+            toast({ 
+              title: 'Agent Synced to Blockchain!', 
+              description: 'Your agent is now permanently on-chain'
+            });
+            await loadUserAgents(walletAddress);
+          } catch (txError: unknown) {
+            console.error('Transaction error:', txError);
+            // Agent is still saved to database even if blockchain sync fails
+            setPageView('complete');
+            toast({ 
+              title: 'Agent Registered (Off-chain)', 
+              description: 'Saved to database. Blockchain sync can be done later.',
+              variant: 'default'
+            });
+            await loadUserAgents(walletAddress);
+          }
+        } else {
+          // Fallback to old sync method
+          toast({ 
+            title: 'Agent Metadata Saved', 
+            description: 'Now syncing to Knowledge Graph...'
+          });
+          await syncToKnowledgeGraph();
+        }
       } else {
         toast({ 
           title: 'Registration Failed', 

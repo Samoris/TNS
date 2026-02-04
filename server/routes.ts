@@ -826,11 +826,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Prepare blockchain sync transaction for Knowledge Graph
+      const atomUri = intuitionService.generateAgentAtomUri(cleanDomainName);
+      let blockchainTx = null;
+      let atomExists = false;
+      
+      try {
+        // Check if atom already exists on-chain
+        const atomCheck = await blockchainService.checkAtomExists(atomUri);
+        
+        if (atomCheck.exists) {
+          atomExists = true;
+        } else {
+          // Prepare transaction for user to sign
+          blockchainTx = await blockchainService.buildCreateAtomTransactionAsync(atomUri);
+        }
+      } catch (error) {
+        console.error('Error preparing blockchain sync:', error);
+      }
+      
+      // Update sync status in database
+      const syncStatus = await storage.getDomainSyncStatus(fullDomainName);
+      if (!syncStatus) {
+        await storage.createDomainSyncStatus({
+          domainName: fullDomainName,
+          atomUri,
+          syncStatus: atomExists ? 'synced' : 'pending',
+        });
+      } else if (atomExists) {
+        await storage.updateDomainSyncStatus(fullDomainName, { syncStatus: 'synced' });
+      }
+      
       res.json({
         success: true,
         domain: fullDomainName,
-        atomUri: intuitionService.generateAgentAtomUri(cleanDomainName),
-        message: 'Agent registered successfully'
+        atomUri,
+        atomExists,
+        blockchainTx,
+        message: atomExists 
+          ? 'Agent registered successfully (already synced to blockchain)' 
+          : 'Agent registered successfully. Sign the transaction to sync to blockchain.'
       });
     } catch (error) {
       console.error("Agent registration error:", error);
