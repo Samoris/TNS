@@ -236,22 +236,42 @@ export class BlockchainService {
   /**
    * Get domain data directly from blockchain by token ID
    */
-  async getDomainByTokenId(tokenId: number): Promise<{
+  async getDomainByTokenId(tokenId: string | number | bigint): Promise<{
     name: string;
     owner: string;
     expirationTime: Date;
     tokenId: string;
   } | null> {
     try {
-      // First get the domain name from token ID
-      const domainName = await this.getDomainNameByTokenId(tokenId);
+      const tokenIdBigInt = BigInt(tokenId);
       
+      // First check migration data for the name
+      const migrationData = await this.loadMigrationData();
+      const tokenIdStr = tokenIdBigInt.toString();
+      let domainName = migrationData.get(tokenIdStr) || null;
+
+      // If not in migration data, query the blockchain directly by token ID
       if (!domainName) {
-        console.log(`No domain found for token ID ${tokenId}`);
+        try {
+          const [owner, expires] = await Promise.all([
+            this.baseRegistrar.ownerOf(tokenIdBigInt).catch(() => ethers.ZeroAddress),
+            this.baseRegistrar.nameExpires(tokenIdBigInt).catch(() => BigInt(0))
+          ]);
+
+          if (owner !== ethers.ZeroAddress) {
+            return {
+              name: `token-${tokenIdStr.slice(0, 8)}`,
+              owner,
+              expirationTime: new Date(Number(expires) * 1000),
+              tokenId: tokenIdStr
+            };
+          }
+        } catch (e) {
+          console.log(`Token ${tokenIdStr} not found on-chain`);
+        }
         return null;
       }
 
-      // Then get the full domain info
       const domainInfo = await this.getDomainInfoENS(domainName);
       
       if (!domainInfo || !domainInfo.exists) {
@@ -269,6 +289,22 @@ export class BlockchainService {
       console.error(`Error getting domain by token ID ${tokenId}:`, error);
       return null;
     }
+  }
+
+  async getDomainByName(name: string): Promise<{
+    name: string;
+    owner: string;
+    expirationTime: Date;
+    tokenId: string;
+  } | null> {
+    const domainInfo = await this.getDomainInfoENS(name);
+    if (!domainInfo || !domainInfo.exists) return null;
+    return {
+      name: name.replace(/\.trust$/, ''),
+      owner: domainInfo.owner,
+      expirationTime: new Date(Number(domainInfo.expirationTime) * 1000),
+      tokenId: domainInfo.tokenId.toString()
+    };
   }
 
   /**

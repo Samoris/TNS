@@ -463,18 +463,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // NFT Metadata endpoint - ERC-721 compliant
+  // NFT Metadata endpoint - by domain name
+  app.get("/api/metadata/name/:name", async (req, res) => {
+    try {
+      const name = req.params.name.replace(/\.trust$/, '');
+      const { blockchainService } = await import("./blockchain");
+      const domain = await blockchainService.getDomainByName(name);
+
+      if (!domain) {
+        return res.status(404).json({ message: "Domain not found" });
+      }
+
+      const domainName = `${domain.name}.trust`;
+      const length = domain.name.length;
+      
+      let pricingTier: string;
+      let pricePerYear: string;
+      if (length === 3) {
+        pricingTier = "Premium (3 characters)";
+        pricePerYear = "100 TRUST/year";
+      } else if (length === 4) {
+        pricingTier = "Standard (4 characters)";
+        pricePerYear = "70 TRUST/year";
+      } else {
+        pricingTier = "Basic (5+ characters)";
+        pricePerYear = "30 TRUST/year";
+      }
+
+      const characterSet = /^[a-zA-Z]+$/.test(domain.name) 
+        ? "letters" 
+        : /^[0-9]+$/.test(domain.name)
+        ? "numbers"
+        : "mixed";
+
+      const metadata = {
+        name: domainName,
+        description: `${domainName}, a Trust Name Service domain on Intuition mainnet. This NFT represents ownership of the domain name.`,
+        image: `${req.protocol}://${req.get("host")}/api/metadata/${domain.tokenId}/image`,
+        external_url: `${req.protocol}://${req.get("host")}/manage/${domain.name}`,
+        attributes: [
+          { trait_type: "Domain Length", display_type: "number", value: length },
+          { trait_type: "Character Set", value: characterSet },
+          { trait_type: "Pricing Tier", value: pricingTier },
+          { trait_type: "Price Per Year", value: pricePerYear },
+          { trait_type: "Owner", value: domain.owner },
+          { trait_type: "Expiration Date", display_type: "date", value: Math.floor(domain.expirationTime.getTime() / 1000) },
+          { trait_type: "Token ID", value: domain.tokenId }
+        ]
+      };
+
+      res.json(metadata);
+    } catch (error) {
+      console.error("Metadata error:", error);
+      res.status(500).json({ message: "Failed to generate metadata" });
+    }
+  });
+
+  // NFT Metadata endpoint - ERC-721 compliant (by token ID)
   app.get("/api/metadata/:tokenId", async (req, res) => {
     try {
-      const tokenId = parseInt(req.params.tokenId);
+      const tokenIdStr = req.params.tokenId;
       
-      if (isNaN(tokenId) || tokenId < 1) {
+      let tokenIdBigInt: bigint;
+      try {
+        tokenIdBigInt = BigInt(tokenIdStr);
+      } catch {
+        return res.status(400).json({ message: "Invalid token ID" });
+      }
+
+      if (tokenIdBigInt <= BigInt(0)) {
         return res.status(400).json({ message: "Invalid token ID" });
       }
 
       // Get domain info from blockchain (not storage)
       const { blockchainService } = await import("./blockchain");
-      const domain = await blockchainService.getDomainByTokenId(tokenId);
+      const domain = await blockchainService.getDomainByTokenId(tokenIdStr);
       
       if (!domain) {
         return res.status(404).json({ message: "Token not found" });
@@ -508,7 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metadata = {
         name: domainName,
         description: `${domainName}, a Trust Name Service domain on Intuition mainnet. This NFT represents ownership of the domain name.`,
-        image: `${req.protocol}://${req.get("host")}/api/metadata/${tokenId}/image`,
+        image: `${req.protocol}://${req.get("host")}/api/metadata/${tokenIdStr}/image`,
         external_url: `${req.protocol}://${req.get("host")}/manage/${domain.name}`,
         attributes: [
           {
@@ -535,8 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           {
             trait_type: "Token ID",
-            display_type: "number",
-            value: tokenId
+            value: tokenIdStr
           }
         ]
       };
@@ -551,15 +613,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NFT Image endpoint - Dynamic SVG generation
   app.get("/api/metadata/:tokenId/image", async (req, res) => {
     try {
-      const tokenId = parseInt(req.params.tokenId);
+      const tokenIdStr = req.params.tokenId;
       
-      if (isNaN(tokenId) || tokenId < 1) {
+      let tokenIdBigInt: bigint;
+      try {
+        tokenIdBigInt = BigInt(tokenIdStr);
+      } catch {
+        return res.status(400).json({ message: "Invalid token ID" });
+      }
+
+      if (tokenIdBigInt <= BigInt(0)) {
         return res.status(400).json({ message: "Invalid token ID" });
       }
 
       // Get domain info from blockchain (not storage)
       const { blockchainService } = await import("./blockchain");
-      const domain = await blockchainService.getDomainByTokenId(tokenId);
+      const domain = await blockchainService.getDomainByTokenId(tokenIdStr);
       
       if (!domain) {
         return res.status(404).json({ message: "Token not found" });
@@ -582,7 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate SVG
-      const svg = generateDomainSVG(domainName, gradientColors, tokenId);
+      const svg = generateDomainSVG(domainName, gradientColors, tokenIdStr);
 
       res.setHeader("Content-Type", "image/svg+xml");
       res.send(svg);
@@ -2361,7 +2430,7 @@ async function generateSuggestions(name: string): Promise<string[]> {
 function generateDomainSVG(
   domainName: string, 
   gradientColors: { start: string; end: string },
-  tokenId: number
+  tokenId: string | number
 ): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
