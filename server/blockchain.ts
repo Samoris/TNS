@@ -181,7 +181,7 @@ export class BlockchainService {
   /**
    * Get domain name from token ID using migration data
    */
-  async getDomainNameByTokenId(tokenId: number): Promise<string | null> {
+  async getDomainNameByTokenId(tokenId: number | string): Promise<string | null> {
     try {
       const migrationData = await this.loadMigrationData();
       const tokenIdStr = tokenId.toString();

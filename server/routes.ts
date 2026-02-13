@@ -112,42 +112,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "testing", "billy"
   ];
   
-  // Create labelhash to name mapping (ENS tokenIds are labelhashes)
-  const labelhashToName: Record<string, string> = {};
-  for (const name of migratedDomainNames) {
+  // Create token ID to name mappings
+  const tokenIdToName: Record<string, string> = {};
+  for (let i = 0; i < migratedDomainNames.length; i++) {
+    const name = migratedDomainNames[i];
+    // Map old sequential token ID (1, 2, 3...)
+    tokenIdToName[(i + 1).toString()] = name;
+    // Map new labelhash-based token ID
     const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
     const tokenIdBigInt = ethers.getBigInt(labelhash);
-    labelhashToName[tokenIdBigInt.toString()] = name;
+    tokenIdToName[tokenIdBigInt.toString()] = name;
   }
   
   app.get("/api/domains/token/:tokenId", async (req, res) => {
     try {
       const { tokenId } = req.params;
       
-      // First check storage
-      const domain = await storage.getDomainByTokenId(parseInt(tokenId));
-      
-      if (domain) {
-        return res.json({ name: domain.name, tokenId: domain.tokenId });
+      // Check token ID to name mapping first (covers both old sequential and labelhash IDs)
+      const mappedName = tokenIdToName[tokenId];
+      if (mappedName) {
+        return res.json({ name: `${mappedName}.trust`, tokenId });
       }
       
-      // Check migrated domains mapping (ENS-style labelhash tokenIds)
-      const migratedName = labelhashToName[tokenId];
-      if (migratedName) {
-        return res.json({ name: `${migratedName}.trust`, tokenId });
-      }
-      
-      // For legacy contracts, try to get from tokenIdToDomain
+      // Check database storage
       try {
-        const domainName = await blockchainService.getDomainNameByTokenId(parseInt(tokenId));
+        const domain = await storage.getDomainByTokenId(parseInt(tokenId));
+        if (domain) {
+          return res.json({ name: domain.name, tokenId: domain.tokenId });
+        }
+      } catch (e) {
+        // parseInt might fail for huge token IDs, that's ok
+      }
+      
+      // Try blockchain lookup via migration data
+      try {
+        const domainName = await blockchainService.getDomainNameByTokenId(tokenId);
         if (domainName) {
           return res.json({ name: domainName.endsWith('.trust') ? domainName : `${domainName}.trust`, tokenId });
         }
       } catch (e) {
-        // Legacy contract lookup failed
+        // Blockchain lookup failed
       }
       
-      // Not found in storage or blockchain
+      // Not found
       return res.status(404).json({ message: "Domain not found for token ID" });
     } catch (error) {
       console.error("Error fetching domain by token ID:", error);
@@ -172,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
-      res.json(domainsWithRecords);
+      res.json({ domains: domainsWithRecords });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch domains" });
     }
