@@ -1204,6 +1204,12 @@ export class Web3Service {
               console.log("Backend lookup error for tokenId:", tokenIdStr, lookupErr);
             }
             
+            if (!domainName) {
+              console.log("Skipping domain with unresolvable tokenId:", tokenIdStr);
+              continue;
+            }
+            
+            const nameWithoutSuffix = domainName.replace('.trust', '');
             domains.push({
               id: tokenIdStr,
               name: domainName,
@@ -1211,7 +1217,7 @@ export class Web3Service {
               owner: currentOwner,
               expirationDate: expirationDate.toISOString(),
               exists: true,
-              pricePerYear: domainName ? (domainName.length === 3 ? "100" : domainName.length === 4 ? "70" : "30") : "30",
+              pricePerYear: nameWithoutSuffix.length === 3 ? "100" : nameWithoutSuffix.length === 4 ? "70" : "30",
               records: [],
               isMigrated: true,
             });

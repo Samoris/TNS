@@ -179,6 +179,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
+      // If no domains in database, try blockchain lookup using migrated domain data
+      if (domainsWithRecords.length === 0) {
+        try {
+          const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
+          const baseRegistrarAddress = "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676";
+          const registrarContract = new ethers.Contract(baseRegistrarAddress, [
+            "function ownerOf(uint256 tokenId) view returns (address)",
+            "function nameExpires(uint256 id) view returns (uint256)"
+          ], provider);
+          
+          const normalizedAddress = address.toLowerCase();
+          
+          // Check all migrated domains for ownership in parallel
+          const results = await Promise.allSettled(
+            migratedDomainNames.map(async (name) => {
+              const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
+              const tokenId = ethers.getBigInt(labelhash);
+              const owner = await registrarContract.ownerOf(tokenId);
+              if (owner.toLowerCase() === normalizedAddress) {
+                const expires = await registrarContract.nameExpires(tokenId);
+                const expirationDate = new Date(Number(expires) * 1000);
+                const pricePerYear = name.length === 3 ? "100" : name.length === 4 ? "70" : "30";
+                return {
+                  id: tokenId.toString(),
+                  name: `${name}.trust`,
+                  tokenId: tokenId.toString(),
+                  owner: owner,
+                  expirationDate: expirationDate.toISOString(),
+                  exists: true,
+                  pricePerYear,
+                  records: [],
+                  subdomains: [],
+                  isMigrated: true,
+                };
+              }
+              return null;
+            })
+          );
+          
+          const ownedDomains = results
+            .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
+            .map(r => r.value);
+          
+          if (ownedDomains.length > 0) {
+            console.log(`Found ${ownedDomains.length} migrated domains on-chain for ${address}`);
+            return res.json({ domains: ownedDomains });
+          }
+        } catch (e) {
+          console.log("Blockchain lookup failed for owner domains:", e);
+        }
+      }
+      
       res.json({ domains: domainsWithRecords });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch domains" });
