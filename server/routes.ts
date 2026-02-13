@@ -101,29 +101,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get domain by token ID (for migrated domains)
-  // Build a mapping of labelhash (tokenId) to domain name from migration data
-  const migratedDomainNames = [
-    "samoris", "intuition", "dsfdfsgfg", "dfhdsgd", "grdgrgdggdv", "grdgrgdggfdgdv",
-    "gfybhkgb", "jhgjfgfgdjgf", "ygytfyuhu", "gmjgfc", "sgsfgf", "sgsfgfa",
-    "gmjjjkfdhfj", "gmjjjkfdhfjfgjs", "ftvhgjdc", "hoiunljk", "dwadsadw",
-    "fsdfdesrsr", "gdfgdfgdh", "gdfgdfgdhgf", "fghkdfhdf", "ufmjfgjhf",
-    "dgjdfjffgkghdgdj", "xcxkj", "xcxjgkj", "ghjgkkj", "tfjfthfg", "dsadsadcc", "dsadsadccx",
-    "testing", "billy"
-  ];
-  
-  // Create token ID to name mappings
+  // Load complete domain mapping from migrated-domains.json (135 domains from legacy + controller)
+  const fs = await import('fs');
+  const path = await import('path');
   const tokenIdToName: Record<string, string> = {};
-  for (let i = 0; i < migratedDomainNames.length; i++) {
-    const name = migratedDomainNames[i];
-    // Map old sequential token ID (1, 2, 3...)
-    tokenIdToName[(i + 1).toString()] = name;
-    // Map new labelhash-based token ID
-    const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
-    const tokenIdBigInt = ethers.getBigInt(labelhash);
-    tokenIdToName[tokenIdBigInt.toString()] = name;
+  const allDomainNames: string[] = [];
+  try {
+    const migrationFile = path.join(process.cwd(), 'server', 'migrated-domains.json');
+    const migrationData = JSON.parse(fs.readFileSync(migrationFile, 'utf8'));
+    for (const domain of migrationData.domains) {
+      const name = domain.name;
+      allDomainNames.push(name);
+      // Map old sequential token ID
+      if (domain.oldTokenId > 0) {
+        tokenIdToName[domain.oldTokenId.toString()] = name;
+      }
+      // Map labelhash-based token ID (ENS standard)
+      tokenIdToName[domain.newTokenId] = name;
+    }
+    console.log(`Loaded ${allDomainNames.length} domain mappings (${Object.keys(tokenIdToName).length} token IDs)`);
+  } catch (e) {
+    console.error("Failed to load migrated-domains.json:", e);
+  }
+
+  // Build domain ownership cache from blockchain at startup
+  let domainOwnershipCache: any[] = [];
+  async function refreshDomainOwnershipCache() {
+    try {
+      const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
+      const baseRegistrarAddress = "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676";
+      const registrarContract = new ethers.Contract(baseRegistrarAddress, [
+        "function ownerOf(uint256 tokenId) view returns (address)",
+        "function nameExpires(uint256 id) view returns (uint256)"
+      ], provider);
+      
+      const BATCH_SIZE = 20;
+      const cache: any[] = [];
+      
+      for (let i = 0; i < allDomainNames.length; i += BATCH_SIZE) {
+        const batch = allDomainNames.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map(async (name) => {
+            const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
+            const tokenId = ethers.getBigInt(labelhash);
+            const [owner, expires] = await Promise.all([
+              registrarContract.ownerOf(tokenId),
+              registrarContract.nameExpires(tokenId)
+            ]);
+            const expirationDate = new Date(Number(expires) * 1000);
+            const pricePerYear = name.length === 3 ? "100" : name.length === 4 ? "70" : "30";
+            return {
+              id: tokenId.toString(),
+              name: `${name}.trust`,
+              tokenId: tokenId.toString(),
+              owner,
+              expirationDate: expirationDate.toISOString(),
+              exists: true,
+              pricePerYear,
+              records: [],
+              subdomains: [],
+              isMigrated: true,
+            };
+          })
+        );
+        
+        for (const r of results) {
+          if (r.status === 'fulfilled') cache.push(r.value);
+        }
+      }
+      
+      domainOwnershipCache = cache;
+      console.log(`Domain ownership cache built: ${cache.length} domains with owners`);
+    } catch (e) {
+      console.error("Failed to build domain ownership cache:", e);
+    }
   }
   
+  // Build cache on startup (non-blocking)
+  refreshDomainOwnershipCache();
+  // Refresh cache every 5 minutes
+  setInterval(refreshDomainOwnershipCache, 5 * 60 * 1000);
+
   app.get("/api/domains/token/:tokenId", async (req, res) => {
     try {
       const { tokenId } = req.params;
@@ -179,55 +237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
-      // If no domains in database, try blockchain lookup using migrated domain data
+      // If no domains in database, check the ownership cache
       if (domainsWithRecords.length === 0) {
-        try {
-          const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
-          const baseRegistrarAddress = "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676";
-          const registrarContract = new ethers.Contract(baseRegistrarAddress, [
-            "function ownerOf(uint256 tokenId) view returns (address)",
-            "function nameExpires(uint256 id) view returns (uint256)"
-          ], provider);
-          
-          const normalizedAddress = address.toLowerCase();
-          
-          // Check all migrated domains for ownership in parallel
-          const results = await Promise.allSettled(
-            migratedDomainNames.map(async (name) => {
-              const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
-              const tokenId = ethers.getBigInt(labelhash);
-              const owner = await registrarContract.ownerOf(tokenId);
-              if (owner.toLowerCase() === normalizedAddress) {
-                const expires = await registrarContract.nameExpires(tokenId);
-                const expirationDate = new Date(Number(expires) * 1000);
-                const pricePerYear = name.length === 3 ? "100" : name.length === 4 ? "70" : "30";
-                return {
-                  id: tokenId.toString(),
-                  name: `${name}.trust`,
-                  tokenId: tokenId.toString(),
-                  owner: owner,
-                  expirationDate: expirationDate.toISOString(),
-                  exists: true,
-                  pricePerYear,
-                  records: [],
-                  subdomains: [],
-                  isMigrated: true,
-                };
-              }
-              return null;
-            })
-          );
-          
-          const ownedDomains = results
-            .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
-            .map(r => r.value);
-          
-          if (ownedDomains.length > 0) {
-            console.log(`Found ${ownedDomains.length} migrated domains on-chain for ${address}`);
-            return res.json({ domains: ownedDomains });
-          }
-        } catch (e) {
-          console.log("Blockchain lookup failed for owner domains:", e);
+        const normalizedAddress = address.toLowerCase();
+        const cachedDomains = domainOwnershipCache.filter(d => d.owner.toLowerCase() === normalizedAddress);
+        if (cachedDomains.length > 0) {
+          console.log(`Found ${cachedDomains.length} domains in cache for ${address}`);
+          return res.json({ domains: cachedDomains });
         }
       }
       
