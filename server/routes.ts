@@ -1758,13 +1758,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Getting domains with sync status for user: ${address}`);
       
-      // Scan all domains from blockchain
-      const allDomains = await blockchainService.scanAllDomains();
+      // Use ownership cache + event scanning for comprehensive domain discovery
+      const normalizedAddr = address.toLowerCase();
       
-      // Filter to only this user's domains
-      const userDomains = allDomains.filter(
-        d => d.owner.toLowerCase() === address.toLowerCase()
+      // First get domains from the ownership cache (covers migrated domains)
+      const cachedUserDomains = domainOwnershipCache
+        .filter(d => d.owner.toLowerCase() === normalizedAddr)
+        .map(d => ({
+          name: d.name.replace(/\.trust$/, ''),
+          owner: d.owner,
+          expirationDate: new Date(d.expirationDate),
+          tokenId: d.tokenId,
+        }));
+      
+      // Also scan events for any domains not in migration data
+      const scannedDomains = await blockchainService.scanAllDomains();
+      const scannedUserDomains = scannedDomains.filter(
+        d => d.owner.toLowerCase() === normalizedAddr
       );
+      
+      // Merge both sources, dedup by domain name
+      const seenNames = new Set<string>();
+      const userDomains: Array<{ name: string; owner: string; expirationDate: Date; tokenId: string }> = [];
+      
+      for (const d of cachedUserDomains) {
+        const cleanName = d.name.replace(/\.trust$/, '');
+        if (!seenNames.has(cleanName)) {
+          seenNames.add(cleanName);
+          userDomains.push({ ...d, name: cleanName });
+        }
+      }
+      
+      for (const d of scannedUserDomains) {
+        const cleanName = d.name.replace(/\.trust$/, '');
+        if (!seenNames.has(cleanName)) {
+          seenNames.add(cleanName);
+          userDomains.push({
+            name: cleanName,
+            owner: d.owner,
+            expirationDate: d.expirationTime,
+            tokenId: d.tokenId,
+          });
+        }
+      }
+      
+      console.log(`Sync: found ${userDomains.length} domains for ${address}`);
       
       const atomCost = await blockchainService.getAtomCost();
       const domainsWithSync = [];
@@ -1805,7 +1843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           domainName: fullName,
           owner: domain.owner,
           tokenId: domain.tokenId,
-          expirationDate: domain.expirationTime,
+          expirationDate: domain.expirationDate,
           atomUri,
           syncStatus: atomCheck.exists ? 'synced' : (syncStatus?.syncStatus || 'pending'),
           atomId: atomCheck.exists ? atomCheck.atomId.toString() : syncStatus?.atomId,
