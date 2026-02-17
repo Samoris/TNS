@@ -284,7 +284,15 @@ export class Web3Service {
     const wasManuallyDisconnected = this.isManuallyDisconnected || 
       localStorage.getItem('walletManuallyDisconnected') === 'true';
     
-    const provider = this.getProvider();
+    let provider = this.getProvider();
+    
+    if (!provider && !wasManuallyDisconnected && window.ethereum) {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      if (accounts && accounts.length > 0) {
+        this.setProvider(window.ethereum, 'metamask');
+        provider = window.ethereum;
+      }
+    }
     
     if (!provider || wasManuallyDisconnected) {
       return {
