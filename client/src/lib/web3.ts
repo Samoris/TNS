@@ -120,7 +120,7 @@ export class Web3Service {
     await this.web3auth.init();
     this.web3authInitialized = true;
 
-    if (this.web3auth.connected && this.web3auth.provider) {
+    if (this.web3auth.connected && this.web3auth.provider && !this.activeProvider) {
       this.setProvider(this.web3auth.provider as unknown as EIP1193Provider, 'web3auth');
     }
 
@@ -151,6 +151,31 @@ export class Web3Service {
     } catch (error: any) {
       console.error("Web3Auth connection error:", error);
       throw new Error(error.message || "Failed to connect with social login");
+    }
+  }
+
+  public async connectWeb3AuthForLinking(): Promise<{ address: string; provider: EIP1193Provider; userInfo: any }> {
+    const web3auth = await this.initWeb3Auth();
+    
+    if (web3auth.connected) {
+      try { await web3auth.logout(); } catch {}
+    }
+    
+    const w3Provider = await web3auth.connect();
+    if (!w3Provider) throw new Error("Web3Auth connection failed");
+
+    const accounts = await (w3Provider as any).request({ method: "eth_accounts" });
+    if (!accounts || accounts.length === 0) throw new Error("No social wallet account found");
+
+    let userInfo = null;
+    try { userInfo = await web3auth.getUserInfo(); } catch {}
+
+    return { address: accounts[0], provider: w3Provider as unknown as EIP1193Provider, userInfo };
+  }
+
+  public async disconnectWeb3AuthOnly(): Promise<void> {
+    if (this.web3auth?.connected) {
+      try { await this.web3auth.logout(); } catch {}
     }
   }
 

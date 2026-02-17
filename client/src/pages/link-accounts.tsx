@@ -13,7 +13,7 @@ import type { LinkedAccount } from "@shared/schema";
 type LinkingStep = "idle" | "connecting-social" | "signing-primary" | "signing-social" | "verifying" | "done" | "error";
 
 export default function LinkAccounts() {
-  const { isConnected, address, providerType, connectWithWeb3Auth, isInitializing } = useWallet();
+  const { isConnected, address, providerType, isInitializing } = useWallet();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [linkingStep, setLinkingStep] = useState<LinkingStep>("idle");
@@ -73,21 +73,11 @@ export default function LinkAccounts() {
     setStepError(null);
 
     try {
-      const socialState = await web3Service.connectWithWeb3Auth();
-      if (!socialState.address) throw new Error("Failed to get social wallet address");
-
-      const socialAddress = socialState.address;
-      const userInfo = await web3Service.getWeb3AuthUserInfo();
+      const social = await web3Service.connectWeb3AuthForLinking();
+      const socialAddress = social.address;
+      const userInfo = social.userInfo;
 
       setLinkingStep("signing-primary");
-
-      await web3Service.disconnectWallet();
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const primaryState = await web3Service.connectWallet();
-      if (!primaryState.address || primaryState.address.toLowerCase() !== address.toLowerCase()) {
-        throw new Error("Please reconnect with the same MetaMask wallet");
-      }
 
       const challengeRes = await apiRequest("POST", "/api/linked-accounts/challenge", {
         primaryAddress: address,
@@ -96,24 +86,20 @@ export default function LinkAccounts() {
       const { nonce, message } = await challengeRes.json();
 
       const { ethers } = await import("ethers");
+
       const primaryProvider = new ethers.BrowserProvider(web3Service.getProvider()!);
       const primarySigner = await primaryProvider.getSigner();
       const primarySignature = await primarySigner.signMessage(message);
 
       setLinkingStep("signing-social");
 
-      const socialReconnect = await web3Service.connectWithWeb3Auth();
-      if (!socialReconnect.address) throw new Error("Failed to reconnect social wallet");
-
-      const socialProvider = new ethers.BrowserProvider(web3Service.getProvider()!);
-      const socialSigner = await socialProvider.getSigner();
+      const socialBrowserProvider = new ethers.BrowserProvider(social.provider);
+      const socialSigner = await socialBrowserProvider.getSigner();
       const socialSignature = await socialSigner.signMessage(message);
 
       setLinkingStep("verifying");
 
-      await web3Service.disconnectWallet();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await web3Service.connectWallet();
+      await web3Service.disconnectWeb3AuthOnly();
 
       await apiRequest("POST", "/api/linked-accounts/verify-link", {
         nonce,
@@ -134,11 +120,7 @@ export default function LinkAccounts() {
       setStepError(error.message || "Failed to link accounts");
       setLinkingStep("error");
 
-      try {
-        await web3Service.disconnectWallet();
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await web3Service.connectWallet();
-      } catch {}
+      try { await web3Service.disconnectWeb3AuthOnly(); } catch {}
     }
   };
 
