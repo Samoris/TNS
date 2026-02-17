@@ -1667,7 +1667,7 @@ export class Web3Service {
   }
 
   /**
-   * Get all resolver data for a domain (Resolver function)
+   * Get all resolver data for a domain using individual contract calls
    */
   public async getResolverData(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<{
     ethAddress: string;
@@ -1681,18 +1681,42 @@ export class Web3Service {
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(resolverAddress, resolverAbi, provider);
-
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
-      const data = await contract.getResolverData(normalizedDomain);
+      const fullDomain = `${normalizedDomain}.trust`;
+      const node = this.namehash(fullDomain);
 
-      console.log("Resolver data for", normalizedDomain, ":", data);
+      const resolverAbiCalls = [
+        "function addr(bytes32 node) view returns (address)",
+        "function contenthash(bytes32 node) view returns (bytes)",
+        "function text(bytes32 node, string key) view returns (string)"
+      ];
+      const contract = new ethers.Contract(resolverAddress, resolverAbiCalls, provider);
+
+      const textKeysToQuery = ['email', 'url', 'avatar', 'description', 'com.twitter', 'com.github', 'com.discord', 'org.telegram'];
+
+      const [ethAddress, contentHash, ...textResults] = await Promise.all([
+        contract.addr(node).catch(() => ethers.ZeroAddress),
+        contract.contenthash(node).catch(() => "0x"),
+        ...textKeysToQuery.map(key => contract.text(node, key).catch(() => ""))
+      ]);
+
+      const textKeys: string[] = [];
+      const textValues: string[] = [];
+      textKeysToQuery.forEach((key, index) => {
+        const value = textResults[index];
+        if (value && value.trim() !== "") {
+          textKeys.push(key);
+          textValues.push(value);
+        }
+      });
+
+      console.log("Resolver data for", normalizedDomain, ":", { ethAddress, contentHash: ethers.hexlify(contentHash), textKeys, textValues });
 
       return {
-        ethAddress: data[0],
-        contentHash: data[1],
-        textKeys: data[2],
-        textValues: data[3]
+        ethAddress,
+        contentHash: typeof contentHash === 'string' ? contentHash : ethers.hexlify(contentHash),
+        textKeys,
+        textValues
       };
     } catch (error: any) {
       console.error("Get resolver data error:", error);

@@ -81,6 +81,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   // Avatar states
   const [isAddingAvatar, setIsAddingAvatar] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState("");
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   
   // Knowledge Graph sync states
   const [syncingRecord, setSyncingRecord] = useState(false);
@@ -432,14 +433,15 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       setIsAddingAvatar(false);
       setNewAvatarUrl("");
       await loadResolverData();
+      setLocalAvatarUrl(null);
       toast({
         title: "Avatar set successfully!",
-        description: `Domain avatar has been updated. Transaction: ${txHash.substring(0, 10)}...`,
+        description: `Domain avatar has been updated on the resolver. Transaction: ${txHash.substring(0, 10)}...`,
       });
-      // Sync to Knowledge Graph
       syncRecordToKnowledgeGraph('avatar', avatarUrl);
     },
     onError: (error: any) => {
+      setLocalAvatarUrl(null);
       toast({
         title: "Failed to set avatar",
         description: error.message || "Something went wrong",
@@ -448,8 +450,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     },
   });
 
-  // Get current avatar from resolver data
   const getCurrentAvatar = (): string | null => {
+    if (localAvatarUrl) return localAvatarUrl;
     if (!resolverData || !resolverData.textKeys) return null;
     const avatarIndex = resolverData.textKeys.indexOf("avatar");
     if (avatarIndex === -1) return null;
@@ -576,8 +578,20 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       <CardHeader className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-trust-blue/10 rounded-lg flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
-              <Globe className="text-trust-blue h-5 w-5 sm:h-6 sm:w-6" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-trust-blue/10 rounded-lg flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0 overflow-hidden">
+              {getCurrentAvatar() ? (
+                <img 
+                  src={getCurrentAvatar()!} 
+                  alt={`${domain.name}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-trust-blue h-5 w-5 sm:h-6 sm:w-6"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>';
+                  }}
+                />
+              ) : (
+                <Globe className="text-trust-blue h-5 w-5 sm:h-6 sm:w-6" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <CardTitle className="text-base sm:text-lg truncate" data-testid={`domain-name-${domain.name || 'unknown'}`}>
@@ -898,10 +912,13 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               }}
                               onComplete={async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
                                 if (result.successful && result.successful.length > 0) {
-                                  const uploadURL = result.successful[0].uploadURL;
+                                  const file = result.successful[0];
+                                  const uploadURL = file.uploadURL || (file.response as any)?.uploadURL;
                                   if (uploadURL) {
                                     const url = new URL(uploadURL);
-                                    const objectPath = `/objects${url.pathname.split('/.private')[1] || url.pathname}`;
+                                    const pathParts = url.pathname.split('/.private');
+                                    const objectPath = `/objects${pathParts.length > 1 ? pathParts[1] : url.pathname}`;
+                                    setLocalAvatarUrl(objectPath);
                                     setAvatarMutation.mutate(objectPath);
                                   }
                                 }
