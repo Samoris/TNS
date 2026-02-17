@@ -14,6 +14,7 @@ export function useWallet() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [web3AuthAvailable, setWeb3AuthAvailable] = useState(false);
+  const [effectiveAddress, setEffectiveAddress] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeWallet = async () => {
@@ -35,6 +36,31 @@ export function useWallet() {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const resolveAddress = async () => {
+      if (!walletState.isConnected || !walletState.address) {
+        setEffectiveAddress(null);
+        return;
+      }
+      if (walletState.providerType === 'web3auth') {
+        try {
+          const res = await fetch(`/api/linked-accounts/resolve/${walletState.address}`);
+          if (res.ok) {
+            const data = await res.json();
+            setEffectiveAddress(data.linked ? data.primaryAddress : walletState.address);
+          } else {
+            setEffectiveAddress(walletState.address);
+          }
+        } catch {
+          setEffectiveAddress(walletState.address);
+        }
+      } else {
+        setEffectiveAddress(walletState.address);
+      }
+    };
+    resolveAddress();
+  }, [walletState.isConnected, walletState.address, walletState.providerType]);
 
   const connectWallet = async () => {
     if (!await web3Service.isMetaMaskInstalled()) {
@@ -168,6 +194,7 @@ export function useWallet() {
 
   return {
     ...walletState,
+    effectiveAddress,
     isLoading,
     error,
     web3AuthAvailable,

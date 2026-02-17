@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X, Database, User, KeyRound } from "lucide-react";
+import { Moon, Sun, Wallet, Globe, LogOut, Crown, RefreshCw, Menu, X, Database, User, KeyRound, Link2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -236,6 +236,13 @@ export function Header() {
                           </DropdownMenuItem>
                         </>
                       )}
+                      <Link href="/link-accounts">
+                        <DropdownMenuItem data-testid="link-accounts">
+                          <Link2 className="mr-2 h-4 w-4" />
+                          Link Social Accounts
+                        </DropdownMenuItem>
+                      </Link>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet-dropdown">
                         <LogOut className="mr-2 h-4 w-4" />
                         Disconnect

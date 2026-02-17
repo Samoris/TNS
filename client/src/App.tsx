@@ -18,6 +18,7 @@ import Support from "@/pages/support";
 import AgentTest from "@/pages/AgentTest";
 import AgentRegister from "@/pages/AgentRegister";
 import Agents from "@/pages/Agents";
+import LinkAccounts from "@/pages/link-accounts";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -40,6 +41,7 @@ function Router() {
           <Route path="/agents" component={Agents} />
           <Route path="/agent-test" component={AgentTest} />
           <Route path="/agent-register" component={AgentRegister} />
+          <Route path="/link-accounts" component={LinkAccounts} />
           <Route component={NotFound} />
         </Switch>
       </main>

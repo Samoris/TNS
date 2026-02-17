@@ -12,12 +12,15 @@ import {
   type DomainWithRecords,
   type Agent,
   type InsertAgent,
+  type LinkedAccount,
+  type InsertLinkedAccount,
   users,
   domains,
   domainRecords,
   domainCommits,
   domainSyncStatus,
   agents,
+  linkedAccounts,
   PRICING_TIERS
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -77,6 +80,12 @@ export interface IStorage {
   updateAgent(domain: string, updates: Partial<Agent>): Promise<Agent | undefined>;
   deleteAgent(domain: string): Promise<boolean>;
   discoverAgents(filters: { capability?: string; type?: string; minReputation?: number }): Promise<Agent[]>;
+
+  // Linked Accounts
+  createLinkedAccount(link: InsertLinkedAccount): Promise<LinkedAccount>;
+  getLinkedAccountBySocial(socialAddress: string): Promise<LinkedAccount | undefined>;
+  getLinkedAccountsByPrimary(primaryAddress: string): Promise<LinkedAccount[]>;
+  deleteLinkedAccount(socialAddress: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -410,6 +419,37 @@ export class MemStorage implements IStorage {
 
     return agents;
   }
+
+  // Linked Accounts (MemStorage)
+  private linkedAccountsMap: Map<string, LinkedAccount> = new Map();
+
+  async createLinkedAccount(link: InsertLinkedAccount): Promise<LinkedAccount> {
+    const id = randomUUID();
+    const account: LinkedAccount = {
+      id,
+      primaryAddress: link.primaryAddress.toLowerCase(),
+      socialAddress: link.socialAddress.toLowerCase(),
+      socialProvider: link.socialProvider,
+      socialEmail: link.socialEmail || null,
+      socialName: link.socialName || null,
+      linkedAt: new Date(),
+    };
+    this.linkedAccountsMap.set(account.socialAddress, account);
+    return account;
+  }
+
+  async getLinkedAccountBySocial(socialAddress: string): Promise<LinkedAccount | undefined> {
+    return this.linkedAccountsMap.get(socialAddress.toLowerCase());
+  }
+
+  async getLinkedAccountsByPrimary(primaryAddress: string): Promise<LinkedAccount[]> {
+    const addr = primaryAddress.toLowerCase();
+    return Array.from(this.linkedAccountsMap.values()).filter(a => a.primaryAddress === addr);
+  }
+
+  async deleteLinkedAccount(socialAddress: string): Promise<boolean> {
+    return this.linkedAccountsMap.delete(socialAddress.toLowerCase());
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -609,6 +649,33 @@ export class DatabaseStorage implements IStorage {
     }
     
     return results;
+  }
+
+  // Linked Accounts (DatabaseStorage)
+  async createLinkedAccount(link: InsertLinkedAccount): Promise<LinkedAccount> {
+    const [result] = await db.insert(linkedAccounts).values({
+      ...link,
+      primaryAddress: link.primaryAddress.toLowerCase(),
+      socialAddress: link.socialAddress.toLowerCase(),
+    }).returning();
+    return result;
+  }
+
+  async getLinkedAccountBySocial(socialAddress: string): Promise<LinkedAccount | undefined> {
+    const [result] = await db.select().from(linkedAccounts)
+      .where(eq(linkedAccounts.socialAddress, socialAddress.toLowerCase()));
+    return result;
+  }
+
+  async getLinkedAccountsByPrimary(primaryAddress: string): Promise<LinkedAccount[]> {
+    return db.select().from(linkedAccounts)
+      .where(eq(linkedAccounts.primaryAddress, primaryAddress.toLowerCase()));
+  }
+
+  async deleteLinkedAccount(socialAddress: string): Promise<boolean> {
+    const result = await db.delete(linkedAccounts)
+      .where(eq(linkedAccounts.socialAddress, socialAddress.toLowerCase()));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

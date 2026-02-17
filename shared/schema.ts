@@ -76,6 +76,16 @@ export const agents = pgTable("agents", {
   stakeholders: integer("stakeholders"),
 });
 
+export const linkedAccounts = pgTable("linked_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  primaryAddress: text("primary_address").notNull(),
+  socialAddress: text("social_address").notNull().unique(),
+  socialProvider: text("social_provider").notNull(),
+  socialEmail: text("social_email"),
+  socialName: text("social_name"),
+  linkedAt: timestamp("linked_at").notNull().defaultNow(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -111,6 +121,11 @@ export const insertAgentSchema = createInsertSchema(agents).omit({
   lastSeen: true,
 });
 
+export const insertLinkedAccountSchema = createInsertSchema(linkedAccounts).omit({
+  id: true,
+  linkedAt: true,
+});
+
 
 // Domain search and availability schema
 export const domainSearchSchema = z.object({
@@ -142,6 +157,9 @@ export type DomainSyncStatus = typeof domainSyncStatus.$inferSelect;
 
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type Agent = typeof agents.$inferSelect;
+
+export type InsertLinkedAccount = z.infer<typeof insertLinkedAccountSchema>;
+export type LinkedAccount = typeof linkedAccounts.$inferSelect;
 
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;
