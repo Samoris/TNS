@@ -23,17 +23,20 @@ export interface WalletState {
   balance: string | null;
   chainId: number | null;
   isCorrectNetwork: boolean;
+  providerType?: 'metamask' | 'web3auth' | null;
 }
+
+export type EIP1193Provider = {
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+  on?: (event: string, callback: (data: any) => void) => void;
+  removeListener?: (event: string, callback: (data: any) => void) => void;
+  selectedAddress?: string | null;
+  chainId?: string | null;
+};
 
 declare global {
   interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: any[] }) => Promise<any>;
-      on: (event: string, callback: (data: any) => void) => void;
-      removeListener: (event: string, callback: (data: any) => void) => void;
-      selectedAddress: string | null;
-      chainId: string | null;
-    };
+    ethereum?: EIP1193Provider;
   }
 }
 
@@ -41,6 +44,10 @@ export class Web3Service {
   private static instance: Web3Service;
   private listeners: Set<(state: WalletState) => void> = new Set();
   private isManuallyDisconnected: boolean = false;
+  private activeProvider: EIP1193Provider | null = null;
+  private providerType: 'metamask' | 'web3auth' | null = null;
+  private web3auth: any = null;
+  private web3authInitialized: boolean = false;
 
   static getInstance(): Web3Service {
     if (!Web3Service.instance) {
@@ -53,11 +60,130 @@ export class Web3Service {
     this.initializeEventListeners();
   }
 
+  public getProvider(): EIP1193Provider | null {
+    return this.activeProvider || window.ethereum || null;
+  }
+
+  public getProviderType(): 'metamask' | 'web3auth' | null {
+    return this.providerType;
+  }
+
+  private setProvider(provider: EIP1193Provider | null, type: 'metamask' | 'web3auth' | null) {
+    if (this.activeProvider && this.activeProvider !== provider) {
+      this.detachEventListeners(this.activeProvider);
+    }
+    this.activeProvider = provider;
+    this.providerType = type;
+    if (provider) {
+      this.attachEventListeners(provider);
+    }
+    if (type) {
+      localStorage.setItem('walletProviderType', type);
+    } else {
+      localStorage.removeItem('walletProviderType');
+    }
+  }
+
+  private async initWeb3Auth(): Promise<any> {
+    if (this.web3auth && this.web3authInitialized) {
+      return this.web3auth;
+    }
+
+    const clientId = import.meta.env.VITE_WEB3AUTH_CLIENT_ID;
+    if (!clientId) {
+      throw new Error("Web3Auth Client ID not configured. Please set VITE_WEB3AUTH_CLIENT_ID.");
+    }
+
+    const { Web3Auth, WEB3AUTH_NETWORK } = await import("@web3auth/modal");
+    const { EthereumPrivateKeyProvider } = await import("@web3auth/ethereum-provider");
+
+    const chainConfig = {
+      chainNamespace: "eip155" as const,
+      chainId: `0x${INTUITION_TESTNET.chainId.toString(16)}`,
+      rpcTarget: INTUITION_TESTNET.rpcUrl,
+      displayName: INTUITION_TESTNET.networkName,
+      blockExplorerUrl: INTUITION_TESTNET.explorerUrl,
+      ticker: INTUITION_TESTNET.currencySymbol,
+      tickerName: INTUITION_TESTNET.currencySymbol,
+    };
+
+    const privateKeyProvider = new EthereumPrivateKeyProvider({
+      config: { chainConfig },
+    });
+
+    this.web3auth = new Web3Auth({
+      clientId,
+      web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
+      privateKeyProvider,
+    });
+
+    await this.web3auth.init();
+    this.web3authInitialized = true;
+
+    if (this.web3auth.connected && this.web3auth.provider) {
+      this.setProvider(this.web3auth.provider as unknown as EIP1193Provider, 'web3auth');
+    }
+
+    return this.web3auth;
+  }
+
+  public async isWeb3AuthAvailable(): Promise<boolean> {
+    return !!import.meta.env.VITE_WEB3AUTH_CLIENT_ID;
+  }
+
+  public async connectWithWeb3Auth(): Promise<WalletState> {
+    try {
+      this.isManuallyDisconnected = false;
+      localStorage.removeItem('walletManuallyDisconnected');
+
+      const web3auth = await this.initWeb3Auth();
+      const provider = await web3auth.connect();
+
+      if (!provider) {
+        throw new Error("Web3Auth connection failed");
+      }
+
+      this.setProvider(provider as unknown as EIP1193Provider, 'web3auth');
+
+      const state = await this.getWalletState();
+      this.notifyStateChange();
+      return state;
+    } catch (error: any) {
+      console.error("Web3Auth connection error:", error);
+      throw new Error(error.message || "Failed to connect with social login");
+    }
+  }
+
+  public async getWeb3AuthUserInfo(): Promise<any> {
+    if (!this.web3auth || !this.web3auth.connected) return null;
+    try {
+      return await this.web3auth.getUserInfo();
+    } catch {
+      return null;
+    }
+  }
+
+  private boundHandlers = {
+    accountsChanged: this.handleAccountsChanged.bind(this),
+    chainChanged: this.handleChainChanged.bind(this),
+    disconnect: this.handleDisconnect.bind(this),
+  };
+
+  private attachEventListeners(provider: EIP1193Provider) {
+    provider.on?.("accountsChanged", this.boundHandlers.accountsChanged);
+    provider.on?.("chainChanged", this.boundHandlers.chainChanged);
+    provider.on?.("disconnect", this.boundHandlers.disconnect);
+  }
+
+  private detachEventListeners(provider: EIP1193Provider) {
+    provider.removeListener?.("accountsChanged", this.boundHandlers.accountsChanged);
+    provider.removeListener?.("chainChanged", this.boundHandlers.chainChanged);
+    provider.removeListener?.("disconnect", this.boundHandlers.disconnect);
+  }
+
   private initializeEventListeners() {
     if (typeof window !== "undefined" && window.ethereum) {
-      window.ethereum.on("accountsChanged", this.handleAccountsChanged.bind(this));
-      window.ethereum.on("chainChanged", this.handleChainChanged.bind(this));
-      window.ethereum.on("disconnect", this.handleDisconnect.bind(this));
+      this.attachEventListeners(window.ethereum);
     }
   }
 
@@ -93,7 +219,6 @@ export class Web3Service {
     }
 
     try {
-      // Clear the manual disconnect flag (both in-memory and persisted)
       this.isManuallyDisconnected = false;
       localStorage.removeItem('walletManuallyDisconnected');
       
@@ -105,6 +230,7 @@ export class Web3Service {
         throw new Error("No accounts available");
       }
 
+      this.setProvider(window.ethereum, 'metamask');
       await this.switchToIntuitionNetwork();
       return await this.getWalletState();
     } catch (error) {
@@ -114,21 +240,25 @@ export class Web3Service {
   }
 
   public async switchToIntuitionNetwork(): Promise<void> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
+    }
+
+    if (this.providerType === 'web3auth') {
+      return;
     }
 
     const chainIdHex = `0x${INTUITION_TESTNET.chainId.toString(16)}`;
 
     try {
-      await window.ethereum.request({
+      await provider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: chainIdHex }],
       });
     } catch (error: any) {
-      // Network doesn't exist, add it
       if (error.code === 4902) {
-        await window.ethereum.request({
+        await provider.request({
           method: "wallet_addEthereumChain",
           params: [
             {
@@ -151,22 +281,24 @@ export class Web3Service {
   }
 
   public async getWalletState(): Promise<WalletState> {
-    // Check both in-memory flag and localStorage for disconnect state
     const wasManuallyDisconnected = this.isManuallyDisconnected || 
       localStorage.getItem('walletManuallyDisconnected') === 'true';
     
-    if (!window.ethereum || wasManuallyDisconnected) {
+    const provider = this.getProvider();
+    
+    if (!provider || wasManuallyDisconnected) {
       return {
         isConnected: false,
         address: null,
         balance: null,
         chainId: null,
         isCorrectNetwork: false,
+        providerType: null,
       };
     }
 
     try {
-      const accounts = await window.ethereum.request({
+      const accounts = await provider.request({
         method: "eth_accounts",
       });
 
@@ -177,11 +309,12 @@ export class Web3Service {
           balance: null,
           chainId: null,
           isCorrectNetwork: false,
+          providerType: null,
         };
       }
 
       const address = accounts[0];
-      const chainId = await window.ethereum.request({
+      const chainId = await provider.request({
         method: "eth_chainId",
       });
 
@@ -191,12 +324,11 @@ export class Web3Service {
       let balance = null;
       if (isCorrectNetwork) {
         try {
-          const balanceWei = await window.ethereum.request({
+          const balanceWei = await provider.request({
             method: "eth_getBalance",
             params: [address, "latest"],
           });
           
-          // Convert from wei to TRUST (assuming 18 decimals)
           const balanceEth = parseInt(balanceWei, 16) / Math.pow(10, 18);
           balance = balanceEth.toFixed(4);
         } catch (error) {
@@ -211,6 +343,7 @@ export class Web3Service {
         balance,
         chainId: numericChainId,
         isCorrectNetwork,
+        providerType: this.providerType,
       };
     } catch (error) {
       console.error("Failed to get wallet state:", error);
@@ -220,24 +353,29 @@ export class Web3Service {
         balance: null,
         chainId: null,
         isCorrectNetwork: false,
+        providerType: null,
       };
     }
   }
 
   public async switchWallet(): Promise<WalletState> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
+    }
+
+    if (this.providerType === 'web3auth') {
+      await this.disconnectWallet();
+      return this.connectWallet();
     }
 
     try {
-      // Request permissions - this will prompt MetaMask to show account selection
-      await window.ethereum.request({
+      await provider.request({
         method: "wallet_requestPermissions",
         params: [{ eth_accounts: {} }],
       });
 
-      // Get the newly selected account
-      const accounts = await window.ethereum.request({
+      const accounts = await provider.request({
         method: "eth_requestAccounts",
       });
 
@@ -245,15 +383,9 @@ export class Web3Service {
         throw new Error("No accounts selected");
       }
 
-      // Ensure we're on the correct network
       await this.switchToIntuitionNetwork();
-      
-      // Get and return the new wallet state
       const newState = await this.getWalletState();
-      
-      // Notify all listeners of the state change
       this.notifyStateChange();
-      
       return newState;
     } catch (error) {
       console.error("Failed to switch wallet:", error);
@@ -262,23 +394,30 @@ export class Web3Service {
   }
 
   public async disconnectWallet(): Promise<void> {
-    // Set manual disconnect flag to prevent auto-reconnection (persisted)
+    if (this.providerType === 'web3auth' && this.web3auth?.connected) {
+      try {
+        await this.web3auth.logout();
+      } catch (e) {
+        console.error("Web3Auth logout error:", e);
+      }
+    }
+
+    this.setProvider(null, null);
     this.isManuallyDisconnected = true;
     localStorage.setItem('walletManuallyDisconnected', 'true');
     
-    // Clear any cached wallet data
     localStorage.removeItem('walletConnected');
     localStorage.removeItem('walletAddress');
     sessionStorage.removeItem('walletConnected');
     sessionStorage.removeItem('walletAddress');
     
-    // Notify listeners with disconnected state
     const disconnectedState: WalletState = {
       isConnected: false,
       address: null,
       balance: null,
       chainId: null,
       isCorrectNetwork: false,
+      providerType: null,
     };
     
     this.listeners.forEach(listener => listener(disconnectedState));
@@ -286,26 +425,27 @@ export class Web3Service {
   }
 
   public async switchAccount(): Promise<WalletState> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
+    }
+
+    if (this.providerType === 'web3auth') {
+      throw new Error("Account switching is not supported with social login. Please disconnect and reconnect.");
     }
 
     try {
-      // Clear the manual disconnect flag
       this.isManuallyDisconnected = false;
       localStorage.removeItem('walletManuallyDisconnected');
       
-      // Request permissions again to force MetaMask to show account selector
-      // This prompts the user to select which accounts to connect
-      const permissions = await window.ethereum.request({
+      const permissions = await provider.request({
         method: "wallet_requestPermissions",
         params: [{ eth_accounts: {} }],
       });
       
       console.log("Permissions granted:", permissions);
       
-      // Get the new account after permission is granted
-      const accounts = await window.ethereum.request({
+      const accounts = await provider.request({
         method: "eth_requestAccounts",
       });
 
@@ -318,12 +458,10 @@ export class Web3Service {
       await this.switchToIntuitionNetwork();
       const newState = await this.getWalletState();
       
-      // Notify listeners of the change
       this.listeners.forEach(listener => listener(newState));
       
       return newState;
     } catch (error: any) {
-      // User rejected the request
       if (error.code === 4001) {
         console.log("User rejected account switch");
         return await this.getWalletState();
@@ -334,8 +472,9 @@ export class Web3Service {
   }
 
   public async sendTransaction(to: string, value: string, data?: string, gasLimit?: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -347,7 +486,6 @@ export class Web3Service {
       await this.switchToIntuitionNetwork();
     }
 
-    // Convert value to hex with proper wei conversion
     const valueInWei = Math.floor(parseFloat(value) * Math.pow(10, 18));
     const valueHex = `0x${valueInWei.toString(16)}`;
 
@@ -361,7 +499,6 @@ export class Web3Service {
       txParams.data = data;
     }
     
-    // Add gas limit to prevent high gas estimation
     if (gasLimit) {
       txParams.gas = `0x${parseInt(gasLimit).toString(16)}`;
     }
@@ -374,7 +511,7 @@ export class Web3Service {
 
     console.log("Sending transaction:", txParams);
 
-    const txHash = await window.ethereum.request({
+    const txHash = await provider.request({
       method: "eth_sendTransaction",
       params: [txParams],
     });
@@ -382,13 +519,10 @@ export class Web3Service {
     return txHash;
   }
 
-  /**
-   * Send a transaction with value already in wei (as a decimal string)
-   * This avoids precision loss from ETH-to-wei conversion
-   */
   public async sendTransactionWithWei(to: string, valueWei: string, data?: string, gasLimit?: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -400,7 +534,6 @@ export class Web3Service {
       await this.switchToIntuitionNetwork();
     }
 
-    // Convert decimal wei string to hex
     const valueHex = `0x${BigInt(valueWei).toString(16)}`;
 
     const txParams: Record<string, string> = {
@@ -422,7 +555,7 @@ export class Web3Service {
     console.log("- Value hex:", valueHex);
     console.log("- Gas limit:", gasLimit || "auto");
 
-    const txHash = await window.ethereum.request({
+    const txHash = await provider.request({
       method: "eth_sendTransaction",
       params: [txParams],
     });
@@ -434,15 +567,16 @@ export class Web3Service {
    * Wait for a transaction to be mined and return the receipt
    */
   public async waitForTransaction(txHash: string, maxAttempts: number = 60): Promise<any> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
     }
 
     console.log("Waiting for transaction to be mined:", txHash);
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const receipt = await window.ethereum.request({
+        const receipt = await provider.request({
           method: "eth_getTransactionReceipt",
           params: [txHash],
         });
@@ -499,11 +633,12 @@ export class Web3Service {
   }
 
   public async callContract(contractAddress: string, data: string): Promise<any> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    const provider = this.getProvider();
+    if (!provider) {
+      throw new Error("No wallet connected");
     }
 
-    return await window.ethereum.request({
+    return await provider.request({
       method: "eth_call",
       params: [{
         to: contractAddress,
@@ -584,8 +719,8 @@ export class Web3Service {
    * Make commitment for domain registration (Step 1 of 2)
    */
   public async makeCommitment(contractAddress: string, abi: any[], commitment: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -596,7 +731,7 @@ export class Web3Service {
     try {
       console.log("Making commitment:", commitment);
       
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       
@@ -623,8 +758,8 @@ export class Web3Service {
    * Register domain with commit-reveal scheme (Step 2 of 2)
    */
   public async registerDomain(contractAddress: string, abi: any[], domainName: string, duration: number, cost: string, secret: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -644,7 +779,7 @@ export class Web3Service {
       console.log("- Secret:", secret.substring(0, 10) + "...");
       
       // Create ethers provider and contract instance
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       
@@ -708,8 +843,8 @@ export class Web3Service {
    * Burn an expired domain NFT to make it available for re-registration
    */
   public async burnExpiredDomain(contractAddress: string, abi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -724,7 +859,7 @@ export class Web3Service {
       console.log("Burning expired domain:", normalizedDomain);
       
       // Create ethers provider and contract instance
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       
@@ -762,8 +897,8 @@ export class Web3Service {
    * Set a domain as the primary domain for the user
    */
   public async setPrimaryDomain(contractAddress: string, abi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -778,7 +913,7 @@ export class Web3Service {
       console.log("Setting primary domain:", normalizedDomain);
       
       // Create ethers provider and contract instance
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       
@@ -818,8 +953,8 @@ export class Web3Service {
    * Renew/extend a domain for additional years
    */
   public async renewDomain(contractAddress: string, abi: any[], domainName: string, durationYears: number): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -834,7 +969,7 @@ export class Web3Service {
       console.log("Renewing domain:", normalizedDomain, "for", durationYears, "years");
       
       // Create ethers provider and contract instance
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
       
@@ -877,12 +1012,12 @@ export class Web3Service {
    * Check domain availability using ENS-forked Controller
    */
   public async checkDomainAvailabilityENS(controllerAddress: string, domainName: string): Promise<boolean> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
       const controllerAbi = ["function available(string name) view returns (bool)"];
@@ -907,12 +1042,12 @@ export class Web3Service {
       // Fall through to legacy
     }
 
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(contractAddress, abi, provider);
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       const isAvailable = await contract.isAvailable(normalizedDomain);
@@ -925,12 +1060,12 @@ export class Web3Service {
   }
 
   public async getTransactionCount(contractAddress: string): Promise<number> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       
       // Get transaction count (nonce) for the contract address
       const txCount = await provider.getTransactionCount(contractAddress);
@@ -948,13 +1083,13 @@ export class Web3Service {
     totalValueLocked: string;
     activeUsers: number;
   }> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
       // Create ethers provider and contract instance
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       
       // Get real contract balance as total value locked
       const balance = await provider.getBalance(contractAddress);
@@ -1059,12 +1194,12 @@ export class Web3Service {
   }
 
   public async getContractOwner(contractAddress: string, abi: any[]): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(contractAddress, abi, provider);
       
       // Call owner function
@@ -1085,13 +1220,13 @@ export class Web3Service {
     baseRegistrarAddress: string,
     ownerAddress: string
   ): Promise<any[]> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
       console.log("Fetching domains for owner (ENS):", ownerAddress);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       
       // Query Controller's NameRegistered events (includes domain name)
       const controllerAbi = [
@@ -1333,13 +1468,13 @@ export class Web3Service {
       // Fall through
     }
 
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
       console.log("Fetching domains for owner:", ownerAddress);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(contractAddress, abi, provider);
       
       // Call getOwnerDomains function
@@ -1401,8 +1536,8 @@ export class Web3Service {
    * Set the resolver contract for a domain (Registry function)
    */
   public async setResolver(registryAddress: string, registryAbi: any[], domainName: string, resolverAddress: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -1414,7 +1549,7 @@ export class Web3Service {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       console.log("Setting resolver for domain:", normalizedDomain, "to", resolverAddress);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(registryAddress, registryAbi, signer);
 
@@ -1440,12 +1575,12 @@ export class Web3Service {
    * Get the resolver contract address for a domain (Registry function)
    */
   public async getResolver(registryAddress: string, registryAbi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(registryAddress, registryAbi, provider);
 
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
@@ -1463,8 +1598,8 @@ export class Web3Service {
    * Set the ETH address for a domain (Resolver function with namehash)
    */
   public async setAddr(resolverAddress: string, resolverAbi: any[], domainName: string, address: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -1479,7 +1614,7 @@ export class Web3Service {
       
       console.log("Setting address for domain:", fullDomain, "node:", node, "to", address);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
       const resolverAbiWithNode = ["function setAddr(bytes32 node, address addr)"];
@@ -1507,12 +1642,12 @@ export class Web3Service {
    * Get the ETH address for a domain (Resolver function with namehash)
    */
   public async getAddr(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       const fullDomain = `${normalizedDomain}.trust`;
       const node = this.namehash(fullDomain);
@@ -1535,8 +1670,8 @@ export class Web3Service {
    * Set a text record for a domain (Resolver function with namehash)
    */
   public async setText(resolverAddress: string, resolverAbi: any[], domainName: string, key: string, value: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -1551,7 +1686,7 @@ export class Web3Service {
       
       console.log("Setting text record for domain:", fullDomain, "node:", node, "key:", key, "value:", value);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
       const resolverAbiWithNode = ["function setText(bytes32 node, string key, string value)"];
@@ -1579,12 +1714,12 @@ export class Web3Service {
    * Get a text record for a domain (Resolver function with namehash)
    */
   public async getText(resolverAddress: string, resolverAbi: any[], domainName: string, key: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       const fullDomain = `${normalizedDomain}.trust`;
       const node = this.namehash(fullDomain);
@@ -1605,8 +1740,8 @@ export class Web3Service {
    * Set content hash (IPFS) for a domain (Resolver function)
    */
   public async setContenthash(resolverAddress: string, resolverAbi: any[], domainName: string, contenthash: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -1618,7 +1753,7 @@ export class Web3Service {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       console.log("Setting contenthash for domain:", normalizedDomain);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
 
@@ -1647,12 +1782,12 @@ export class Web3Service {
    * Get content hash for a domain (Resolver function)
    */
   public async getContenthash(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(resolverAddress, resolverAbi, provider);
 
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
@@ -1675,12 +1810,12 @@ export class Web3Service {
     textKeys: string[];
     textValues: string[];
   }> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       const fullDomain = `${normalizedDomain}.trust`;
       const node = this.namehash(fullDomain);
@@ -1733,8 +1868,8 @@ export class Web3Service {
    * Clear all resolver records for a domain (Resolver function)
    */
   public async clearRecords(resolverAddress: string, resolverAbi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -1746,7 +1881,7 @@ export class Web3Service {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       console.log("Clearing all records for domain:", normalizedDomain);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
 
@@ -1776,12 +1911,12 @@ export class Web3Service {
     resolverAddress: string,
     ownerAddress: string
   ): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       
       // Calculate the reverse node for the address: addr.reverse
       // Reverse node format: keccak256(addr.lower + ".addr.reverse")
@@ -1822,12 +1957,12 @@ export class Web3Service {
       // Fall through to legacy method
     }
     
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(registryAddress, registryAbi, provider);
 
       const primaryDomain = await contract.getPrimaryDomain(ownerAddress);
@@ -1849,12 +1984,12 @@ export class Web3Service {
    * Falls back to BaseRegistrar owner for migrated domains without resolver records
    */
   public async resolvePaymentAddress(forwarderAddress: string, forwarderAbi: any[], domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const contract = new ethers.Contract(forwarderAddress, forwarderAbi, provider);
 
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
@@ -1904,8 +2039,8 @@ export class Web3Service {
    * Falls back to direct transfer for migrated domains without resolver records
    */
   public async sendToTrustDomain(forwarderAddress: string, forwarderAbi: any[], domainName: string, amountInTrust: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -1917,7 +2052,7 @@ export class Web3Service {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       console.log("Sending", amountInTrust, "TRUST to domain:", normalizedDomain);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const amountWei = ethers.parseEther(amountInTrust);
 
@@ -1999,12 +2134,12 @@ export class Web3Service {
    * Get ERC-20 token balance for an address
    */
   public async getTokenBalance(tokenAddress: string, ownerAddress: string): Promise<bigint> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const tokenAbi = ["function balanceOf(address) view returns (uint256)"];
       const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
       const balance = await contract.balanceOf(ownerAddress);
@@ -2019,12 +2154,12 @@ export class Web3Service {
    * Get ERC-20 token allowance for a spender
    */
   public async getTokenAllowance(tokenAddress: string, ownerAddress: string, spenderAddress: string): Promise<bigint> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const tokenAbi = ["function allowance(address owner, address spender) view returns (uint256)"];
       const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
       const allowance = await contract.allowance(ownerAddress, spenderAddress);
@@ -2039,8 +2174,8 @@ export class Web3Service {
    * Approve ERC-20 token spending for a contract
    */
   public async approveToken(tokenAddress: string, spenderAddress: string, amount: bigint): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -2054,7 +2189,7 @@ export class Web3Service {
       console.log("- Spender:", spenderAddress);
       console.log("- Amount:", ethers.formatEther(amount), "TRUST");
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       const tokenAbi = ["function approve(address spender, uint256 amount) returns (bool)"];
       const contract = new ethers.Contract(tokenAddress, tokenAbi, signer);
@@ -2122,8 +2257,8 @@ export class Web3Service {
     ownerAddress?: string,
     resolverAddress?: string
   ): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -2161,7 +2296,7 @@ export class Web3Service {
       console.log("- Cost:", ethers.formatEther(cost), "TRUST");
       console.log("- Expected commitment:", expectedCommitment);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
       // Verify the commitment is stored and ready
@@ -2252,8 +2387,8 @@ export class Web3Service {
     durationSeconds: number,
     resolverAddress?: string
   ): Promise<{ commitment: string; txHash: string }> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -2266,7 +2401,7 @@ export class Web3Service {
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
       // Full ENS-style commitment parameters (must match register call exactly)
@@ -2316,8 +2451,8 @@ export class Web3Service {
    * Renew domain using ENS-forked controller with native TRUST token
    */
   public async renewDomainENS(controllerAddress: string, domainName: string, durationSeconds: number, cost: bigint): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -2333,7 +2468,7 @@ export class Web3Service {
       console.log("- Duration:", durationSeconds, "seconds");
       console.log("- Cost:", ethers.formatEther(cost), "TRUST");
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
       const controllerAbi = ["function renew(string name, uint256 duration) payable"];
@@ -2364,8 +2499,8 @@ export class Web3Service {
    * Set primary name via reverse registrar (ENS-forked)
    */
   public async setPrimaryNameENS(reverseRegistrarAddress: string, domainName: string): Promise<string> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     const state = await this.getWalletState();
@@ -2378,7 +2513,7 @@ export class Web3Service {
       
       console.log("Setting primary name via reverse registrar:", fullDomainName);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
       const reverseAbi = ["function setName(string name) returns (bytes32)"];
@@ -2428,14 +2563,14 @@ export class Web3Service {
    * Returns the cost in native TRUST (wei units)
    */
   public async getRentPriceENS(controllerAddress: string, domainName: string, durationSeconds: number): Promise<bigint> {
-    if (!window.ethereum) {
-      throw new Error("MetaMask not installed");
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
     }
 
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       
       const controllerAbi = [
         "function rentPrice(string name, uint256 duration) view returns (tuple(uint256 base, uint256 premium))"

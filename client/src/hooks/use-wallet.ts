@@ -8,17 +8,20 @@ export function useWallet() {
     balance: null,
     chainId: null,
     isCorrectNetwork: false,
+    providerType: null,
   });
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [web3AuthAvailable, setWeb3AuthAvailable] = useState(false);
 
   useEffect(() => {
-    // Initialize wallet state
     const initializeWallet = async () => {
       try {
         const state = await web3Service.getWalletState();
         setWalletState(state);
+        const available = await web3Service.isWeb3AuthAvailable();
+        setWeb3AuthAvailable(available);
       } catch (error) {
         console.error("Failed to initialize wallet:", error);
       }
@@ -26,7 +29,6 @@ export function useWallet() {
 
     initializeWallet();
 
-    // Subscribe to wallet state changes
     const unsubscribe = web3Service.subscribe(setWalletState);
 
     return () => {
@@ -49,6 +51,21 @@ export function useWallet() {
     } catch (error: any) {
       console.error("Failed to connect wallet:", error);
       setError(error.message || "Failed to connect wallet");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const connectWithWeb3Auth = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const state = await web3Service.connectWithWeb3Auth();
+      setWalletState(state);
+    } catch (error: any) {
+      console.error("Failed to connect with social login:", error);
+      setError(error.message || "Failed to connect with social login");
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +170,9 @@ export function useWallet() {
     ...walletState,
     isLoading,
     error,
+    web3AuthAvailable,
     connectWallet,
+    connectWithWeb3Auth,
     switchWallet,
     switchAccount,
     disconnectWallet,

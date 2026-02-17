@@ -6,6 +6,44 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <script>
+      if(typeof globalThis.Buffer==='undefined'){
+        (function(){
+          function Buffer(arg,enc){
+            if(typeof arg==='number'){this._arr=new Uint8Array(arg);return}
+            if(typeof arg==='string'){
+              if(enc==='hex'){var h=arg.replace(/[^0-9a-fA-F]/g,'');var a=[];for(var i=0;i<h.length;i+=2)a.push(parseInt(h.substr(i,2),16));this._arr=new Uint8Array(a)}
+              else if(enc==='base64'){var b=atob(arg);var a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);this._arr=a}
+              else{var e=new TextEncoder();this._arr=e.encode(arg)}
+            }
+            else if(arg instanceof Uint8Array){this._arr=arg}
+            else if(Array.isArray(arg)){this._arr=new Uint8Array(arg)}
+            else{this._arr=new Uint8Array(0)}
+            this.length=this._arr.length;
+          }
+          Buffer.from=function(a,e){return new Buffer(a,e)};
+          Buffer.alloc=function(s,f){var b=new Buffer(s);if(f!==undefined)b._arr.fill(f);return b};
+          Buffer.allocUnsafe=function(s){return new Buffer(s)};
+          Buffer.isBuffer=function(o){return o instanceof Buffer};
+          Buffer.concat=function(list){var t=0;list.forEach(function(b){t+=(b._arr||b).length});var r=new Uint8Array(t);var off=0;list.forEach(function(b){var a=b._arr||b;r.set(a,off);off+=a.length});return new Buffer(r)};
+          Buffer.prototype.toString=function(enc){
+            if(enc==='hex'){return Array.from(this._arr).map(function(b){return b.toString(16).padStart(2,'0')}).join('')}
+            if(enc==='base64'){var s='';this._arr.forEach(function(b){s+=String.fromCharCode(b)});return btoa(s)}
+            return new TextDecoder().decode(this._arr)
+          };
+          Buffer.prototype.slice=function(s,e){return new Buffer(this._arr.slice(s,e))};
+          Buffer.prototype.copy=function(t,ts,ss,se){t._arr.set(this._arr.slice(ss||0,se),ts||0)};
+          Buffer.prototype.readUInt8=function(o){return this._arr[o]};
+          Buffer.prototype.writeUInt8=function(v,o){this._arr[o]=v};
+          Buffer.prototype.toJSON=function(){return{type:'Buffer',data:Array.from(this._arr)}};
+          Buffer.prototype[Symbol.iterator]=function(){return this._arr[Symbol.iterator]()};
+          Object.defineProperty(Buffer.prototype,'buffer',{get:function(){return this._arr.buffer}});
+          Object.defineProperty(Buffer.prototype,'byteOffset',{get:function(){return this._arr.byteOffset}});
+          Object.defineProperty(Buffer.prototype,'byteLength',{get:function(){return this._arr.byteLength}});
+          globalThis.Buffer=Buffer;
+        })();
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
