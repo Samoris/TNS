@@ -2485,13 +2485,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const fileBuffer = Buffer.concat(chunks);
 
-      // Pin to IPFS using Pinata REST API
-      const FormData = (await import('form-data')).default;
+      // Pin to IPFS using Pinata REST API with native FormData
+      const blob = new Blob([fileBuffer], { type: contentType });
+      const file = new File([blob], fileName, { type: contentType });
       const formData = new FormData();
-      formData.append('file', fileBuffer, {
-        filename: fileName,
-        contentType: contentType,
-      });
+      formData.append('file', file);
       formData.append('pinataMetadata', JSON.stringify({ name: `tns-avatar-${fileName}` }));
       formData.append('pinataOptions', JSON.stringify({ cidVersion: 1 }));
 
@@ -2499,9 +2497,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${pinataJwt}`,
-          ...formData.getHeaders(),
         },
-        body: formData as any,
+        body: formData,
       });
 
       if (!pinataResponse.ok) {
