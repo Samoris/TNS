@@ -457,17 +457,27 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     },
   });
 
+  const resolveIpfsUrl = (url: string): string => {
+    if (url.startsWith('ipfs://')) {
+      const cid = url.replace('ipfs://', '');
+      return `https://gateway.pinata.cloud/ipfs/${cid}`;
+    }
+    return url;
+  };
+
   const getCurrentAvatar = (): string | null => {
-    if (localAvatarUrl) return localAvatarUrl;
+    if (localAvatarUrl) return resolveIpfsUrl(localAvatarUrl);
     if (!resolverData || !resolverData.textKeys) return null;
     const avatarIndex = resolverData.textKeys.indexOf("avatar");
     if (avatarIndex === -1) return null;
     const avatarValue = resolverData.textValues[avatarIndex];
-    return avatarValue && avatarValue.trim() !== "" ? avatarValue : null;
+    if (!avatarValue || avatarValue.trim() === "") return null;
+    return resolveIpfsUrl(avatarValue);
   };
 
   const isValidUrl = (url: string): boolean => {
     try {
+      if (url.startsWith('ipfs://')) return true;
       new URL(url);
       return true;
     } catch {
@@ -912,7 +922,6 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               onGetUploadParameters={async () => {
                                 const response = await fetch('/api/objects/upload', { method: 'POST' });
                                 const data = await response.json();
-                                (window as any).__tnsUploadBaseURL = data.baseURL;
                                 return {
                                   method: 'PUT' as const,
                                   url: data.uploadURL,
@@ -926,10 +935,36 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                     const url = new URL(uploadURL);
                                     const pathParts = url.pathname.split('/.private');
                                     const objectPath = `/objects${pathParts.length > 1 ? pathParts[1] : url.pathname}`;
-                                    const baseURL = (window as any).__tnsUploadBaseURL || window.location.origin;
-                                    const fullImageURL = `${baseURL}${objectPath}`;
-                                    setLocalAvatarUrl(fullImageURL);
-                                    setAvatarMutation.mutate(fullImageURL);
+
+                                    toast({ title: "Pinning to IPFS...", description: "Uploading your image to decentralized storage." });
+
+                                    try {
+                                      const pinResponse = await fetch('/api/ipfs/pin', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ objectPath }),
+                                      });
+                                      const pinData = await pinResponse.json();
+
+                                      if (pinData.success && pinData.gatewayUrl) {
+                                        setLocalAvatarUrl(pinData.gatewayUrl);
+                                        toast({ title: "Pinned to IPFS!", description: `CID: ${pinData.cid.substring(0, 16)}...` });
+                                        setAvatarMutation.mutate(pinData.gatewayUrl);
+                                      } else {
+                                        toast({ title: "IPFS pinning failed", description: pinData.error || "Falling back to direct URL.", variant: "destructive" });
+                                        const baseURL = window.location.origin;
+                                        const fullImageURL = `${baseURL}${objectPath}`;
+                                        setLocalAvatarUrl(fullImageURL);
+                                        setAvatarMutation.mutate(fullImageURL);
+                                      }
+                                    } catch (e) {
+                                      console.error("IPFS pin error:", e);
+                                      toast({ title: "IPFS pinning failed", description: "Falling back to direct URL.", variant: "destructive" });
+                                      const baseURL = window.location.origin;
+                                      const fullImageURL = `${baseURL}${objectPath}`;
+                                      setLocalAvatarUrl(fullImageURL);
+                                      setAvatarMutation.mutate(fullImageURL);
+                                    }
                                   }
                                 }
                               }}
@@ -939,7 +974,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               {getCurrentAvatar() ? (
                                 <><Edit3 className="h-3 w-3 mr-1" /> Update</>
                               ) : (
-                                <><Upload className="h-3 w-3 mr-1" /> Upload Image</>
+                                <><Upload className="h-3 w-3 mr-1" /> Upload to IPFS</>
                               )}
                             </ObjectUploader>
                           </div>

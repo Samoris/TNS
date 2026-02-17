@@ -2445,6 +2445,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pin an uploaded image to IPFS via Pinata
+  app.post("/api/ipfs/pin", async (req, res) => {
+    try {
+      const { objectPath } = req.body;
+      if (!objectPath) {
+        return res.status(400).json({ error: "objectPath is required" });
+      }
+
+      const pinataJwt = process.env.PINATA_JWT;
+      const pinataGateway = process.env.PINATA_GATEWAY || "gateway.pinata.cloud";
+      if (!pinataJwt) {
+        return res.status(500).json({ error: "IPFS pinning not configured. PINATA_JWT is required." });
+      }
+
+      // Fetch the image from object storage
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+      const [metadata] = await objectFile.getMetadata();
+      const contentType = metadata.contentType || "application/octet-stream";
+      const fileName = objectPath.split('/').pop() || "domain-image";
+
+      // Download the file into a buffer
+      const chunks: Buffer[] = [];
+      await new Promise<void>((resolve, reject) => {
+        const stream = objectFile.createReadStream();
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        stream.on('end', resolve);
+        stream.on('error', reject);
+      });
+      const fileBuffer = Buffer.concat(chunks);
+
+      // Pin to IPFS using Pinata REST API
+      const FormData = (await import('form-data')).default;
+      const formData = new FormData();
+      formData.append('file', fileBuffer, {
+        filename: fileName,
+        contentType: contentType,
+      });
+      formData.append('pinataMetadata', JSON.stringify({ name: `tns-avatar-${fileName}` }));
+      formData.append('pinataOptions', JSON.stringify({ cidVersion: 1 }));
+
+      const pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${pinataJwt}`,
+          ...formData.getHeaders(),
+        },
+        body: formData as any,
+      });
+
+      if (!pinataResponse.ok) {
+        const errText = await pinataResponse.text();
+        console.error("Pinata error:", errText);
+        return res.status(500).json({ error: "Failed to pin to IPFS" });
+      }
+
+      const pinResult = await pinataResponse.json() as any;
+      const cid = pinResult.IpfsHash;
+      const ipfsUri = `ipfs://${cid}`;
+      const gatewayUrl = `https://${pinataGateway}/ipfs/${cid}`;
+
+      console.log(`Pinned to IPFS: ${ipfsUri} (gateway: ${gatewayUrl})`);
+
+      res.json({
+        success: true,
+        cid,
+        ipfsUri,
+        gatewayUrl,
+      });
+    } catch (error) {
+      console.error("IPFS pin error:", error);
+      res.status(500).json({ error: "Failed to pin image to IPFS" });
+    }
+  });
+
   // Update domain image after upload
   app.put("/api/domains/:name/image", async (req, res) => {
     try {
