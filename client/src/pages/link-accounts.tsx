@@ -13,7 +13,7 @@ import type { LinkedAccount } from "@shared/schema";
 type LinkingStep = "idle" | "connecting-social" | "signing-primary" | "signing-social" | "verifying" | "done" | "error";
 
 export default function LinkAccounts() {
-  const { isConnected, address, providerType, connectWithWeb3Auth } = useWallet();
+  const { isConnected, address, providerType, connectWithWeb3Auth, isInitializing } = useWallet();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [linkingStep, setLinkingStep] = useState<LinkingStep>("idle");
@@ -141,6 +141,22 @@ export default function LinkAccounts() {
       } catch {}
     }
   };
+
+  if (isInitializing) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <Card>
+          <CardHeader className="text-center">
+            <Loader2 className="h-12 w-12 mx-auto text-trust-blue mb-4 animate-spin" />
+            <CardTitle className="text-2xl">Link Your Accounts</CardTitle>
+            <CardDescription>
+              Checking wallet connection...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (

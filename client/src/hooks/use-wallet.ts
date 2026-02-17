@@ -15,6 +15,7 @@ export function useWallet() {
   const [error, setError] = useState<string | null>(null);
   const [web3AuthAvailable, setWeb3AuthAvailable] = useState(false);
   const [effectiveAddress, setEffectiveAddress] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const initializeWallet = async () => {
@@ -25,6 +26,8 @@ export function useWallet() {
         setWeb3AuthAvailable(available);
       } catch (error) {
         console.error("Failed to initialize wallet:", error);
+      } finally {
+        setIsInitializing(false);
       }
     };
 
@@ -195,6 +198,7 @@ export function useWallet() {
   return {
     ...walletState,
     effectiveAddress,
+    isInitializing,
     isLoading,
     error,
     web3AuthAvailable,
