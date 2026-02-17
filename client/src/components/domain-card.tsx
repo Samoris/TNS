@@ -905,6 +905,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                               onGetUploadParameters={async () => {
                                 const response = await fetch('/api/objects/upload', { method: 'POST' });
                                 const data = await response.json();
+                                (window as any).__tnsUploadBaseURL = data.baseURL;
                                 return {
                                   method: 'PUT' as const,
                                   url: data.uploadURL,
@@ -918,8 +919,10 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                     const url = new URL(uploadURL);
                                     const pathParts = url.pathname.split('/.private');
                                     const objectPath = `/objects${pathParts.length > 1 ? pathParts[1] : url.pathname}`;
-                                    setLocalAvatarUrl(objectPath);
-                                    setAvatarMutation.mutate(objectPath);
+                                    const baseURL = (window as any).__tnsUploadBaseURL || window.location.origin;
+                                    const fullImageURL = `${baseURL}${objectPath}`;
+                                    setLocalAvatarUrl(fullImageURL);
+                                    setAvatarMutation.mutate(fullImageURL);
                                   }
                                 }
                               }}

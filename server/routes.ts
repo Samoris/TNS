@@ -2420,7 +2420,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.headers['x-forwarded-host'] || req.get('host');
+      const baseURL = `${protocol}://${host}`;
+      res.json({ uploadURL, baseURL });
     } catch (error) {
       console.error("Upload URL error:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
