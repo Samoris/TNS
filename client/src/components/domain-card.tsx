@@ -461,7 +461,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     if (url.startsWith('ipfs://')) {
       let cid = url.slice(7);
       if (cid.startsWith('ipfs/')) cid = cid.slice(5);
-      return `https://gateway.pinata.cloud/ipfs/${cid}`;
+      return `https://chocolate-sympathetic-beaver-889.mypinata.cloud/ipfs/${cid}`;
     }
     // Fix malformed gateway URLs where gateway is just an ID without a domain
     const malformedMatch = url.match(/^https?:\/\/([a-f0-9]+)\/ipfs\/(.+)$/i);
