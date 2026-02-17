@@ -39,10 +39,11 @@ export default function LinkAccounts() {
 
       const provider = web3Service.getProvider();
       if (!provider) throw new Error("No provider");
-      const { ethers } = await import("ethers");
-      const browserProvider = new ethers.BrowserProvider(provider);
-      const signer = await browserProvider.getSigner();
-      const signature = await signer.signMessage(message);
+      const msgHex = `0x${Array.from(new TextEncoder().encode(message)).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+      const signature = await provider.request({
+        method: "personal_sign",
+        params: [msgHex, address],
+      });
 
       await apiRequest("DELETE", `/api/linked-accounts/${socialAddress}`, {
         signature,
@@ -85,17 +86,24 @@ export default function LinkAccounts() {
       });
       const { nonce, message } = await challengeRes.json();
 
-      const { ethers } = await import("ethers");
-
-      const primaryProvider = new ethers.BrowserProvider(web3Service.getProvider()!);
-      const primarySigner = await primaryProvider.getSigner();
-      const primarySignature = await primarySigner.signMessage(message);
+      const primaryProvider = web3Service.getProvider()!;
+      const primarySignature = await primaryProvider.request({
+        method: "personal_sign",
+        params: [
+          `0x${Array.from(new TextEncoder().encode(message)).map(b => b.toString(16).padStart(2, '0')).join('')}`,
+          address,
+        ],
+      });
 
       setLinkingStep("signing-social");
 
-      const socialBrowserProvider = new ethers.BrowserProvider(social.provider);
-      const socialSigner = await socialBrowserProvider.getSigner();
-      const socialSignature = await socialSigner.signMessage(message);
+      const socialSignature = await social.provider.request({
+        method: "personal_sign",
+        params: [
+          `0x${Array.from(new TextEncoder().encode(message)).map(b => b.toString(16).padStart(2, '0')).join('')}`,
+          socialAddress,
+        ],
+      });
 
       setLinkingStep("verifying");
 
@@ -117,7 +125,8 @@ export default function LinkAccounts() {
       setTimeout(() => setLinkingStep("idle"), 3000);
     } catch (error: any) {
       console.error("Linking error:", error);
-      setStepError(error.message || "Failed to link accounts");
+      const msg = error?.message || (typeof error === 'string' ? error : "Failed to link accounts");
+      setStepError(msg);
       setLinkingStep("error");
 
       try { await web3Service.disconnectWeb3AuthOnly(); } catch {}
