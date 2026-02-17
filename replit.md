@@ -23,7 +23,7 @@ Core features include domain registration with a 2-step commit-reveal process, a
 - **Payment Forwarding**: Allows direct TRUST token transfers to `.trust` domains.
 - **Reverse Resolution**: Users can set a primary domain to be displayed instead of their wallet address.
 - **Domain Management**: Owners can set resolver records (ETH address, IPFS hash, text records), upload domain images, and manage primary domain status.
-- **Domain Image Upload**: Images are uploaded to Replit Object Storage and linked via resolver's avatar text record.
+- **Domain Image Upload**: Images are uploaded to Replit Object Storage, pinned to IPFS via Pinata, and the IPFS gateway URL is stored in the resolver's avatar text record. Falls back to direct object storage URLs if IPFS pinning fails.
 - **Domain Renewal**: Flexible duration options with real-time cost calculation.
 - **NFT Metadata**: ERC-721 compliant metadata with dynamic SVG images and attributes like domain length, pricing tier, and dates.
 

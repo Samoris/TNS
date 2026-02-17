@@ -459,7 +459,8 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
 
   const resolveIpfsUrl = (url: string): string => {
     if (url.startsWith('ipfs://')) {
-      const cid = url.replace('ipfs://', '');
+      let cid = url.slice(7);
+      if (cid.startsWith('ipfs/')) cid = cid.slice(5);
       return `https://gateway.pinata.cloud/ipfs/${cid}`;
     }
     return url;
@@ -942,7 +943,7 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                                       const pinResponse = await fetch('/api/ipfs/pin', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ objectPath }),
+                                        body: JSON.stringify({ objectPath, owner: walletAddress }),
                                       });
                                       const pinData = await pinResponse.json();
 

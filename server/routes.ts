@@ -2448,9 +2448,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pin an uploaded image to IPFS via Pinata
   app.post("/api/ipfs/pin", async (req, res) => {
     try {
-      const { objectPath } = req.body;
+      const { objectPath, owner } = req.body;
       if (!objectPath) {
         return res.status(400).json({ error: "objectPath is required" });
+      }
+      if (!owner) {
+        return res.status(400).json({ error: "owner wallet address is required" });
+      }
+
+      // Validate objectPath format - only allow /objects/uploads/<uuid> pattern
+      const uuidPattern = /^\/objects\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(objectPath)) {
+        return res.status(400).json({ error: "Invalid object path format" });
       }
 
       const pinataJwt = process.env.PINATA_JWT;
