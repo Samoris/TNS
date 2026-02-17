@@ -25,7 +25,7 @@ import logoImage from "@assets/WhatsApp Image 2025-10-16 at 3.19.59 PM_176063388
 const ADMIN_WALLET_ADDRESS = (import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "").toLowerCase();
 
 export function Header() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -236,12 +236,10 @@ export function Header() {
                           </DropdownMenuItem>
                         </>
                       )}
-                      <Link href="/link-accounts">
-                        <DropdownMenuItem data-testid="link-accounts">
-                          <Link2 className="mr-2 h-4 w-4" />
-                          Link Social Accounts
-                        </DropdownMenuItem>
-                      </Link>
+                      <DropdownMenuItem onClick={() => navigate("/link-accounts")} data-testid="link-accounts">
+                        <Link2 className="mr-2 h-4 w-4" />
+                        Link Social Accounts
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={disconnectWallet} data-testid="disconnect-wallet-dropdown">
                         <LogOut className="mr-2 h-4 w-4" />
