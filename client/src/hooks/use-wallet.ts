@@ -8,26 +8,18 @@ export function useWallet() {
     balance: null,
     chainId: null,
     isCorrectNetwork: false,
-    providerType: null,
   });
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [web3AuthAvailable, setWeb3AuthAvailable] = useState(false);
-  const [effectiveAddress, setEffectiveAddress] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const initializeWallet = async () => {
       try {
         const state = await web3Service.getWalletState();
         setWalletState(state);
-        const available = await web3Service.isWeb3AuthAvailable();
-        setWeb3AuthAvailable(available);
       } catch (error) {
         console.error("Failed to initialize wallet:", error);
-      } finally {
-        setIsInitializing(false);
       }
     };
 
@@ -39,31 +31,6 @@ export function useWallet() {
       unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    const resolveAddress = async () => {
-      if (!walletState.isConnected || !walletState.address) {
-        setEffectiveAddress(null);
-        return;
-      }
-      if (walletState.providerType === 'web3auth') {
-        try {
-          const res = await fetch(`/api/linked-accounts/resolve/${walletState.address}`);
-          if (res.ok) {
-            const data = await res.json();
-            setEffectiveAddress(data.linked ? data.primaryAddress : walletState.address);
-          } else {
-            setEffectiveAddress(walletState.address);
-          }
-        } catch {
-          setEffectiveAddress(walletState.address);
-        }
-      } else {
-        setEffectiveAddress(walletState.address);
-      }
-    };
-    resolveAddress();
-  }, [walletState.isConnected, walletState.address, walletState.providerType]);
 
   const connectWallet = async () => {
     if (!await web3Service.isMetaMaskInstalled()) {
@@ -80,21 +47,6 @@ export function useWallet() {
     } catch (error: any) {
       console.error("Failed to connect wallet:", error);
       setError(error.message || "Failed to connect wallet");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const connectWithWeb3Auth = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const state = await web3Service.connectWithWeb3Auth();
-      setWalletState(state);
-    } catch (error: any) {
-      console.error("Failed to connect with social login:", error);
-      setError(error.message || "Failed to connect with social login");
     } finally {
       setIsLoading(false);
     }
@@ -197,13 +149,9 @@ export function useWallet() {
 
   return {
     ...walletState,
-    effectiveAddress,
-    isInitializing,
     isLoading,
     error,
-    web3AuthAvailable,
     connectWallet,
-    connectWithWeb3Auth,
     switchWallet,
     switchAccount,
     disconnectWallet,

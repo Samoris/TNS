@@ -23,7 +23,6 @@ export interface WalletState {
   balance: string | null;
   chainId: number | null;
   isCorrectNetwork: boolean;
-  providerType?: 'metamask' | 'web3auth' | null;
 }
 
 export type EIP1193Provider = {
@@ -44,10 +43,6 @@ export class Web3Service {
   private static instance: Web3Service;
   private listeners: Set<(state: WalletState) => void> = new Set();
   private isManuallyDisconnected: boolean = false;
-  private activeProvider: EIP1193Provider | null = null;
-  private providerType: 'metamask' | 'web3auth' | null = null;
-  private web3auth: any = null;
-  private web3authInitialized: boolean = false;
 
   static getInstance(): Web3Service {
     if (!Web3Service.instance) {
@@ -61,131 +56,7 @@ export class Web3Service {
   }
 
   public getProvider(): EIP1193Provider | null {
-    return this.activeProvider || window.ethereum || null;
-  }
-
-  public getProviderType(): 'metamask' | 'web3auth' | null {
-    return this.providerType;
-  }
-
-  private setProvider(provider: EIP1193Provider | null, type: 'metamask' | 'web3auth' | null) {
-    if (this.activeProvider && this.activeProvider !== provider) {
-      this.detachEventListeners(this.activeProvider);
-    }
-    this.activeProvider = provider;
-    this.providerType = type;
-    if (provider) {
-      this.attachEventListeners(provider);
-    }
-    if (type) {
-      localStorage.setItem('walletProviderType', type);
-    } else {
-      localStorage.removeItem('walletProviderType');
-    }
-  }
-
-  private async initWeb3Auth(): Promise<any> {
-    if (this.web3auth && this.web3authInitialized) {
-      return this.web3auth;
-    }
-
-    const clientId = import.meta.env.VITE_WEB3AUTH_CLIENT_ID;
-    if (!clientId) {
-      throw new Error("Web3Auth Client ID not configured. Please set VITE_WEB3AUTH_CLIENT_ID.");
-    }
-
-    const { Web3Auth, WEB3AUTH_NETWORK } = await import("@web3auth/modal");
-    const { EthereumPrivateKeyProvider } = await import("@web3auth/ethereum-provider");
-
-    const chainConfig = {
-      chainNamespace: "eip155" as const,
-      chainId: `0x${INTUITION_TESTNET.chainId.toString(16)}`,
-      rpcTarget: INTUITION_TESTNET.rpcUrl,
-      displayName: INTUITION_TESTNET.networkName,
-      blockExplorerUrl: INTUITION_TESTNET.explorerUrl,
-      ticker: INTUITION_TESTNET.currencySymbol,
-      tickerName: INTUITION_TESTNET.currencySymbol,
-    };
-
-    const privateKeyProvider = new EthereumPrivateKeyProvider({
-      config: { chainConfig },
-    });
-
-    this.web3auth = new Web3Auth({
-      clientId,
-      web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET,
-      privateKeyProvider,
-    });
-
-    await this.web3auth.init();
-    this.web3authInitialized = true;
-
-    if (this.web3auth.connected && this.web3auth.provider && !this.activeProvider) {
-      this.setProvider(this.web3auth.provider as unknown as EIP1193Provider, 'web3auth');
-    }
-
-    return this.web3auth;
-  }
-
-  public async isWeb3AuthAvailable(): Promise<boolean> {
-    return !!import.meta.env.VITE_WEB3AUTH_CLIENT_ID;
-  }
-
-  public async connectWithWeb3Auth(): Promise<WalletState> {
-    try {
-      this.isManuallyDisconnected = false;
-      localStorage.removeItem('walletManuallyDisconnected');
-
-      const web3auth = await this.initWeb3Auth();
-      const provider = await web3auth.connect();
-
-      if (!provider) {
-        throw new Error("Web3Auth connection failed");
-      }
-
-      this.setProvider(provider as unknown as EIP1193Provider, 'web3auth');
-
-      const state = await this.getWalletState();
-      this.notifyStateChange();
-      return state;
-    } catch (error: any) {
-      console.error("Web3Auth connection error:", error);
-      throw new Error(error.message || "Failed to connect with social login");
-    }
-  }
-
-  public async connectWeb3AuthForLinking(): Promise<{ address: string; provider: EIP1193Provider; userInfo: any }> {
-    const web3auth = await this.initWeb3Auth();
-    
-    if (web3auth.connected) {
-      try { await web3auth.logout(); } catch {}
-    }
-    
-    const w3Provider = await web3auth.connect();
-    if (!w3Provider) throw new Error("Web3Auth connection failed");
-
-    const accounts = await (w3Provider as any).request({ method: "eth_accounts" });
-    if (!accounts || accounts.length === 0) throw new Error("No social wallet account found");
-
-    let userInfo = null;
-    try { userInfo = await web3auth.getUserInfo(); } catch {}
-
-    return { address: accounts[0], provider: w3Provider as unknown as EIP1193Provider, userInfo };
-  }
-
-  public async disconnectWeb3AuthOnly(): Promise<void> {
-    if (this.web3auth?.connected) {
-      try { await this.web3auth.logout(); } catch {}
-    }
-  }
-
-  public async getWeb3AuthUserInfo(): Promise<any> {
-    if (!this.web3auth || !this.web3auth.connected) return null;
-    try {
-      return await this.web3auth.getUserInfo();
-    } catch {
-      return null;
-    }
+    return window.ethereum || null;
   }
 
   private boundHandlers = {
@@ -198,12 +69,6 @@ export class Web3Service {
     provider.on?.("accountsChanged", this.boundHandlers.accountsChanged);
     provider.on?.("chainChanged", this.boundHandlers.chainChanged);
     provider.on?.("disconnect", this.boundHandlers.disconnect);
-  }
-
-  private detachEventListeners(provider: EIP1193Provider) {
-    provider.removeListener?.("accountsChanged", this.boundHandlers.accountsChanged);
-    provider.removeListener?.("chainChanged", this.boundHandlers.chainChanged);
-    provider.removeListener?.("disconnect", this.boundHandlers.disconnect);
   }
 
   private initializeEventListeners() {
@@ -255,7 +120,6 @@ export class Web3Service {
         throw new Error("No accounts available");
       }
 
-      this.setProvider(window.ethereum, 'metamask');
       await this.switchToIntuitionNetwork();
       return await this.getWalletState();
     } catch (error) {
@@ -268,10 +132,6 @@ export class Web3Service {
     const provider = this.getProvider();
     if (!provider) {
       throw new Error("No wallet connected");
-    }
-
-    if (this.providerType === 'web3auth') {
-      return;
     }
 
     const chainIdHex = `0x${INTUITION_TESTNET.chainId.toString(16)}`;
@@ -314,7 +174,6 @@ export class Web3Service {
     if (!provider && !wasManuallyDisconnected && window.ethereum) {
       const accounts = await window.ethereum.request({ method: "eth_accounts" });
       if (accounts && accounts.length > 0) {
-        this.setProvider(window.ethereum, 'metamask');
         provider = window.ethereum;
       }
     }
@@ -326,7 +185,6 @@ export class Web3Service {
         balance: null,
         chainId: null,
         isCorrectNetwork: false,
-        providerType: null,
       };
     }
 
@@ -342,7 +200,6 @@ export class Web3Service {
           balance: null,
           chainId: null,
           isCorrectNetwork: false,
-          providerType: null,
         };
       }
 
@@ -376,7 +233,6 @@ export class Web3Service {
         balance,
         chainId: numericChainId,
         isCorrectNetwork,
-        providerType: this.providerType,
       };
     } catch (error) {
       console.error("Failed to get wallet state:", error);
@@ -386,7 +242,6 @@ export class Web3Service {
         balance: null,
         chainId: null,
         isCorrectNetwork: false,
-        providerType: null,
       };
     }
   }
@@ -395,11 +250,6 @@ export class Web3Service {
     const provider = this.getProvider();
     if (!provider) {
       throw new Error("No wallet connected");
-    }
-
-    if (this.providerType === 'web3auth') {
-      await this.disconnectWallet();
-      return this.connectWallet();
     }
 
     try {
@@ -427,15 +277,6 @@ export class Web3Service {
   }
 
   public async disconnectWallet(): Promise<void> {
-    if (this.providerType === 'web3auth' && this.web3auth?.connected) {
-      try {
-        await this.web3auth.logout();
-      } catch (e) {
-        console.error("Web3Auth logout error:", e);
-      }
-    }
-
-    this.setProvider(null, null);
     this.isManuallyDisconnected = true;
     localStorage.setItem('walletManuallyDisconnected', 'true');
     
@@ -450,7 +291,6 @@ export class Web3Service {
       balance: null,
       chainId: null,
       isCorrectNetwork: false,
-      providerType: null,
     };
     
     this.listeners.forEach(listener => listener(disconnectedState));
@@ -461,10 +301,6 @@ export class Web3Service {
     const provider = this.getProvider();
     if (!provider) {
       throw new Error("No wallet connected");
-    }
-
-    if (this.providerType === 'web3auth') {
-      throw new Error("Account switching is not supported with social login. Please disconnect and reconnect.");
     }
 
     try {

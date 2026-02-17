@@ -43,8 +43,6 @@ The database is managed via Drizzle ORM with schema defined in `shared/schema.ts
 - `domainRecords` - Resolver records (addresses, text records, avatar)
 - `domainCommits` - Commit-reveal registration data
 - `domainSyncStatus` - Knowledge Graph sync tracking
-- `linked_accounts` - Social login wallet to MetaMask wallet mappings
-
 Agent registrations persist permanently across server restarts.
 
 ### Automatic Blockchain Sync
@@ -75,8 +73,7 @@ TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastruc
 ## External Dependencies
 - **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
 - **Smart Contract Addresses**: TNS Registry, Base Registrar (ERC-721), Controller, Resolver, Reverse Registrar, Price Oracle, Payment Forwarder, Treasury, Intuition EthMultiVault (Proxy), Intuition MultiVault (Implementation).
-- **Wallet Integration**: MetaMask + Web3Auth (Social Login via Google, Twitter, Email)
-- **Account Linking**: Users can link social login wallets to MetaMask wallets via challenge-response signature verification. Linked accounts share .trust domains across login methods. Data stored in `linked_accounts` table. The `useWallet` hook provides `effectiveAddress` which resolves Web3Auth addresses to linked primary addresses.
+- **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin
 - **Styling Framework**: Tailwind CSS
 - **UI Component Library**: shadcn/ui

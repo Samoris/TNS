@@ -54,8 +54,6 @@
     "@uppy/file-input": "^4.2.2",
     "@uppy/progress-bar": "^4.3.2",
     "@uppy/react": "^4.5.2",
-    "@web3auth/ethereum-provider": "^9.7.0",
-    "@web3auth/modal": "^10.14.1",
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
