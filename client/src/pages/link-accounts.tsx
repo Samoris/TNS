@@ -21,7 +21,7 @@ export default function LinkAccounts() {
 
   const { data: linkedAccounts = [], isLoading: loadingLinks } = useQuery<LinkedAccount[]>({
     queryKey: ["/api/linked-accounts/by-primary", address],
-    enabled: isConnected && !!address && providerType === "metamask",
+    enabled: isConnected && !!address && providerType !== "web3auth",
   });
 
   const { data: resolvedLink } = useQuery<{ primaryAddress: string; linked: boolean }>({
@@ -60,8 +60,12 @@ export default function LinkAccounts() {
   });
 
   const startLinking = async () => {
-    if (!address || providerType !== "metamask") {
-      toast({ title: "Connect MetaMask First", description: "Please connect your MetaMask wallet before linking social accounts.", variant: "destructive" });
+    if (!address || !isConnected) {
+      toast({ title: "Connect Wallet First", description: "Please connect your wallet before linking social accounts.", variant: "destructive" });
+      return;
+    }
+    if (providerType === "web3auth") {
+      toast({ title: "Use MetaMask", description: "Please connect with MetaMask to link social accounts. Disconnect social login first.", variant: "destructive" });
       return;
     }
 
