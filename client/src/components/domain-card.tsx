@@ -369,17 +369,24 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     },
     onSuccess: async ({ txHash, record }) => {
       setIsAddingTextRecord(false);
-      const savedRecord = { ...newTextRecord };
       setNewTextRecord({ key: "email", value: "" });
+      if (record.key === "avatar") {
+        setLocalAvatarUrl(record.value);
+      }
       await loadResolverData();
+      if (record.key === "avatar") {
+        setLocalAvatarUrl(null);
+      }
       toast({
-        title: "Text record set successfully!",
-        description: `Text record has been updated. Transaction: ${txHash.substring(0, 10)}...`,
+        title: "Text record set on resolver!",
+        description: `"${record.key}" has been updated on-chain. Transaction: ${txHash.substring(0, 10)}...`,
       });
-      // Sync to Knowledge Graph
       syncRecordToKnowledgeGraph(record.key, record.value);
     },
     onError: (error: any) => {
+      if (newTextRecord.key === "avatar") {
+        setLocalAvatarUrl(null);
+      }
       toast({
         title: "Failed to set text record",
         description: error.message || "Something went wrong",
