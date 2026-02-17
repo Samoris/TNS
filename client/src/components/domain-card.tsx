@@ -463,6 +463,11 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       if (cid.startsWith('ipfs/')) cid = cid.slice(5);
       return `https://gateway.pinata.cloud/ipfs/${cid}`;
     }
+    // Fix malformed gateway URLs where gateway is just an ID without a domain
+    const malformedMatch = url.match(/^https?:\/\/([a-f0-9]+)\/ipfs\/(.+)$/i);
+    if (malformedMatch && !malformedMatch[1].includes('.')) {
+      return `https://${malformedMatch[1]}.mypinata.cloud/ipfs/${malformedMatch[2]}`;
+    }
     return url;
   };
 

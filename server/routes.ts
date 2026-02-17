@@ -2463,7 +2463,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const pinataJwt = process.env.PINATA_JWT;
-      const pinataGateway = process.env.PINATA_GATEWAY || "gateway.pinata.cloud";
+      let pinataGateway = process.env.PINATA_GATEWAY || "gateway.pinata.cloud";
+      // Normalize gateway: if it's just an ID/subdomain, append .mypinata.cloud
+      // If it already has dots (e.g., "my-gateway.mypinata.cloud"), use as-is
+      if (pinataGateway && !pinataGateway.includes('.')) {
+        pinataGateway = `${pinataGateway}.mypinata.cloud`;
+      }
+      // Strip protocol prefix if provided
+      pinataGateway = pinataGateway.replace(/^https?:\/\//, '');
       if (!pinataJwt) {
         return res.status(500).json({ error: "IPFS pinning not configured. PINATA_JWT is required." });
       }
