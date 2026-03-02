@@ -19,7 +19,7 @@ contract Root is Ownable {
     uint16 constant public TYPE_TXT = 16;
     uint16 constant public TYPE_SOA = 6;
 
-    TNS public tns;
+    ENS public tns;
     DNSSEC public oracle;
 
     address public registrar;
@@ -27,7 +27,7 @@ contract Root is Ownable {
     event TLDRegistered(bytes32 indexed node, address indexed registrar);
     event RegistrarChanged(address indexed registrar);
 
-    constructor(TNS _tns, DNSSEC _oracle, address _registrar) public {
+    constructor(ENS _tns, DNSSEC _oracle, address _registrar) public {
         tns = _tns;
         oracle = _oracle;
         registrar = _registrar;

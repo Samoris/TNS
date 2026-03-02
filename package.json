@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@0xintuition/graphql": "^2.0.0-alpha.4",
+    "@ensdomains/buffer": "^0.0.5",
+    "@ensdomains/dnssec-oracle": "^0.0.8",
+    "@ensdomains/ens": "^0.4.5",
     "@google-cloud/storage": "^7.18.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
@@ -75,6 +78,7 @@
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
     "next-themes": "^0.4.6",
+    "openzeppelin-solidity": "^2.5.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pinata": "^2.5.5",

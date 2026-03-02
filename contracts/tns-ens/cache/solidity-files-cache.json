@@ -1,49 +1,9 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/home/runner/workspace/contracts/tns-ens/ethregistrar/BaseRegistrarImplementation.sol": {
-      "lastModificationDate": 1768989448417,
-      "contentHash": "c734f6f837bb7e926aa56dcd5251b0d0",
-      "sourceName": "ethregistrar/BaseRegistrarImplementation.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "../registry/TNS.sol",
-        "./IBaseRegistrar.sol",
-        "@openzeppelin/contracts/token/ERC721/ERC721.sol",
-        "@openzeppelin/contracts/access/Ownable.sol"
-      ],
-      "versionPragmas": [
-        ">=0.8.4"
-      ],
-      "artifacts": [
-        "BaseRegistrarImplementation"
-      ]
-    },
     "/home/runner/workspace/contracts/tns-ens/registry/TNS.sol": {
-      "lastModificationDate": 1768988757925,
-      "contentHash": "b5ca142f2abfab8f3fec300de6d0734d",
+      "lastModificationDate": 1772462696417,
+      "contentHash": "4b13b4ea401a90f7a5a8d511d28e7341",
       "sourceName": "registry/TNS.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -70,15 +30,15 @@
       },
       "imports": [],
       "versionPragmas": [
-        ">=0.8.4"
+        ">=0.7.0"
       ],
       "artifacts": [
         "TNS"
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/ethregistrar/IBaseRegistrar.sol": {
-      "lastModificationDate": 1768988781828,
-      "contentHash": "b028b9c8b9bfcd7eea97216c3996bb75",
+      "lastModificationDate": 1772462783467,
+      "contentHash": "c1d843b40f902ff3d498608b4b504142",
       "sourceName": "ethregistrar/IBaseRegistrar.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -552,89 +512,6 @@
         "Math"
       ]
     },
-    "/home/runner/workspace/contracts/tns-ens/ethregistrar/TNSRegistrarController.sol": {
-      "lastModificationDate": 1768989119762,
-      "contentHash": "44bb5ca9e6551adf184b505b76385d57",
-      "sourceName": "ethregistrar/TNSRegistrarController.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./BaseRegistrarImplementation.sol",
-        "./StringUtils.sol",
-        "../resolvers/Resolver.sol",
-        "../registry/TNS.sol",
-        "../reverseRegistrar/ReverseRegistrar.sol",
-        "../reverseRegistrar/ReverseClaimer.sol",
-        "./ITNSRegistrarController.sol",
-        "@openzeppelin/contracts/access/Ownable.sol",
-        "@openzeppelin/contracts/utils/introspection/IERC165.sol",
-        "@openzeppelin/contracts/utils/Address.sol",
-        "../wrapper/INameWrapper.sol",
-        "../utils/ERC20Recoverable.sol"
-      ],
-      "versionPragmas": [
-        "~0.8.17"
-      ],
-      "artifacts": [
-        "TNSRegistrarController"
-      ]
-    },
-    "/home/runner/workspace/contracts/tns-ens/ethregistrar/StringUtils.sol": {
-      "lastModificationDate": 1768988807882,
-      "contentHash": "4668a3254e1603873061753c8a93529f",
-      "sourceName": "ethregistrar/StringUtils.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.8.4"
-      ],
-      "artifacts": [
-        "StringUtils"
-      ]
-    },
     "/home/runner/workspace/contracts/tns-ens/resolvers/Resolver.sol": {
       "lastModificationDate": 1768989449557,
       "contentHash": "8f5ab12c781df2d691506d9e77f5d3cb",
@@ -828,43 +705,6 @@
       ],
       "artifacts": [
         "INameWrapper"
-      ]
-    },
-    "/home/runner/workspace/contracts/tns-ens/ethregistrar/ITNSRegistrarController.sol": {
-      "lastModificationDate": 1768988814977,
-      "contentHash": "36ebd4629952969319622e1aa2d21c6a",
-      "sourceName": "ethregistrar/ITNSRegistrarController.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./IPriceOracle.sol"
-      ],
-      "versionPragmas": [
-        "~0.8.17"
-      ],
-      "artifacts": [
-        "ITNSRegistrarController"
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/resolvers/profiles/IAddrResolver.sol": {
@@ -1080,8 +920,8 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/root/Controllable.sol": {
-      "lastModificationDate": 1768988824305,
-      "contentHash": "a6f4d009ba1bf0538962942c80aa4fca",
+      "lastModificationDate": 1772462708254,
+      "contentHash": "6e1fb569ff4350397fa2a187f24df073",
       "sourceName": "root/Controllable.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -1110,7 +950,7 @@
         "@openzeppelin/contracts/access/Ownable.sol"
       ],
       "versionPragmas": [
-        "^0.8.4"
+        "^0.8.0"
       ],
       "artifacts": [
         "Controllable"
@@ -1149,41 +989,6 @@
       ],
       "artifacts": [
         "IERC20"
-      ]
-    },
-    "/home/runner/workspace/contracts/tns-ens/ethregistrar/IPriceOracle.sol": {
-      "lastModificationDate": 1768988810274,
-      "contentHash": "e3e4a2a0b4b9d7107d35991c3e2c278c",
-      "sourceName": "ethregistrar/IPriceOracle.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">=0.8.17 <0.9.0"
-      ],
-      "artifacts": [
-        "IPriceOracle"
       ]
     },
     "/home/runner/workspace/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol": {
@@ -1419,11 +1224,11 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/registry/TNSRegistry.sol": {
-      "lastModificationDate": 1768988776141,
-      "contentHash": "57831f847839a06134b0d209a1778a76",
+      "lastModificationDate": 1772461197020,
+      "contentHash": "5309218e54edddfc763b6b93e43c54c1",
       "sourceName": "registry/TNSRegistry.sol",
       "solcConfig": {
-        "version": "0.8.17",
+        "version": "0.7.6",
         "settings": {
           "optimizer": {
             "enabled": true,
@@ -1449,16 +1254,121 @@
         "./TNS.sol"
       ],
       "versionPragmas": [
-        ">=0.8.4"
+        "^0.7.0"
       ],
       "artifacts": [
         "TNSRegistry"
       ]
     },
-    "/home/runner/workspace/contracts/tns-ens/ethregistrar/StablePriceOracle.sol": {
-      "lastModificationDate": 1768988859604,
-      "contentHash": "402cde78ab7164b6376707a68991371f",
-      "sourceName": "ethregistrar/StablePriceOracle.sol",
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/SafeMath.sol": {
+      "lastModificationDate": 1772459974818,
+      "contentHash": "c311c254a287d87d5346ce7b3d3ef33d",
+      "sourceName": "ethregistrar/contracts/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "SafeMath"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/StringUtils.sol": {
+      "lastModificationDate": 1772459991850,
+      "contentHash": "b1714973830a1ff47b2a09b8e2ae4f02",
+      "sourceName": "ethregistrar/contracts/StringUtils.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "StringUtils"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/PriceOracle.sol": {
+      "lastModificationDate": 1772459970178,
+      "contentHash": "1d9be0933f4b6dcb96295adc47ee2848",
+      "sourceName": "ethregistrar/contracts/PriceOracle.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "PriceOracle"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/ens/contracts/Registrar.sol": {
+      "lastModificationDate": 1772462659894,
+      "contentHash": "6afccbe2dae58bd4329bb6fbd43af0c8",
+      "sourceName": "@ensdomains/ens/contracts/Registrar.sol",
       "solcConfig": {
         "version": "0.8.17",
         "settings": {
@@ -1483,15 +1393,1124 @@
         }
       },
       "imports": [
-        "./IPriceOracle.sol",
-        "./StringUtils.sol",
-        "@openzeppelin/contracts/access/Ownable.sol"
+        "./Deed.sol"
       ],
       "versionPragmas": [
-        "~0.8.17"
+        ">=0.4.24"
       ],
       "artifacts": [
+        "Registrar"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/ens/contracts/Deed.sol": {
+      "lastModificationDate": 1772462659891,
+      "contentHash": "f726978fb5ff64ae2117c231d8cc55ec",
+      "sourceName": "@ensdomains/ens/contracts/Deed.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "Deed"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/ens/contracts/ENS.sol": {
+      "lastModificationDate": 1772462659891,
+      "contentHash": "5f9f587fda47e110d8c9cd76b4ba9390",
+      "sourceName": "@ensdomains/ens/contracts/ENS.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "ENS"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/DummyOracle.sol": {
+      "lastModificationDate": 1772459969409,
+      "contentHash": "2698a226865a35a3966d41321c460185",
+      "sourceName": "ethregistrar/contracts/DummyOracle.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "DummyOracle"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/BaseRegistrar.sol": {
+      "lastModificationDate": 1772460214695,
+      "contentHash": "aaefeeb276d8bb96d1e9cab0d487353f",
+      "sourceName": "ethregistrar/contracts/BaseRegistrar.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@ensdomains/ens/contracts/ENS.sol",
+        "@ensdomains/ens/contracts/HashRegistrar.sol",
+        "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol",
+        "openzeppelin-solidity/contracts/ownership/Ownable.sol"
+      ],
+      "versionPragmas": [
+        ">=0.4.24"
+      ],
+      "artifacts": [
+        "BaseRegistrar"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol": {
+      "lastModificationDate": 1772462404246,
+      "contentHash": "cd44b8402a71c35a4f725f828ced4cae",
+      "sourceName": "openzeppelin-solidity/contracts/ownership/Ownable.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../GSN/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "Ownable"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/ens/contracts/HashRegistrar.sol": {
+      "lastModificationDate": 1772462659894,
+      "contentHash": "4c0dbd254f10213ad00dc4d2eac95928",
+      "sourceName": "@ensdomains/ens/contracts/HashRegistrar.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ENS.sol",
+        "./DeedImplementation.sol",
+        "./Registrar.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "HashRegistrar"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/token/ERC721/ERC721.sol": {
+      "lastModificationDate": 1772462404240,
+      "contentHash": "81c352cf56ebc1ee63da6fd3da32310b",
+      "sourceName": "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../GSN/Context.sol",
+        "./IERC721.sol",
+        "./IERC721Receiver.sol",
+        "../../math/SafeMath.sol",
+        "../../utils/Address.sol",
+        "../../drafts/Counters.sol",
+        "../../introspection/ERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "ERC721"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/GSN/Context.sol": {
+      "lastModificationDate": 1772462404237,
+      "contentHash": "32a66f6f4d0584b403f26f8e5e4d17b5",
+      "sourceName": "openzeppelin-solidity/contracts/GSN/Context.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "Context"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/ens/contracts/DeedImplementation.sol": {
+      "lastModificationDate": 1772462659891,
+      "contentHash": "ab0ffa4895ca7e5d69e30ed49b6e385e",
+      "sourceName": "@ensdomains/ens/contracts/DeedImplementation.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Deed.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "DeedImplementation"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/utils/Address.sol": {
+      "lastModificationDate": 1772462404236,
+      "contentHash": "a41701ff3cdbb98920cd49750549d127",
+      "sourceName": "openzeppelin-solidity/contracts/utils/Address.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.5.5"
+      ],
+      "artifacts": [
+        "Address"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol": {
+      "lastModificationDate": 1772462404249,
+      "contentHash": "d208da96b6f6c1d204ee8248087cf2d7",
+      "sourceName": "openzeppelin-solidity/contracts/math/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "SafeMath"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/introspection/ERC165.sol": {
+      "lastModificationDate": 1772462404237,
+      "contentHash": "0b47821c476c3f23aa689c2d6d8134de",
+      "sourceName": "openzeppelin-solidity/contracts/introspection/ERC165.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "ERC165"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/drafts/Counters.sol": {
+      "lastModificationDate": 1772462404237,
+      "contentHash": "2e4e5055539646b55f7d05ea1436d66a",
+      "sourceName": "openzeppelin-solidity/contracts/drafts/Counters.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../math/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "Counters"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/token/ERC721/IERC721Receiver.sol": {
+      "lastModificationDate": 1772462404244,
+      "contentHash": "68f1063a3b1ba2ea6f98738f0b959bb2",
+      "sourceName": "openzeppelin-solidity/contracts/token/ERC721/IERC721Receiver.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "IERC721Receiver"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/token/ERC721/IERC721.sol": {
+      "lastModificationDate": 1772462404243,
+      "contentHash": "521544d4b3261c8e186ffde31310f84f",
+      "sourceName": "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../introspection/IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "IERC721"
+      ]
+    },
+    "/home/runner/workspace/node_modules/openzeppelin-solidity/contracts/introspection/IERC165.sol": {
+      "lastModificationDate": 1772462404243,
+      "contentHash": "90b6ff61fbb96331143b12e0803eedcd",
+      "sourceName": "openzeppelin-solidity/contracts/introspection/IERC165.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "IERC165"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/ETHRegistrarController.sol": {
+      "lastModificationDate": 1772462138237,
+      "contentHash": "546cadb2af2b0dc78ffe4be88c299a61",
+      "sourceName": "ethregistrar/contracts/ETHRegistrarController.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./PriceOracle.sol",
+        "./BaseRegistrar.sol",
+        "./StringUtils.sol",
+        "openzeppelin-solidity/contracts/ownership/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "TNSRegistrarController"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/StablePriceOracle.sol": {
+      "lastModificationDate": 1772459987813,
+      "contentHash": "cea07cba7f5dc73cbc96881368cc1a9d",
+      "sourceName": "ethregistrar/contracts/StablePriceOracle.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./PriceOracle.sol",
+        "./SafeMath.sol",
+        "./StringUtils.sol",
+        "openzeppelin-solidity/contracts/ownership/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "DSValue",
         "StablePriceOracle"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/SimplePriceOracle.sol": {
+      "lastModificationDate": 1772459979318,
+      "contentHash": "9bb8859332b9e58a145c4ed3bdab53e7",
+      "sourceName": "ethregistrar/contracts/SimplePriceOracle.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./PriceOracle.sol",
+        "openzeppelin-solidity/contracts/ownership/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "SimplePriceOracle"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/BaseRegistrarImplementation.sol": {
+      "lastModificationDate": 1772460231470,
+      "contentHash": "7e417a2dec5e32a9e70b7b7a578c71db",
+      "sourceName": "ethregistrar/contracts/BaseRegistrarImplementation.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@ensdomains/ens/contracts/ENS.sol",
+        "@ensdomains/ens/contracts/Registrar.sol",
+        "@ensdomains/ens/contracts/HashRegistrar.sol",
+        "./BaseRegistrar.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "BaseRegistrarImplementation"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/ens/contracts/ENSRegistry.sol": {
+      "lastModificationDate": 1772462659891,
+      "contentHash": "60360c8691af4304000c5376eb9db575",
+      "sourceName": "@ensdomains/ens/contracts/ENSRegistry.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ENS.sol"
+      ],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "ENSRegistry"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/_TestDeps.sol": {
+      "lastModificationDate": 1772462771536,
+      "contentHash": "692acf6cf95fd4dad936e67488b3c7fd",
+      "sourceName": "ethregistrar/contracts/_TestDeps.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@ensdomains/ens/contracts/ENSRegistry.sol"
+      ],
+      "versionPragmas": [],
+      "artifacts": []
+    },
+    "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/Migrations.sol": {
+      "lastModificationDate": 1772459969664,
+      "contentHash": "9de6c054b0e107f02a5ac267578e46b8",
+      "sourceName": "ethregistrar/contracts/Migrations.sol",
+      "solcConfig": {
+        "version": "0.5.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.5.0"
+      ],
+      "artifacts": [
+        "Migrations"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/root/Root.sol": {
+      "lastModificationDate": 1772462879795,
+      "contentHash": "645cbd95545389d5ff429e4c3e430936",
+      "sourceName": "root/Root.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@ensdomains/ens/contracts/ENS.sol",
+        "@ensdomains/dnssec-oracle/contracts/DNSSEC.sol",
+        "@ensdomains/dnssec-oracle/contracts/BytesUtils.sol",
+        "@ensdomains/dnsregistrar/contracts/DNSClaimChecker.sol",
+        "@ensdomains/buffer/contracts/Buffer.sol",
+        "./Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.4.24"
+      ],
+      "artifacts": [
+        "Root"
+      ]
+    },
+    "/home/runner/workspace/contracts/tns-ens/root/Ownable.sol": {
+      "lastModificationDate": 1772461162148,
+      "contentHash": "99f1df7a55e5dcaed107d3d815885644",
+      "sourceName": "root/Ownable.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.4.24"
+      ],
+      "artifacts": [
+        "Ownable"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/dnssec-oracle/contracts/DNSSEC.sol": {
+      "lastModificationDate": 1772462659901,
+      "contentHash": "f795df9bf2db6b85b3ccd2a947d8c1d0",
+      "sourceName": "@ensdomains/dnssec-oracle/contracts/DNSSEC.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.4.23"
+      ],
+      "artifacts": [
+        "DNSSEC"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/dnsregistrar/contracts/DNSClaimChecker.sol": {
+      "lastModificationDate": 1772462913626,
+      "contentHash": "ceec47836073fa11bf67bc1ea5e64365",
+      "sourceName": "@ensdomains/dnsregistrar/contracts/DNSClaimChecker.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@ensdomains/dnssec-oracle/contracts/DNSSEC.sol",
+        "@ensdomains/dnssec-oracle/contracts/BytesUtils.sol",
+        "@ensdomains/dnssec-oracle/contracts/RRUtils.sol",
+        "@ensdomains/buffer/contracts/Buffer.sol"
+      ],
+      "versionPragmas": [
+        "^0.4.24"
+      ],
+      "artifacts": [
+        "DNSClaimChecker"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/buffer/contracts/Buffer.sol": {
+      "lastModificationDate": 1772462659875,
+      "contentHash": "d8dbd1cdedf0f1fd9167967e7ca5c5f4",
+      "sourceName": "@ensdomains/buffer/contracts/Buffer.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.4.23"
+      ],
+      "artifacts": [
+        "Buffer"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/dnssec-oracle/contracts/BytesUtils.sol": {
+      "lastModificationDate": 1772462659900,
+      "contentHash": "36a1765817248287034f0688981918e8",
+      "sourceName": "@ensdomains/dnssec-oracle/contracts/BytesUtils.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.4.17"
+      ],
+      "artifacts": [
+        "BytesUtils"
+      ]
+    },
+    "/home/runner/workspace/node_modules/@ensdomains/dnssec-oracle/contracts/RRUtils.sol": {
+      "lastModificationDate": 1772462659902,
+      "contentHash": "687ca4015f00d4b18f7563fdb8a92597",
+      "sourceName": "@ensdomains/dnssec-oracle/contracts/RRUtils.sol",
+      "solcConfig": {
+        "version": "0.4.26",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./BytesUtils.sol",
+        "@ensdomains/buffer/contracts/Buffer.sol"
+      ],
+      "versionPragmas": [
+        "^0.4.17"
+      ],
+      "artifacts": [
+        "RRUtils"
       ]
     }
   }

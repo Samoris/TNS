@@ -9,22 +9,31 @@ const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || "0x629A5386F73283F80847
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.17",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
+    compilers: [
+      {
+        version: "0.4.26",
+        settings: { optimizer: { enabled: true, runs: 200 } },
       },
-    },
+      {
+        version: "0.5.17",
+        settings: { optimizer: { enabled: true, runs: 200 } },
+      },
+      {
+        version: "0.7.6",
+        settings: { optimizer: { enabled: true, runs: 200 } },
+      },
+      {
+        version: "0.8.17",
+        settings: { optimizer: { enabled: true, runs: 200 } },
+      },
+    ],
   },
   networks: {
-    // Intuition Mainnet
     intuition: {
       url: "https://intuition.calderachain.xyz",
       chainId: 1155,
       accounts: [PRIVATE_KEY],
     },
-    // Local development
     localhost: {
       url: "http://127.0.0.1:8545",
     },

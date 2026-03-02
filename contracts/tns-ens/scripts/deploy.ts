@@ -46,7 +46,8 @@ async function main() {
   // ===== 2. Deploy BaseRegistrarImplementation =====
   console.log("\n2. Deploying BaseRegistrarImplementation...");
   const BaseRegistrar = await ethers.getContractFactory("BaseRegistrarImplementation");
-  const registrar = await BaseRegistrar.deploy(await registry.getAddress(), TRUST_NODE);
+  const transferPeriodEnds = 0;
+  const registrar = await BaseRegistrar.deploy(await registry.getAddress(), TRUST_NODE, transferPeriodEnds);
   await registrar.waitForDeployment();
   console.log("BaseRegistrarImplementation deployed to:", await registrar.getAddress());
   
