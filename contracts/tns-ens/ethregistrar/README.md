@@ -1,8 +1,8 @@
-# Eth Registrar
+# Trust Registrar
 
 [![Build Status](https://travis-ci.com/ensdomains/ethregistrar.svg?branch=master)](https://travis-ci.com/ensdomains/ethregistrar) [![License](https://img.shields.io/badge/License-BSD--2--Clause-blue.svg)](LICENSE)
 
-Implements an [ENS](https://ens.domains/) registrar intended for the .eth TLD.
+Implements a [TNS](https://ens.domains/) registrar intended for the .trust TLD.
 
 ## Contracts
 
@@ -10,19 +10,19 @@ The registrar is separated into several components for simplicity, modularity, a
 
 ### [BaseRegistrar](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrarImplementation.sol)
 
-BaseRegistrar is the contract that owns the TLD in the ENS registry. This contract implements a minimal set of functionality:
+BaseRegistrar is the contract that owns the TLD in the TNS registry. This contract implements a minimal set of functionality:
 
  - The owner of the registrar may add and remove controllers.
  - Controllers may register new domains and extend the expiry of (renew) existing domains. They can not change the ownership or reduce the expiration time of existing domains.
  - Name owners may transfer ownership to another address.
- - Name owners may reclaim ownership in the ENS registry if they have lost it.
+ - Name owners may reclaim ownership in the TNS registry if they have lost it.
  - Owners of names in the interim registrar may transfer them to the new registrar, during the 1 year transition period. When they do so, their deposit is returned to them in its entirety.
 
 This separation of concerns provides name owners strong guarantees over continued ownership of their existing names, while still permitting innovation and change in the way names are registered and renewed via the controller mechanism.
 
-### [EthRegistrarController](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol)
+### [TnsRegistrarController](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol)
 
-EthRegistrarController is the first implementation of a registration controller for the new registrar. This contract implements the following functionality:
+TnsRegistrarController is the first implementation of a registration controller for the new registrar. This contract implements the following functionality:
 
  - The owner of the registrar may set a price oracle contract, which determines the cost of registrations and renewals based on the name and the desired registration or renewal duration.
  - The owner of the registrar may withdraw any collected funds to their account.
@@ -38,7 +38,7 @@ The minimum delay and expiry for commitments exist to prevent miners or other us
 
 ### [SimplePriceOracle](https://github.com/ensdomains/ethregistrar/blob/master/contracts/SimplePriceOracle.sol)
 
-SimplePriceOracle is a trivial implementation of the pricing oracle for the EthRegistrarController that always returns a fixed price per domain per year, determined by the contract owner.
+SimplePriceOracle is a trivial implementation of the pricing oracle for the TnsRegistrarController that always returns a fixed price per domain per year, determined by the contract owner.
 
 ### [StablePriceOracle](https://github.com/ensdomains/ethregistrar/blob/master/contracts/StablePriceOracle.sol)
 

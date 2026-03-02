@@ -1,7 +1,7 @@
 const ENS = artifacts.require('@ensdomains/ens/ENSRegistry');
 const HashRegistrar = artifacts.require('@ensdomains/ens/HashRegistrar');
 const BaseRegistrar = artifacts.require('./BaseRegistrarImplementation');
-const ETHRegistrarController = artifacts.require('./ETHRegistrarController');
+const TNSRegistrarController = artifacts.require('./TNSRegistrarController');
 const SimplePriceOracle = artifacts.require('./SimplePriceOracle');
 var Promise = require('bluebird');
 
@@ -36,8 +36,8 @@ async function expectFailure(call) {
 	}
 }
 
-contract('ETHRegistrarController', function (accounts) {
-	let ens;
+contract('TNSRegistrarController', function (accounts) {
+	let tns;
 	let baseRegistrar;
 	let interimRegistrar;
 	let controller;
@@ -58,23 +58,23 @@ contract('ETHRegistrarController', function (accounts) {
 		await advanceTime(2 * DAYS + 1);
 		await Promise.map(hashes, (hash) => interimRegistrar.finalizeAuction(hash));
 		for(var name of names) {
-			assert.equal(await ens.owner(namehash.hash(name + '.eth')), accounts[0]);
+			assert.equal(await tns.owner(namehash.hash(name + '.trust')), accounts[0]);
 		}
 	}
 
 	before(async () => {
-		ens = await ENS.new();
+		tns = await ENS.new();
 
-		interimRegistrar = await HashRegistrar.new(ens.address, namehash.hash('eth'), 1493895600);
-		await ens.setSubnodeOwner('0x0', sha3('eth'), interimRegistrar.address);
+		interimRegistrar = await HashRegistrar.new(tns.address, namehash.hash('trust'), 1493895600);
+		await tns.setSubnodeOwner('0x0', sha3('trust'), interimRegistrar.address);
 		await registerOldNames(['name', 'name2'], registrantAccount);
 
 		const now = (await web3.eth.getBlock('latest')).timestamp;
-		baseRegistrar = await BaseRegistrar.new(ens.address, namehash.hash('eth'), now + 365 * DAYS, {from: ownerAccount});
-		await ens.setSubnodeOwner('0x0', sha3('eth'), baseRegistrar.address);
+		baseRegistrar = await BaseRegistrar.new(tns.address, namehash.hash('trust'), now + 365 * DAYS, {from: ownerAccount});
+		await tns.setSubnodeOwner('0x0', sha3('trust'), baseRegistrar.address);
 
 		priceOracle = await SimplePriceOracle.new(1);
-		controller = await ETHRegistrarController.new(
+		controller = await TNSRegistrarController.new(
 			baseRegistrar.address,
 			priceOracle.address,
 			{from: ownerAccount});
