@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function refreshDomainOwnershipCache() {
     try {
       const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
-      const baseRegistrarAddress = "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676";
+      const baseRegistrarAddress = "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4";
       const registrarContract = new ethers.Contract(baseRegistrarAddress, [
         "function ownerOf(uint256 tokenId) view returns (address)",
         "function nameExpires(uint256 id) view returns (uint256)"
@@ -522,7 +522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       rpcUrl: "https://intuition.calderachain.xyz",
       currencySymbol: "TRUST",
       explorerUrl: "https://explorer.intuition.systems",
-      contractAddress: "0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676",
+      contractAddress: "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4",
     });
   });
 

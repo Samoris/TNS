@@ -299,13 +299,14 @@ export default function DocsPage() {
         {
           heading: "Smart Contracts (ENS-Forked)",
           items: [
-            "TNS Registry: 0x34D7648aecc10fd86A53Cdd2436125342f3d7412",
-            "Base Registrar (ERC-721): 0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676",
-            "Registrar Controller: 0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044",
-            "Resolver: 0x17Adb57047EDe9eBA93A5855f8578A8E512592C5",
-            "Reverse Registrar: 0x5140b65d566DA2d1298fCFE75eA972850bC2E365",
-            "Price Oracle: 0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303",
-            "Payment Forwarder: 0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0"
+            "TNS Registry: 0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
+            "Base Registrar (ERC-721): 0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4",
+            "Registrar Controller: 0xeA6469B9B917F06499807509ED2d1223cA85E1f9",
+            "Resolver: 0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5",
+            "Reverse Registrar: 0x78Cd4f5149060De05a84040283812b0c056972eD",
+            "Price Oracle: 0x6F258639D183Fb7955B93d086FA9300eED79383A",
+            "Payment Forwarder: 0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F",
+            "Treasury: 0x629A5386F73283F80847154d16E359192a891f86"
           ]
         },
         {

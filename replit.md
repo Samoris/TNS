@@ -72,7 +72,20 @@ TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastruc
 
 ## External Dependencies
 - **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
-- **Smart Contract Addresses**: TNS Registry, Base Registrar (ERC-721), Controller, Resolver, Reverse Registrar, Price Oracle, Payment Forwarder, Treasury, Intuition EthMultiVault (Proxy), Intuition MultiVault (Implementation).
+- **Smart Contract Addresses (V2 — deployed March 2026)**:
+  - TNS Registry: `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99`
+  - Base Registrar (ERC-721): `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4`
+  - Controller: `0xeA6469B9B917F06499807509ED2d1223cA85E1f9`
+  - Resolver: `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5`
+  - Reverse Registrar: `0x78Cd4f5149060De05a84040283812b0c056972eD`
+  - Price Oracle (Stable): `0x6F258639D183Fb7955B93d086FA9300eED79383A`
+  - Dummy Oracle: `0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb`
+  - Payment Forwarder: `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F`
+  - Root: `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75`
+  - Treasury: `0x629A5386F73283F80847154d16E359192a891f86`
+  - Intuition EthMultiVault (Proxy): `0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e`
+- **V1 (deprecated) Contract Addresses**: Registry `0x34D7648...`, BaseRegistrar `0xc08c5b...`, Controller `0x57C93D...`, Resolver `0x17Adb5...`
+- **Migration**: All 258 domains from V1 contracts successfully migrated to V2 contracts with preserved ownership and expiry dates. Treasury now receives fees directly on register/renew.
 - **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin
 - **Styling Framework**: Tailwind CSS
