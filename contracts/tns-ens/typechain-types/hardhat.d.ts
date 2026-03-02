@@ -90,10 +90,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
-      name: "BaseRegistrarImplementation",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.BaseRegistrarImplementation__factory>;
-    getContractFactory(
       name: "BaseRegistrar",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.BaseRegistrar__factory>;
@@ -133,22 +129,6 @@ declare module "hardhat/types/runtime" {
       name: "IBaseRegistrar",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IBaseRegistrar__factory>;
-    getContractFactory(
-      name: "IPriceOracle",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IPriceOracle__factory>;
-    getContractFactory(
-      name: "ITNSRegistrarController",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ITNSRegistrarController__factory>;
-    getContractFactory(
-      name: "StablePriceOracle",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.StablePriceOracle__factory>;
-    getContractFactory(
-      name: "TNSRegistrarController",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.TNSRegistrarController__factory>;
     getContractFactory(
       name: "Context",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -350,11 +330,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC165>;
     getContractAt(
-      name: "BaseRegistrarImplementation",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.BaseRegistrarImplementation>;
-    getContractAt(
       name: "BaseRegistrar",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -404,26 +379,6 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.IBaseRegistrar>;
-    getContractAt(
-      name: "IPriceOracle",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IPriceOracle>;
-    getContractAt(
-      name: "ITNSRegistrarController",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ITNSRegistrarController>;
-    getContractAt(
-      name: "StablePriceOracle",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.StablePriceOracle>;
-    getContractAt(
-      name: "TNSRegistrarController",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.TNSRegistrarController>;
     getContractAt(
       name: "Context",
       address: string | ethers.Addressable,
@@ -632,10 +587,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC165>;
     deployContract(
-      name: "BaseRegistrarImplementation",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.BaseRegistrarImplementation>;
-    deployContract(
       name: "BaseRegistrar",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.BaseRegistrar>;
@@ -675,22 +626,6 @@ declare module "hardhat/types/runtime" {
       name: "IBaseRegistrar",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IBaseRegistrar>;
-    deployContract(
-      name: "IPriceOracle",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IPriceOracle>;
-    deployContract(
-      name: "ITNSRegistrarController",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ITNSRegistrarController>;
-    deployContract(
-      name: "StablePriceOracle",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.StablePriceOracle>;
-    deployContract(
-      name: "TNSRegistrarController",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.TNSRegistrarController>;
     deployContract(
       name: "Context",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -892,11 +827,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC165>;
     deployContract(
-      name: "BaseRegistrarImplementation",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.BaseRegistrarImplementation>;
-    deployContract(
       name: "BaseRegistrar",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -946,26 +876,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IBaseRegistrar>;
-    deployContract(
-      name: "IPriceOracle",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IPriceOracle>;
-    deployContract(
-      name: "ITNSRegistrarController",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ITNSRegistrarController>;
-    deployContract(
-      name: "StablePriceOracle",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.StablePriceOracle>;
-    deployContract(
-      name: "TNSRegistrarController",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.TNSRegistrarController>;
     deployContract(
       name: "Context",
       args: any[],

@@ -38,7 +38,7 @@ contract TNSRegistrarController is Ownable {
     }
 
     function valid(string memory name) public view returns(bool) {
-        return name.strlen() > 6;
+        return name.strlen() >= 3;
     }
 
     function available(string memory name) public view returns(bool) {

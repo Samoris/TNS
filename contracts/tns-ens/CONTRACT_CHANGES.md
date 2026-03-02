@@ -89,13 +89,13 @@ All changes fall into these categories:
 | `withdraw()` | Sends to `owner()` | `treasury.transfer(address(this).balance)` |
 | New function | N/A | `setTreasury(address payable _treasury)` — owner can update treasury |
 | New event | N/A | `event NewTreasury(address indexed treasury)` |
-| `valid()` | `name.strlen() >= 3` | `name.strlen() > 6` (minimum 7 characters) |
+| `valid()` | `name.strlen() >= 3` | `name.strlen() >= 3` (matches ENS standard) |
 | `makeCommitment()` | Includes `owner` param | Simplified to `(name, secret)` only |
 | `commit()` | `require(commitments[commitment] == 0)` | `require(commitments[commitment] + MAX_COMMITMENT_AGE < now)` |
 
 **Logic changes**:
 - **Treasury**: Registration and renewal fees are forwarded directly to the treasury address on every transaction. This eliminates the need for a separate `withdraw()` call and ensures the treasury receives funds immediately.
-- **Name length**: Minimum valid name length is 7 characters (vs ENS's 3). This is enforced by the `valid()` function.
+- **Name length**: Minimum valid name length is 3 characters, matching ENS standard. Enforced by the `valid()` function.
 - **Commitment**: Simplified `makeCommitment` doesn't include `owner` in the hash. The `commit` function allows re-committing after the previous commitment expires (vs ENS which requires commitment == 0).
 
 ---
@@ -234,7 +234,7 @@ The following contracts have no changes beyond import path adjustments:
 | StablePriceOracle | `0x6F258639D183Fb7955B93d086FA9300eED79383A` | v0.5.17 |
 | ReverseRegistrar | `0x78Cd4f5149060De05a84040283812b0c056972eD` | v0.8.17 |
 | Root | `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75` | v0.4.26 |
-| TNSRegistrarController | `0xeA6469B9B917F06499807509ED2d1223cA85E1f9` | v0.5.17 |
+| TNSRegistrarController | `0x7C553152e7e4c9d1498D921FB5bd05bDf287f268` | v0.5.17 |
 | Resolver | `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5` | v0.8.17 |
 | PaymentForwarder | `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F` | v0.8.17 |
 | Treasury | `0x629A5386F73283F80847154d16E359192a891f86` | N/A |

@@ -2,9 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as contracts from "./contracts";
-export { BaseRegistrarImplementation__factory } from "./BaseRegistrarImplementation__factory";
 export { IBaseRegistrar__factory } from "./IBaseRegistrar__factory";
-export { IPriceOracle__factory } from "./IPriceOracle__factory";
-export { ITNSRegistrarController__factory } from "./ITNSRegistrarController__factory";
-export { StablePriceOracle__factory } from "./StablePriceOracle__factory";
-export { TNSRegistrarController__factory } from "./TNSRegistrarController__factory";

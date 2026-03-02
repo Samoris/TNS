@@ -3,9 +3,4 @@
 /* eslint-disable */
 import type * as contracts from "./contracts";
 export type { contracts };
-export type { BaseRegistrarImplementation } from "./BaseRegistrarImplementation";
 export type { IBaseRegistrar } from "./IBaseRegistrar";
-export type { IPriceOracle } from "./IPriceOracle";
-export type { ITNSRegistrarController } from "./ITNSRegistrarController";
-export type { StablePriceOracle } from "./StablePriceOracle";
-export type { TNSRegistrarController } from "./TNSRegistrarController";

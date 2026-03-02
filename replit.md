@@ -75,7 +75,7 @@ TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastruc
 - **Smart Contract Addresses (V2 — deployed March 2026)**:
   - TNS Registry: `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99`
   - Base Registrar (ERC-721): `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4`
-  - Controller: `0xeA6469B9B917F06499807509ED2d1223cA85E1f9`
+  - Controller: `0x7C553152e7e4c9d1498D921FB5bd05bDf287f268`
   - Resolver: `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5`
   - Reverse Registrar: `0x78Cd4f5149060De05a84040283812b0c056972eD`
   - Price Oracle (Stable): `0x6F258639D183Fb7955B93d086FA9300eED79383A`

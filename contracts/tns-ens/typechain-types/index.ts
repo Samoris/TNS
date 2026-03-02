@@ -60,10 +60,10 @@ export type { ERC165 } from "./@openzeppelin/contracts/utils/introspection/ERC16
 export { ERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/ERC165__factory";
 export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC165";
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
-export type { BaseRegistrarImplementation } from "./ethregistrar/BaseRegistrarImplementation";
-export { BaseRegistrarImplementation__factory } from "./factories/ethregistrar/BaseRegistrarImplementation__factory";
 export type { BaseRegistrar } from "./ethregistrar/contracts/BaseRegistrar";
 export { BaseRegistrar__factory } from "./factories/ethregistrar/contracts/BaseRegistrar__factory";
+export type { BaseRegistrarImplementation } from "./ethregistrar/contracts/BaseRegistrarImplementation";
+export { BaseRegistrarImplementation__factory } from "./factories/ethregistrar/contracts/BaseRegistrarImplementation__factory";
 export type { DummyOracle } from "./ethregistrar/contracts/DummyOracle";
 export { DummyOracle__factory } from "./factories/ethregistrar/contracts/DummyOracle__factory";
 export type { TNSRegistrarController } from "./ethregistrar/contracts/ETHRegistrarController.sol/TNSRegistrarController";
@@ -80,10 +80,6 @@ export type { StablePriceOracle } from "./ethregistrar/contracts/StablePriceOrac
 export { StablePriceOracle__factory } from "./factories/ethregistrar/contracts/StablePriceOracle.sol/StablePriceOracle__factory";
 export type { IBaseRegistrar } from "./ethregistrar/IBaseRegistrar";
 export { IBaseRegistrar__factory } from "./factories/ethregistrar/IBaseRegistrar__factory";
-export type { IPriceOracle } from "./ethregistrar/IPriceOracle";
-export { IPriceOracle__factory } from "./factories/ethregistrar/IPriceOracle__factory";
-export type { ITNSRegistrarController } from "./ethregistrar/ITNSRegistrarController";
-export { ITNSRegistrarController__factory } from "./factories/ethregistrar/ITNSRegistrarController__factory";
 export type { Context } from "./openzeppelin-solidity/contracts/GSN/Context";
 export { Context__factory } from "./factories/openzeppelin-solidity/contracts/GSN/Context__factory";
 export type { TNS } from "./registry/TNS";
