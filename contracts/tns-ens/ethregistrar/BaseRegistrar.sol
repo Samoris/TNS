@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-import "../registry/TNS.sol";
+import "@ensdomains/ens/contracts/ENS.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 

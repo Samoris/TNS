@@ -4,7 +4,7 @@ import "./PriceOracle.sol";
 import "./BaseRegistrar.sol";
 import "./StringUtils.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../resolvers/Resolver.sol";
+import "@ensdomains/resolver/contracts/Resolver.sol";
 
 /**
  * @dev A registrar controller for registering and renewing names at fixed cost.

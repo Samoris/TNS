@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "../registry/TNS.sol";
+import "@ensdomains/ens/contracts/ENS.sol";
 import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "./BaseRegistrar.sol";
 
