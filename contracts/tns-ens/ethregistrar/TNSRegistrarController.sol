@@ -25,11 +25,6 @@ error Unauthorised(bytes32 node);
 error MaxCommitmentAgeTooLow();
 error MaxCommitmentAgeTooHigh();
 
-/**
- * @dev A registrar controller for registering and renewing names at fixed cost.
- * Exact port of ENS ETHRegistrarController, adapted for .trust TLD.
- * Uses native TRUST token for payments (same as ETH on Ethereum).
- */
 contract TNSRegistrarController is
     Ownable,
     ITNSRegistrarController,
@@ -41,7 +36,6 @@ contract TNSRegistrarController is
     using Address for address;
 
     uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
-    // namehash of 'trust' - keccak256(abi.encodePacked(bytes32(0), keccak256("trust")))
     bytes32 private constant TRUST_NODE =
         0xe16bcebb9fdd78a351d48e8b8c0efa4a4d222509da29d80bcbb1e2b64eac4985;
     uint64 private constant MAX_EXPIRY = type(uint64).max;
@@ -52,9 +46,6 @@ contract TNSRegistrarController is
     uint256 public immutable maxCommitmentAge;
     ReverseRegistrar public immutable reverseRegistrar;
     INameWrapper public immutable nameWrapper;
-    
-    // Treasury address for payment collection
-    address public treasury;
 
     mapping(bytes32 => uint256) public commitments;
 
@@ -80,8 +71,7 @@ contract TNSRegistrarController is
         uint256 _maxCommitmentAge,
         ReverseRegistrar _reverseRegistrar,
         INameWrapper _nameWrapper,
-        TNS _tns,
-        address _treasury
+        TNS _tns
     ) ReverseClaimer(_tns, msg.sender) {
         if (_maxCommitmentAge <= _minCommitmentAge) {
             revert MaxCommitmentAgeTooLow();
@@ -96,7 +86,6 @@ contract TNSRegistrarController is
         maxCommitmentAge = _maxCommitmentAge;
         reverseRegistrar = _reverseRegistrar;
         nameWrapper = _nameWrapper;
-        treasury = _treasury;
     }
 
     function rentPrice(
@@ -182,23 +171,13 @@ contract TNSRegistrarController is
             )
         );
 
-        uint256 expires;
-        
-        // Check if NameWrapper is available
-        if (address(nameWrapper) != address(0)) {
-            expires = nameWrapper.registerAndWrapETH2LD(
-                name,
-                owner,
-                duration,
-                resolver,
-                ownerControlledFuses
-            );
-        } else {
-            // Direct registration without wrapper
-            bytes32 label = keccak256(bytes(name));
-            uint256 tokenId = uint256(label);
-            expires = base.register(tokenId, owner, duration);
-        }
+        uint256 expires = nameWrapper.registerAndWrapETH2LD(
+            name,
+            owner,
+            duration,
+            resolver,
+            ownerControlledFuses
+        );
 
         if (data.length > 0) {
             _setRecords(resolver, keccak256(bytes(name)), data);
@@ -217,13 +196,6 @@ contract TNSRegistrarController is
             expires
         );
 
-        // Send payment to treasury
-        if (price.base + price.premium > 0) {
-            (bool sent, ) = treasury.call{value: price.base + price.premium}("");
-            require(sent, "Treasury payment failed");
-        }
-
-        // Refund excess
         if (msg.value > (price.base + price.premium)) {
             payable(msg.sender).transfer(
                 msg.value - (price.base + price.premium)
@@ -242,18 +214,7 @@ contract TNSRegistrarController is
             revert InsufficientValue();
         }
 
-        uint256 expires;
-        if (address(nameWrapper) != address(0)) {
-            expires = nameWrapper.renew(tokenId, duration);
-        } else {
-            expires = base.renew(tokenId, duration);
-        }
-
-        // Send payment to treasury
-        if (price.base > 0) {
-            (bool sent, ) = treasury.call{value: price.base}("");
-            require(sent, "Treasury payment failed");
-        }
+        uint256 expires = nameWrapper.renew(tokenId, duration);
 
         if (msg.value > price.base) {
             payable(msg.sender).transfer(msg.value - price.base);
@@ -263,12 +224,7 @@ contract TNSRegistrarController is
     }
 
     function withdraw() public {
-        (bool sent, ) = treasury.call{value: address(this).balance}("");
-        require(sent, "Withdraw failed");
-    }
-
-    function setTreasury(address _treasury) external onlyOwner {
-        treasury = _treasury;
+        payable(owner()).transfer(address(this).balance);
     }
 
     function supportsInterface(
@@ -279,19 +235,15 @@ contract TNSRegistrarController is
             interfaceID == type(ITNSRegistrarController).interfaceId;
     }
 
-    /* Internal functions */
-
     function _consumeCommitment(
         string memory name,
         uint256 duration,
         bytes32 commitment
     ) internal {
-        // Require an old enough commitment.
         if (commitments[commitment] + minCommitmentAge > block.timestamp) {
             revert CommitmentTooNew(commitment);
         }
 
-        // If the commitment is too old, or the name is registered, stop
         if (commitments[commitment] + maxCommitmentAge <= block.timestamp) {
             revert CommitmentTooOld(commitment);
         }
@@ -312,7 +264,6 @@ contract TNSRegistrarController is
         bytes32 label,
         bytes[] calldata data
     ) internal {
-        // use hardcoded .trust namehash
         bytes32 nodehash = keccak256(abi.encodePacked(TRUST_NODE, label));
         Resolver resolver = Resolver(resolverAddress);
         resolver.multicallWithNodeCheck(nodehash, data);

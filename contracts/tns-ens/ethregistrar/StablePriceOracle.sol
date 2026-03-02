@@ -4,25 +4,24 @@ pragma solidity ~0.8.17;
 import "./IPriceOracle.sol";
 import "./StringUtils.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "./AggregatorInterface.sol";
 
-/**
- * @dev StablePriceOracle for TNS.
- * Adapted from ENS StablePriceOracle for TRUST token pricing.
- * Prices are in TRUST (native token) instead of USD.
- */
 contract StablePriceOracle is IPriceOracle, Ownable {
     using StringUtils for *;
 
-    // Rent prices in TRUST per year (in wei)
-    uint256 public price1Letter;
-    uint256 public price2Letter;
-    uint256 public price3Letter;
-    uint256 public price4Letter;
-    uint256 public price5Letter;
+    uint256 public immutable price1Letter;
+    uint256 public immutable price2Letter;
+    uint256 public immutable price3Letter;
+    uint256 public immutable price4Letter;
+    uint256 public immutable price5Letter;
+
+    AggregatorInterface public immutable usdOracle;
 
     event RentPriceChanged(uint256[] prices);
 
-    constructor(uint256[] memory _rentPrices) {
+    constructor(AggregatorInterface _usdOracle, uint256[] memory _rentPrices) {
+        usdOracle = _usdOracle;
         price1Letter = _rentPrices[0];
         price2Letter = _rentPrices[1];
         price3Letter = _rentPrices[2];
@@ -34,33 +33,29 @@ contract StablePriceOracle is IPriceOracle, Ownable {
         string calldata name,
         uint256 expires,
         uint256 duration
-    ) external view override returns (Price memory) {
+    ) external view override returns (IPriceOracle.Price memory) {
         uint256 len = name.strlen();
         uint256 basePrice;
 
         if (len >= 5) {
-            basePrice = price5Letter;
+            basePrice = price5Letter * duration;
         } else if (len == 4) {
-            basePrice = price4Letter;
+            basePrice = price4Letter * duration;
         } else if (len == 3) {
-            basePrice = price3Letter;
+            basePrice = price3Letter * duration;
         } else if (len == 2) {
-            basePrice = price2Letter;
+            basePrice = price2Letter * duration;
         } else {
-            basePrice = price1Letter;
+            basePrice = price1Letter * duration;
         }
 
         return
-            Price({
-                base: (basePrice * duration) / 365 days,
-                premium: _premium(name, expires, duration)
+            IPriceOracle.Price({
+                base: attoUSDToWei(basePrice),
+                premium: attoUSDToWei(_premium(name, expires, duration))
             });
     }
 
-    /**
-     * @dev Returns the premium price for a name.
-     * Can be overridden to add premium decay for recently expired names.
-     */
     function _premium(
         string memory name,
         uint256 expires,
@@ -69,19 +64,18 @@ contract StablePriceOracle is IPriceOracle, Ownable {
         return 0;
     }
 
-    function setPrices(uint256[] memory _rentPrices) external onlyOwner {
-        require(_rentPrices.length == 5, "Must provide 5 prices");
-        price1Letter = _rentPrices[0];
-        price2Letter = _rentPrices[1];
-        price3Letter = _rentPrices[2];
-        price4Letter = _rentPrices[3];
-        price5Letter = _rentPrices[4];
-        emit RentPriceChanged(_rentPrices);
+    function attoUSDToWei(uint256 amount) internal view returns (uint256) {
+        uint256 trustPrice = uint256(usdOracle.latestAnswer());
+        return (amount * 1e8) / trustPrice;
     }
 
     function supportsInterface(
         bytes4 interfaceID
     ) public view virtual returns (bool) {
-        return interfaceID == type(IPriceOracle).interfaceId;
+        return
+            interfaceID ==
+            type(IERC165).interfaceId ||
+            interfaceID ==
+            type(IPriceOracle).interfaceId;
     }
 }
