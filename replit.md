@@ -28,7 +28,7 @@ Core features include domain registration with a 2-step commit-reveal process, a
 - **NFT Metadata**: ERC-721 compliant metadata with dynamic SVG images and attributes like domain length, pricing tier, and dates.
 
 ### System Design Choices
-The smart contracts are forked from ENS, adapted for TRUST token payments on Intuition. This includes `TNSRegistry`, `TNSBaseRegistrar` (ERC-721), `TNSController` (with commit-reveal and TRUST payments), `TNSResolver`, `TNSReverseRegistrar`, `TNSPriceOracle` (tiered pricing), and `TNSPaymentForwarder`. Migrated domains are handled gracefully, ensuring address resolution and payment forwarding work even without resolver records.
+The smart contracts are exact clones of the audited ENS contracts (from `intuition-box/ens_ethregistrar-tns-diff` and `intuition-box/ens_root-tns-diff`), with only `ENS` → `TNS`, `.eth` → `.trust`, and TNS-specific pricing as changes. The contract set includes: `TNSRegistry`, `BaseRegistrarImplementation` (ERC-721), `TNSRegistrarController` (commit-reveal with `registerWithConfig`), `StablePriceOracle` (USD-based via Chainlink `AggregatorInterface`), `Root` (root node ownership with TLD locking), `ReverseRegistrar`, `Resolver`, and `PaymentForwarder`. Supporting contracts include `DummyOracle`, `SimplePriceOracle`, `SafeMath`, `StringUtils`, `Ownable`, and `Controllable`. Migrated domains are handled gracefully, ensuring address resolution and payment forwarding work even without resolver records.
 The frontend is built with React, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query, and Wouter. The backend uses Express.js and TypeScript, providing APIs for domain availability, registration, and user account management.
 
 ### Data Persistence

@@ -1,72 +1,38 @@
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity ^0.5.0;
 
 import "../registry/TNS.sol";
-import "./IBaseRegistrar.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
+import "./BaseRegistrar.sol";
 
-/**
- * @dev BaseRegistrarImplementation for TNS.
- * Exact port of ENS BaseRegistrarImplementation.
- */
-contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
+contract BaseRegistrarImplementation is BaseRegistrar, ERC721 {
     // A map of expiry times
-    mapping(uint256 => uint256) expiries;
-    // The TNS registry
-    TNS public tns;
-    // The namehash of the TLD this registrar owns (eg, .trust)
-    bytes32 public baseNode;
-    // A map of addresses that are authorised to register and renew names.
-    mapping(address => bool) public controllers;
-    uint256 public constant GRACE_PERIOD = 90 days;
-    bytes4 private constant INTERFACE_META_ID =
-        bytes4(keccak256("supportsInterface(bytes4)"));
-    bytes4 private constant ERC721_ID =
-        bytes4(
-            keccak256("balanceOf(address)") ^
-                keccak256("ownerOf(uint256)") ^
-                keccak256("approve(address,uint256)") ^
-                keccak256("getApproved(uint256)") ^
-                keccak256("setApprovalForAll(address,bool)") ^
-                keccak256("isApprovedForAll(address,address)") ^
-                keccak256("transferFrom(address,address,uint256)") ^
-                keccak256("safeTransferFrom(address,address,uint256)") ^
-                keccak256("safeTransferFrom(address,address,uint256,bytes)")
-        );
-    bytes4 private constant RECLAIM_ID =
-        bytes4(keccak256("reclaim(uint256,address)"));
+    mapping(uint256=>uint) expiries;
 
-    /**
-     * v2.1.3 version of _isApprovedOrOwner which calls ownerOf(tokenId) and takes grace period into consideration instead of ERC721.ownerOf(tokenId);
-     * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v2.1.3/contracts/token/ERC721/ERC721.sol#L187
-     * @dev Returns whether the given spender can transfer a given token ID
-     * @param spender address of the spender to query
-     * @param tokenId uint256 ID of the token to be transferred
-     * @return bool whether the msg.sender is approved for the given token ID,
-     *    is an operator of the owner, or is the owner of the token
-     */
-    function _isApprovedOrOwner(
-        address spender,
-        uint256 tokenId
-    ) internal view override returns (bool) {
-        address tokenOwner = ownerOf(tokenId);
-        return (spender == tokenOwner ||
-            getApproved(tokenId) == spender ||
-            isApprovedForAll(tokenOwner, spender));
-    }
+    bytes4 constant private INTERFACE_META_ID = bytes4(keccak256("supportsInterface(bytes4)"));
+    bytes4 constant private ERC721_ID = bytes4(
+        keccak256("balanceOf(address)") ^
+        keccak256("ownerOf(uint256)") ^
+        keccak256("approve(address,uint256)") ^
+        keccak256("getApproved(uint256)") ^
+        keccak256("setApprovalForAll(address,bool)") ^
+        keccak256("isApprovedForAll(address,address)") ^
+        keccak256("transferFrom(address,address,uint256)") ^
+        keccak256("safeTransferFrom(address,address,uint256)") ^
+        keccak256("safeTransferFrom(address,address,uint256,bytes)")
+    );
+    bytes4 constant private RECLAIM_ID = bytes4(keccak256("reclaim(uint256,address)"));
 
-    constructor(TNS _tns, bytes32 _baseNode) ERC721("Trust Name Service", "TNS") {
+    constructor(TNS _tns, bytes32 _baseNode) public {
         tns = _tns;
         baseNode = _baseNode;
     }
 
-    modifier live() {
+    modifier live {
         require(tns.owner(baseNode) == address(this));
         _;
     }
 
-    modifier onlyController() {
+    modifier onlyController {
         require(controllers[msg.sender]);
         _;
     }
@@ -77,39 +43,37 @@ contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
      * @param tokenId uint256 ID of the token to query the owner of
      * @return address currently marked as the owner of the given token ID
      */
-    function ownerOf(
-        uint256 tokenId
-    ) public view override(IERC721, ERC721) returns (address) {
-        require(expiries[tokenId] > block.timestamp);
+    function ownerOf(uint256 tokenId) public view returns (address) {
+        require(expiries[tokenId] > now);
         return super.ownerOf(tokenId);
     }
 
     // Authorises a controller, who can register and renew domains.
-    function addController(address controller) external override onlyOwner {
+    function addController(address controller) external onlyOwner {
         controllers[controller] = true;
         emit ControllerAdded(controller);
     }
 
     // Revoke controller permission for an address.
-    function removeController(address controller) external override onlyOwner {
+    function removeController(address controller) external onlyOwner {
         controllers[controller] = false;
         emit ControllerRemoved(controller);
     }
 
     // Set the resolver for the TLD this registrar manages.
-    function setResolver(address resolver) external override onlyOwner {
+    function setResolver(address resolver) external onlyOwner {
         tns.setResolver(baseNode, resolver);
     }
 
     // Returns the expiration timestamp of the specified id.
-    function nameExpires(uint256 id) external view override returns (uint256) {
+    function nameExpires(uint256 id) external view returns(uint) {
         return expiries[id];
     }
 
     // Returns true iff the specified name is available for registration.
-    function available(uint256 id) public view override returns (bool) {
+    function available(uint256 id) public view returns(bool) {
         // Not available if it's registered here or in its grace period.
-        return expiries[id] + GRACE_PERIOD < block.timestamp;
+        return expiries[id] + GRACE_PERIOD < now;
     }
 
     /**
@@ -118,12 +82,8 @@ contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
      * @param owner The address that should own the registration.
      * @param duration Duration in seconds for the registration.
      */
-    function register(
-        uint256 id,
-        address owner,
-        uint256 duration
-    ) external override returns (uint256) {
-        return _register(id, owner, duration, true);
+    function register(uint256 id, address owner, uint duration) external returns(uint) {
+      return _register(id, owner, duration, true);
     }
 
     /**
@@ -132,49 +92,32 @@ contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
      * @param owner The address that should own the registration.
      * @param duration Duration in seconds for the registration.
      */
-    function registerOnly(
-        uint256 id,
-        address owner,
-        uint256 duration
-    ) external returns (uint256) {
-        return _register(id, owner, duration, false);
+    function registerOnly(uint256 id, address owner, uint duration) external returns(uint) {
+      return _register(id, owner, duration, false);
     }
 
-    function _register(
-        uint256 id,
-        address owner,
-        uint256 duration,
-        bool updateRegistry
-    ) internal live onlyController returns (uint256) {
+    function _register(uint256 id, address owner, uint duration, bool updateRegistry) internal live onlyController returns(uint) {
         require(available(id));
-        require(
-            block.timestamp + duration + GRACE_PERIOD >
-                block.timestamp + GRACE_PERIOD
-        ); // Prevent future overflow
+        require(now + duration + GRACE_PERIOD > now + GRACE_PERIOD); // Prevent future overflow
 
-        expiries[id] = block.timestamp + duration;
-        if (_exists(id)) {
+        expiries[id] = now + duration;
+        if(_exists(id)) {
             // Name was previously owned, and expired
             _burn(id);
         }
         _mint(owner, id);
-        if (updateRegistry) {
+        if(updateRegistry) {
             tns.setSubnodeOwner(baseNode, bytes32(id), owner);
         }
 
-        emit NameRegistered(id, owner, block.timestamp + duration);
+        emit NameRegistered(id, owner, now + duration);
 
-        return block.timestamp + duration;
+        return now + duration;
     }
 
-    function renew(
-        uint256 id,
-        uint256 duration
-    ) external override live onlyController returns (uint256) {
-        require(expiries[id] + GRACE_PERIOD >= block.timestamp); // Name must be registered here or in grace period
-        require(
-            expiries[id] + duration + GRACE_PERIOD > duration + GRACE_PERIOD
-        ); // Prevent future overflow
+    function renew(uint256 id, uint duration) external live onlyController returns(uint) {
+        require(expiries[id] + GRACE_PERIOD >= now); // Name must be registered here or in grace period
+        require(expiries[id] + duration + GRACE_PERIOD > duration + GRACE_PERIOD); // Prevent future overflow
 
         expiries[id] += duration;
         emit NameRenewed(id, expiries[id]);
@@ -184,21 +127,14 @@ contract BaseRegistrarImplementation is ERC721, IBaseRegistrar, Ownable {
     /**
      * @dev Reclaim ownership of a name in TNS, if you own it in the registrar.
      */
-    function reclaim(uint256 id, address owner) external override live {
+    function reclaim(uint256 id, address owner) external live {
         require(_isApprovedOrOwner(msg.sender, id));
         tns.setSubnodeOwner(baseNode, bytes32(id), owner);
     }
 
-    function _exists(uint256 tokenId) internal view override returns (bool) {
-        return _ownerOf(tokenId) != address(0);
-    }
-
-    function supportsInterface(
-        bytes4 interfaceID
-    ) public view override(ERC721, IERC165) returns (bool) {
-        return
-            interfaceID == INTERFACE_META_ID ||
-            interfaceID == ERC721_ID ||
-            interfaceID == RECLAIM_ID;
+    function supportsInterface(bytes4 interfaceID) external view returns (bool) {
+        return interfaceID == INTERFACE_META_ID ||
+               interfaceID == ERC721_ID ||
+               interfaceID == RECLAIM_ID;
     }
 }

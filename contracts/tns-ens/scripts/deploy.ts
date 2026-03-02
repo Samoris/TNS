@@ -1,17 +1,18 @@
 import { ethers } from "hardhat";
 
 /**
- * TNS Deployment Script - Full ENS Port
- * Only change from ENS: .eth -> .trust
+ * TNS Deployment Script
+ * Exact port of ENS deployment with .eth -> .trust
  * 
  * Deployment Order:
  * 1. TNSRegistry
  * 2. BaseRegistrarImplementation
- * 3. ExponentialPremiumPriceOracle (with USD oracle)
- * 4. ReverseRegistrar
- * 5. Resolver
- * 6. TNSRegistrarController
- * 7. Post-deployment setup
+ * 3. DummyOracle (or real Chainlink AggregatorInterface)
+ * 4. StablePriceOracle
+ * 5. ReverseRegistrar
+ * 6. Root
+ * 7. TNSRegistrarController
+ * 8. Post-deployment setup
  */
 
 async function main() {
@@ -20,12 +21,12 @@ async function main() {
   console.log("Deploying contracts with account:", deployer.address);
   console.log("Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "TRUST");
   
-  const USD_ORACLE = process.env.USD_ORACLE_ADDRESS || ethers.ZeroAddress;
-  
+  // Calculate .trust node: keccak256(abi.encodePacked(bytes32(0), keccak256("trust")))
   const TRUST_LABEL = ethers.keccak256(ethers.toUtf8Bytes("trust"));
   const ROOT_NODE = ethers.ZeroHash;
   const TRUST_NODE = ethers.keccak256(ethers.solidityPacked(["bytes32", "bytes32"], [ROOT_NODE, TRUST_LABEL]));
   
+  // Calculate addr.reverse node
   const REVERSE_LABEL = ethers.keccak256(ethers.toUtf8Bytes("reverse"));
   const ADDR_LABEL = ethers.keccak256(ethers.toUtf8Bytes("addr"));
   const REVERSE_NODE = ethers.keccak256(ethers.solidityPacked(["bytes32", "bytes32"], [ROOT_NODE, REVERSE_LABEL]));
@@ -49,50 +50,53 @@ async function main() {
   await registrar.waitForDeployment();
   console.log("BaseRegistrarImplementation deployed to:", await registrar.getAddress());
   
-  // ===== 3. Deploy ExponentialPremiumPriceOracle =====
-  console.log("\n3. Deploying ExponentialPremiumPriceOracle...");
-  const rentPrices = [
-    ethers.parseEther("0"),     // 1 letter: unused (min 3 chars)
-    ethers.parseEther("0"),     // 2 letters: unused (min 3 chars)
-    ethers.parseUnits("640", 18),   // 3 letters: $640/year in attodollars
-    ethers.parseUnits("160", 18),   // 4 letters: $160/year in attodollars
-    ethers.parseUnits("5", 18),     // 5+ letters: $5/year in attodollars
-  ];
-  const startPremium = ethers.parseUnits("100000000", 18); // ~$100M USD start premium
-  const totalDays = 21; // 21 days of premium decay
-  const PriceOracle = await ethers.getContractFactory("ExponentialPremiumPriceOracle");
-  const priceOracle = await PriceOracle.deploy(USD_ORACLE, rentPrices, startPremium, totalDays);
-  await priceOracle.waitForDeployment();
-  console.log("ExponentialPremiumPriceOracle deployed to:", await priceOracle.getAddress());
+  // ===== 3. Deploy DummyOracle (TRUST/USD price) =====
+  console.log("\n3. Deploying DummyOracle...");
+  // Set TRUST price to $1 USD (1e8 format matching Chainlink 8-decimal standard)
+  const TRUST_USD_PRICE = 100000000; // $1.00 in 8-decimal format
+  const DummyOracle = await ethers.getContractFactory("DummyOracle");
+  const oracle = await DummyOracle.deploy(TRUST_USD_PRICE);
+  await oracle.waitForDeployment();
+  console.log("DummyOracle deployed to:", await oracle.getAddress());
   
-  // ===== 4. Deploy ReverseRegistrar =====
-  console.log("\n4. Deploying ReverseRegistrar...");
+  // ===== 4. Deploy StablePriceOracle =====
+  console.log("\n4. Deploying StablePriceOracle...");
+  // Prices in attodollars (1e-18 USD) per second
+  // ENS pricing structure adapted for TNS:
+  // 1 letter: not used (min 3 chars enforced by controller)
+  // 2 letters: not used (min 3 chars enforced by controller)
+  // 3 letters: 100 TRUST/year = 100e18 attodollars / 365.25 days
+  // 4 letters: 70 TRUST/year
+  // 5+ letters: 30 TRUST/year
+  const SECONDS_PER_YEAR = 31557600; // 365.25 days
+  const rentPrices = [
+    ethers.parseEther("1000").toString(),  // 1 letter: 1000 TRUST/year (unused)
+    ethers.parseEther("500").toString(),   // 2 letters: 500 TRUST/year (unused)
+    ethers.parseEther("100").toString(),   // 3 letters: 100 TRUST/year
+    ethers.parseEther("70").toString(),    // 4 letters: 70 TRUST/year
+    ethers.parseEther("30").toString(),    // 5+ letters: 30 TRUST/year
+  ];
+  // Convert to attodollars per second (rentPrices are per year)
+  const rentPricesPerSecond = rentPrices.map(p => (BigInt(p) / BigInt(SECONDS_PER_YEAR)).toString());
+  
+  const PriceOracle = await ethers.getContractFactory("StablePriceOracle");
+  const priceOracle = await PriceOracle.deploy(await oracle.getAddress(), rentPricesPerSecond);
+  await priceOracle.waitForDeployment();
+  console.log("StablePriceOracle deployed to:", await priceOracle.getAddress());
+  
+  // ===== 5. Deploy ReverseRegistrar =====
+  console.log("\n5. Deploying ReverseRegistrar...");
   const ReverseRegistrar = await ethers.getContractFactory("ReverseRegistrar");
   const reverseRegistrar = await ReverseRegistrar.deploy(await registry.getAddress());
   await reverseRegistrar.waitForDeployment();
   console.log("ReverseRegistrar deployed to:", await reverseRegistrar.getAddress());
   
-  // ===== 5. Deploy NameWrapper =====
-  console.log("\n5. Deploying NameWrapper...");
-  const NameWrapper = await ethers.getContractFactory("NameWrapper");
-  const nameWrapper = await NameWrapper.deploy(
-    await registry.getAddress(),
-    await registrar.getAddress(),
-    ""
-  );
-  await nameWrapper.waitForDeployment();
-  console.log("NameWrapper deployed to:", await nameWrapper.getAddress());
-  
-  // ===== 6. Deploy Resolver =====
-  console.log("\n6. Deploying Resolver...");
-  const Resolver = await ethers.getContractFactory("Resolver");
-  const resolver = await Resolver.deploy(
-    await registry.getAddress(),
-    ethers.ZeroAddress,
-    await reverseRegistrar.getAddress()
-  );
-  await resolver.waitForDeployment();
-  console.log("Resolver deployed to:", await resolver.getAddress());
+  // ===== 6. Deploy Root =====
+  console.log("\n6. Deploying Root...");
+  const Root = await ethers.getContractFactory("Root");
+  const root = await Root.deploy(await registry.getAddress());
+  await root.waitForDeployment();
+  console.log("Root deployed to:", await root.getAddress());
   
   // ===== 7. Deploy TNSRegistrarController =====
   console.log("\n7. Deploying TNSRegistrarController...");
@@ -101,10 +105,7 @@ async function main() {
     await registrar.getAddress(),
     await priceOracle.getAddress(),
     60,     // minCommitmentAge: 60 seconds
-    86400,  // maxCommitmentAge: 24 hours
-    await reverseRegistrar.getAddress(),
-    await nameWrapper.getAddress(),
-    await registry.getAddress()
+    86400   // maxCommitmentAge: 24 hours
   );
   await controller.waitForDeployment();
   console.log("TNSRegistrarController deployed to:", await controller.getAddress());
@@ -112,44 +113,44 @@ async function main() {
   // ===== POST-DEPLOYMENT SETUP =====
   console.log("\n=== Post-Deployment Setup ===");
   
-  console.log("8a. Creating .reverse TLD...");
-  let tx = await registry.setSubnodeOwner(ROOT_NODE, REVERSE_LABEL, deployer.address);
+  // 8a. Transfer root node ownership to Root contract
+  console.log("8a. Transferring root node to Root contract...");
+  let tx = await registry.setOwner(ROOT_NODE, await root.getAddress());
   await tx.wait();
   
-  console.log("8b. Creating addr.reverse node...");
+  // 8b. Set deployer as controller on Root
+  console.log("8b. Setting deployer as Root controller...");
+  tx = await root.setController(deployer.address, true);
+  await tx.wait();
+  
+  // 8c. Create .reverse TLD via Root
+  console.log("8c. Creating .reverse TLD...");
+  tx = await root.setSubnodeOwner(REVERSE_LABEL, deployer.address);
+  await tx.wait();
+  
+  // 8d. Set up addr.reverse node
+  console.log("8d. Creating addr.reverse node...");
   tx = await registry.setSubnodeOwner(REVERSE_NODE, ADDR_LABEL, await reverseRegistrar.getAddress());
   await tx.wait();
   
-  console.log("8c. Transferring .trust TLD to BaseRegistrar...");
-  tx = await registry.setSubnodeOwner(ROOT_NODE, TRUST_LABEL, await registrar.getAddress());
+  // 8e. Transfer .trust TLD to BaseRegistrar via Root
+  console.log("8e. Transferring .trust TLD to BaseRegistrar...");
+  tx = await root.setSubnodeOwner(TRUST_LABEL, await registrar.getAddress());
   await tx.wait();
   
-  console.log("8d. Adding Controller to BaseRegistrar...");
+  // 8f. Lock .trust TLD
+  console.log("8f. Locking .trust TLD...");
+  tx = await root.lock(TRUST_LABEL);
+  await tx.wait();
+  
+  // 8g. Add Controller to BaseRegistrar
+  console.log("8g. Adding Controller to BaseRegistrar...");
   tx = await registrar.addController(await controller.getAddress());
   await tx.wait();
   
-  console.log("8e. Adding Controller to NameWrapper...");
-  tx = await nameWrapper.setController(await controller.getAddress(), true);
-  await tx.wait();
-  
-  console.log("8f. Adding NameWrapper to BaseRegistrar as controller...");
-  tx = await registrar.addController(await nameWrapper.getAddress());
-  await tx.wait();
-  
-  console.log("8g. Setting Controller on ReverseRegistrar...");
+  // 8h. Set Controller on ReverseRegistrar
+  console.log("8h. Setting Controller on ReverseRegistrar...");
   tx = await reverseRegistrar.setController(await controller.getAddress(), true);
-  await tx.wait();
-  
-  console.log("8h. Setting default resolver on ReverseRegistrar...");
-  tx = await reverseRegistrar.setDefaultResolver(await resolver.getAddress());
-  await tx.wait();
-  
-  console.log("8i. Updating trusted controller in Resolver...");
-  tx = await resolver.setTrustedController(await controller.getAddress());
-  await tx.wait();
-  
-  console.log("8j. Setting resolver for .trust TLD...");
-  tx = await registrar.setResolver(await resolver.getAddress());
   await tx.wait();
   
   // ===== SUMMARY =====
@@ -157,20 +158,26 @@ async function main() {
   console.log("=== TNS Deployment Complete! ===");
   console.log("========================================");
   console.log("\nContract Addresses:");
-  console.log("TNSRegistry:                    ", await registry.getAddress());
-  console.log("BaseRegistrar:                  ", await registrar.getAddress());
-  console.log("ExponentialPremiumPriceOracle:   ", await priceOracle.getAddress());
-  console.log("NameWrapper:                    ", await nameWrapper.getAddress());
-  console.log("ReverseRegistrar:               ", await reverseRegistrar.getAddress());
-  console.log("Resolver:                       ", await resolver.getAddress());
-  console.log("TNSRegistrarController:         ", await controller.getAddress());
-  console.log("\nTRUST_NODE:                   ", TRUST_NODE);
+  console.log("TNSRegistry:              ", await registry.getAddress());
+  console.log("BaseRegistrar:            ", await registrar.getAddress());
+  console.log("DummyOracle:              ", await oracle.getAddress());
+  console.log("StablePriceOracle:        ", await priceOracle.getAddress());
+  console.log("ReverseRegistrar:         ", await reverseRegistrar.getAddress());
+  console.log("Root:                     ", await root.getAddress());
+  console.log("TNSRegistrarController:   ", await controller.getAddress());
+  console.log("\nTRUST_NODE:             ", TRUST_NODE);
   
+  // Verify deployment
   console.log("\n=== Verification ===");
   const trustOwner = await registry.owner(TRUST_NODE);
   console.log(".trust TLD owner:", trustOwner);
   console.log("Expected (BaseRegistrar):", await registrar.getAddress());
   console.log("Match:", trustOwner === await registrar.getAddress());
+  
+  const rootOwner = await registry.owner(ROOT_NODE);
+  console.log("Root node owner:", rootOwner);
+  console.log("Expected (Root contract):", await root.getAddress());
+  console.log("Match:", rootOwner === await root.getAddress());
 }
 
 main()

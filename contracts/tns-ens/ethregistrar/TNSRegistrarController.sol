@@ -1,284 +1,178 @@
-//SPDX-License-Identifier: MIT
-pragma solidity ~0.8.17;
+pragma solidity ^0.5.0;
 
-import {BaseRegistrarImplementation} from "./BaseRegistrarImplementation.sol";
-import {StringUtils} from "./StringUtils.sol";
-import {Resolver} from "../resolvers/Resolver.sol";
-import {TNS} from "../registry/TNS.sol";
-import {ReverseRegistrar} from "../reverseRegistrar/ReverseRegistrar.sol";
-import {ReverseClaimer} from "../reverseRegistrar/ReverseClaimer.sol";
-import {ITNSRegistrarController, IPriceOracle} from "./ITNSRegistrarController.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {INameWrapper} from "../wrapper/INameWrapper.sol";
-import {ERC20Recoverable} from "../utils/ERC20Recoverable.sol";
+import "./PriceOracle.sol";
+import "./BaseRegistrar.sol";
+import "./StringUtils.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "@ensdomains/resolver/contracts/Resolver.sol";
 
-error CommitmentTooNew(bytes32 commitment);
-error CommitmentTooOld(bytes32 commitment);
-error NameNotAvailable(string name);
-error DurationTooShort(uint256 duration);
-error ResolverRequiredWhenDataSupplied();
-error UnexpiredCommitmentExists(bytes32 commitment);
-error InsufficientValue();
-error Unauthorised(bytes32 node);
-error MaxCommitmentAgeTooLow();
-error MaxCommitmentAgeTooHigh();
-
-contract TNSRegistrarController is
-    Ownable,
-    ITNSRegistrarController,
-    IERC165,
-    ERC20Recoverable,
-    ReverseClaimer
-{
+/**
+ * @dev A registrar controller for registering and renewing names at fixed cost.
+ */
+contract TNSRegistrarController is Ownable {
     using StringUtils for *;
-    using Address for address;
 
-    uint256 public constant MIN_REGISTRATION_DURATION = 28 days;
-    bytes32 private constant TRUST_NODE =
-        0xe16bcebb9fdd78a351d48e8b8c0efa4a4d222509da29d80bcbb1e2b64eac4985;
-    uint64 private constant MAX_EXPIRY = type(uint64).max;
+    uint constant public MIN_REGISTRATION_DURATION = 28 days;
 
-    BaseRegistrarImplementation immutable base;
-    IPriceOracle public immutable prices;
-    uint256 public immutable minCommitmentAge;
-    uint256 public immutable maxCommitmentAge;
-    ReverseRegistrar public immutable reverseRegistrar;
-    INameWrapper public immutable nameWrapper;
-
-    mapping(bytes32 => uint256) public commitments;
-
-    event NameRegistered(
-        string name,
-        bytes32 indexed label,
-        address indexed owner,
-        uint256 baseCost,
-        uint256 premium,
-        uint256 expires
-    );
-    event NameRenewed(
-        string name,
-        bytes32 indexed label,
-        uint256 cost,
-        uint256 expires
+    bytes4 constant private INTERFACE_META_ID = bytes4(keccak256("supportsInterface(bytes4)"));
+    bytes4 constant private COMMITMENT_CONTROLLER_ID = bytes4(
+        keccak256("rentPrice(string,uint256)") ^
+        keccak256("available(string)") ^
+        keccak256("makeCommitment(string,address,bytes32)") ^
+        keccak256("commit(bytes32)") ^
+        keccak256("register(string,address,uint256,bytes32)") ^
+        keccak256("renew(string,uint256)")
     );
 
-    constructor(
-        BaseRegistrarImplementation _base,
-        IPriceOracle _prices,
-        uint256 _minCommitmentAge,
-        uint256 _maxCommitmentAge,
-        ReverseRegistrar _reverseRegistrar,
-        INameWrapper _nameWrapper,
-        TNS _tns
-    ) ReverseClaimer(_tns, msg.sender) {
-        if (_maxCommitmentAge <= _minCommitmentAge) {
-            revert MaxCommitmentAgeTooLow();
-        }
-        if (_maxCommitmentAge > block.timestamp) {
-            revert MaxCommitmentAgeTooHigh();
-        }
+    bytes4 constant private COMMITMENT_WITH_CONFIG_CONTROLLER_ID = bytes4(
+        keccak256("registerWithConfig(string,address,uint256,bytes32,address,address)") ^
+        keccak256("makeCommitmentWithConfig(string,address,bytes32,address,address)")
+    );
+
+    BaseRegistrar base;
+    PriceOracle prices;
+    uint public minCommitmentAge;
+    uint public maxCommitmentAge;
+
+    mapping(bytes32=>uint) public commitments;
+
+    event NameRegistered(string name, bytes32 indexed label, address indexed owner, uint cost, uint expires);
+    event NameRenewed(string name, bytes32 indexed label, uint cost, uint expires);
+    event NewPriceOracle(address indexed oracle);
+
+    constructor(BaseRegistrar _base, PriceOracle _prices, uint _minCommitmentAge, uint _maxCommitmentAge) public {
+        require(_maxCommitmentAge > _minCommitmentAge);
 
         base = _base;
         prices = _prices;
         minCommitmentAge = _minCommitmentAge;
         maxCommitmentAge = _maxCommitmentAge;
-        reverseRegistrar = _reverseRegistrar;
-        nameWrapper = _nameWrapper;
     }
 
-    function rentPrice(
-        string memory name,
-        uint256 duration
-    ) public view override returns (IPriceOracle.Price memory price) {
-        bytes32 label = keccak256(bytes(name));
-        price = prices.price(name, base.nameExpires(uint256(label)), duration);
+    function rentPrice(string memory name, uint duration) view public returns(uint) {
+        bytes32 hash = keccak256(bytes(name));
+        return prices.price(name, base.nameExpires(uint256(hash)), duration);
     }
 
-    function valid(string memory name) public pure returns (bool) {
+    function valid(string memory name) public pure returns(bool) {
         return name.strlen() >= 3;
     }
 
-    function available(string memory name) public view override returns (bool) {
+    function available(string memory name) public view returns(bool) {
         bytes32 label = keccak256(bytes(name));
         return valid(name) && base.available(uint256(label));
     }
 
-    function makeCommitment(
-        string memory name,
-        address owner,
-        uint256 duration,
-        bytes32 secret,
-        address resolver,
-        bytes[] calldata data,
-        bool reverseRecord,
-        uint16 ownerControlledFuses
-    ) public pure override returns (bytes32) {
+    function makeCommitment(string memory name, address owner, bytes32 secret) pure public returns(bytes32) {
+        return makeCommitmentWithConfig(name, owner, secret, address(0), address(0));
+    }
+
+    function makeCommitmentWithConfig(string memory name, address owner, bytes32 secret, address resolver, address addr) pure public returns(bytes32) {
         bytes32 label = keccak256(bytes(name));
-        if (data.length > 0 && resolver == address(0)) {
-            revert ResolverRequiredWhenDataSupplied();
+        if (resolver == address(0) && addr == address(0)) {
+            return keccak256(abi.encodePacked(label, owner, secret));
         }
-        return
-            keccak256(
-                abi.encode(
-                    label,
-                    owner,
-                    duration,
-                    secret,
-                    resolver,
-                    data,
-                    reverseRecord,
-                    ownerControlledFuses
-                )
-            );
+        require(resolver != address(0));
+        return keccak256(abi.encodePacked(label, owner, resolver, addr, secret));
     }
 
-    function commit(bytes32 commitment) public override {
-        if (commitments[commitment] + maxCommitmentAge >= block.timestamp) {
-            revert UnexpiredCommitmentExists(commitment);
-        }
-        commitments[commitment] = block.timestamp;
+    function commit(bytes32 commitment) public {
+        require(commitments[commitment] + maxCommitmentAge < now);
+        commitments[commitment] = now;
     }
 
-    function register(
-        string calldata name,
-        address owner,
-        uint256 duration,
-        bytes32 secret,
-        address resolver,
-        bytes[] calldata data,
-        bool reverseRecord,
-        uint16 ownerControlledFuses
-    ) public payable override {
-        IPriceOracle.Price memory price = rentPrice(name, duration);
-        if (msg.value < price.base + price.premium) {
-            revert InsufficientValue();
+    function register(string calldata name, address owner, uint duration, bytes32 secret) external payable {
+      registerWithConfig(name, owner, duration, secret, address(0), address(0));
+    }
+
+    function registerWithConfig(string memory name, address owner, uint duration, bytes32 secret, address resolver, address addr) public payable {
+        bytes32 commitment = makeCommitmentWithConfig(name, owner, secret, resolver, addr);
+        uint cost = _consumeCommitment(name, duration, commitment);
+
+        bytes32 label = keccak256(bytes(name));
+        uint256 tokenId = uint256(label);
+
+        uint expires;
+        if(resolver != address(0)) {
+            // Set this contract as the (temporary) owner, giving it
+            // permission to set up the resolver.
+            expires = base.register(tokenId, address(this), duration);
+
+            // The nodehash of this label
+            bytes32 nodehash = keccak256(abi.encodePacked(base.baseNode(), label));
+
+            // Set the resolver
+            base.tns().setResolver(nodehash, resolver);
+
+            // Configure the resolver
+            if (addr != address(0)) {
+                Resolver(resolver).setAddr(nodehash, addr);
+            }
+
+            // Now transfer full ownership to the expeceted owner
+            base.reclaim(tokenId, owner);
+            base.transferFrom(address(this), owner, tokenId);
+        } else {
+            require(addr == address(0));
+            expires = base.register(tokenId, owner, duration);
         }
 
-        _consumeCommitment(
-            name,
-            duration,
-            makeCommitment(
-                name,
-                owner,
-                duration,
-                secret,
-                resolver,
-                data,
-                reverseRecord,
-                ownerControlledFuses
-            )
-        );
+        emit NameRegistered(name, label, owner, cost, expires);
 
-        uint256 expires = nameWrapper.registerAndWrapETH2LD(
-            name,
-            owner,
-            duration,
-            resolver,
-            ownerControlledFuses
-        );
-
-        if (data.length > 0) {
-            _setRecords(resolver, keccak256(bytes(name)), data);
-        }
-
-        if (reverseRecord) {
-            _setReverseRecord(name, resolver, msg.sender);
-        }
-
-        emit NameRegistered(
-            name,
-            keccak256(bytes(name)),
-            owner,
-            price.base,
-            price.premium,
-            expires
-        );
-
-        if (msg.value > (price.base + price.premium)) {
-            payable(msg.sender).transfer(
-                msg.value - (price.base + price.premium)
-            );
+        // Refund any extra payment
+        if(msg.value > cost) {
+            msg.sender.transfer(msg.value - cost);
         }
     }
 
-    function renew(
-        string calldata name,
-        uint256 duration
-    ) external payable override {
-        bytes32 labelhash = keccak256(bytes(name));
-        uint256 tokenId = uint256(labelhash);
-        IPriceOracle.Price memory price = rentPrice(name, duration);
-        if (msg.value < price.base) {
-            revert InsufficientValue();
+    function renew(string calldata name, uint duration) external payable {
+        uint cost = rentPrice(name, duration);
+        require(msg.value >= cost);
+
+        bytes32 label = keccak256(bytes(name));
+        uint expires = base.renew(uint256(label), duration);
+
+        if(msg.value > cost) {
+            msg.sender.transfer(msg.value - cost);
         }
 
-        uint256 expires = nameWrapper.renew(tokenId, duration);
-
-        if (msg.value > price.base) {
-            payable(msg.sender).transfer(msg.value - price.base);
-        }
-
-        emit NameRenewed(name, labelhash, msg.value, expires);
+        emit NameRenewed(name, label, cost, expires);
     }
 
-    function withdraw() public {
-        payable(owner()).transfer(address(this).balance);
+    function setPriceOracle(PriceOracle _prices) public onlyOwner {
+        prices = _prices;
+        emit NewPriceOracle(address(prices));
     }
 
-    function supportsInterface(
-        bytes4 interfaceID
-    ) external pure returns (bool) {
-        return
-            interfaceID == type(IERC165).interfaceId ||
-            interfaceID == type(ITNSRegistrarController).interfaceId;
+    function setCommitmentAges(uint _minCommitmentAge, uint _maxCommitmentAge) public onlyOwner {
+        minCommitmentAge = _minCommitmentAge;
+        maxCommitmentAge = _maxCommitmentAge;
     }
 
-    function _consumeCommitment(
-        string memory name,
-        uint256 duration,
-        bytes32 commitment
-    ) internal {
-        if (commitments[commitment] + minCommitmentAge > block.timestamp) {
-            revert CommitmentTooNew(commitment);
-        }
-
-        if (commitments[commitment] + maxCommitmentAge <= block.timestamp) {
-            revert CommitmentTooOld(commitment);
-        }
-
-        if (!available(name)) {
-            revert NameNotAvailable(name);
-        }
-
-        delete (commitments[commitment]);
-
-        if (duration < MIN_REGISTRATION_DURATION) {
-            revert DurationTooShort(duration);
-        }
+    function withdraw() public onlyOwner {
+        msg.sender.transfer(address(this).balance);
     }
 
-    function _setRecords(
-        address resolverAddress,
-        bytes32 label,
-        bytes[] calldata data
-    ) internal {
-        bytes32 nodehash = keccak256(abi.encodePacked(TRUST_NODE, label));
-        Resolver resolver = Resolver(resolverAddress);
-        resolver.multicallWithNodeCheck(nodehash, data);
+    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
+        return interfaceID == INTERFACE_META_ID ||
+               interfaceID == COMMITMENT_CONTROLLER_ID ||
+               interfaceID == COMMITMENT_WITH_CONFIG_CONTROLLER_ID;
     }
 
-    function _setReverseRecord(
-        string memory name,
-        address resolver,
-        address owner
-    ) internal {
-        reverseRegistrar.setNameForAddr(
-            msg.sender,
-            owner,
-            resolver,
-            string.concat(name, ".trust")
-        );
+    function _consumeCommitment(string memory name, uint duration, bytes32 commitment) internal returns (uint256) {
+        // Require a valid commitment
+        require(commitments[commitment] + minCommitmentAge <= now);
+
+        // If the commitment is too old, or the name is registered, stop
+        require(commitments[commitment] + maxCommitmentAge > now);
+        require(available(name));
+
+        delete(commitments[commitment]);
+
+        uint cost = rentPrice(name, duration);
+        require(duration >= MIN_REGISTRATION_DURATION);
+        require(msg.value >= cost);
+
+        return cost;
     }
 }
