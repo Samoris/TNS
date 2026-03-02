@@ -1,0 +1,13 @@
+{
+  "name": "DummyOracle",
+  "address": "0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb",
+  "contractPath": "ethregistrar/contracts/DummyOracle.sol",
+  "contractName": "DummyOracle",
+  "compilerVersion": "0.8.17",
+  "optimizerEnabled": true,
+  "optimizerRuns": 200,
+  "constructorArgs": [
+    100000000
+  ],
+  "standardJsonInputFile": "DummyOracle_standard_input.json"
+}

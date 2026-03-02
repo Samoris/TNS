@@ -1,0 +1,15 @@
+{
+  "name": "BaseRegistrarImplementation",
+  "address": "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4",
+  "contractPath": "ethregistrar/contracts/BaseRegistrarImplementation.sol",
+  "contractName": "BaseRegistrarImplementation",
+  "compilerVersion": "0.5.17",
+  "optimizerEnabled": true,
+  "optimizerRuns": 200,
+  "constructorArgs": [
+    "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
+    "0xe16bcebb9fdd78a351d48e8b8c0efa4a4d222509da29d80bcbb1e2b64eac4985",
+    0
+  ],
+  "standardJsonInputFile": "BaseRegistrarImplementation_standard_input.json"
+}

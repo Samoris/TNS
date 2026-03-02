@@ -53,6 +53,9 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+  sourcify: {
+    enabled: true,
+  },
   paths: {
     sources: "./",
     tests: "./test",

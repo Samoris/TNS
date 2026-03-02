@@ -1,0 +1,20 @@
+{
+  "name": "StablePriceOracle",
+  "address": "0x6F258639D183Fb7955B93d086FA9300eED79383A",
+  "contractPath": "ethregistrar/contracts/StablePriceOracle.sol",
+  "contractName": "StablePriceOracle",
+  "compilerVersion": "0.5.17",
+  "optimizerEnabled": true,
+  "optimizerRuns": 200,
+  "constructorArgs": [
+    "0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb",
+    [
+      "31688087814028",
+      "15844043907014",
+      "3168808781402",
+      "2218166146982",
+      "950642634420"
+    ]
+  ],
+  "standardJsonInputFile": "StablePriceOracle_standard_input.json"
+}

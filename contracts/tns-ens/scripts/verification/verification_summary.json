@@ -1,0 +1,132 @@
+[
+  {
+    "name": "TNSRegistry",
+    "address": "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
+    "contractPath": "registry/TNSRegistry.sol",
+    "contractName": "TNSRegistry",
+    "compilerVersion": "0.8.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [],
+    "standardJsonInputFile": "TNSRegistry_standard_input.json"
+  },
+  {
+    "name": "BaseRegistrarImplementation",
+    "address": "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4",
+    "contractPath": "ethregistrar/contracts/BaseRegistrarImplementation.sol",
+    "contractName": "BaseRegistrarImplementation",
+    "compilerVersion": "0.5.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
+      "0xe16bcebb9fdd78a351d48e8b8c0efa4a4d222509da29d80bcbb1e2b64eac4985",
+      0
+    ],
+    "standardJsonInputFile": "BaseRegistrarImplementation_standard_input.json"
+  },
+  {
+    "name": "DummyOracle",
+    "address": "0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb",
+    "contractPath": "ethregistrar/contracts/DummyOracle.sol",
+    "contractName": "DummyOracle",
+    "compilerVersion": "0.8.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      100000000
+    ],
+    "standardJsonInputFile": "DummyOracle_standard_input.json"
+  },
+  {
+    "name": "StablePriceOracle",
+    "address": "0x6F258639D183Fb7955B93d086FA9300eED79383A",
+    "contractPath": "ethregistrar/contracts/StablePriceOracle.sol",
+    "contractName": "StablePriceOracle",
+    "compilerVersion": "0.5.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb",
+      [
+        "31688087814028",
+        "15844043907014",
+        "3168808781402",
+        "2218166146982",
+        "950642634420"
+      ]
+    ],
+    "standardJsonInputFile": "StablePriceOracle_standard_input.json"
+  },
+  {
+    "name": "ReverseRegistrar",
+    "address": "0x78Cd4f5149060De05a84040283812b0c056972eD",
+    "contractPath": "reverseRegistrar/ReverseRegistrar.sol",
+    "contractName": "ReverseRegistrar",
+    "compilerVersion": "0.8.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99"
+    ],
+    "standardJsonInputFile": "ReverseRegistrar_standard_input.json"
+  },
+  {
+    "name": "Root",
+    "address": "0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75",
+    "contractPath": "root/Root.sol",
+    "contractName": "Root",
+    "compilerVersion": "0.4.26",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
+      "0x0000000000000000000000000000000000000000",
+      "0xDC1DE801d1a38cBCFBc91Ca019c0F2fCcAf1AD14"
+    ],
+    "standardJsonInputFile": "Root_standard_input.json"
+  },
+  {
+    "name": "TNSRegistrarController",
+    "address": "0xeA6469B9B917F06499807509ED2d1223cA85E1f9",
+    "contractPath": "ethregistrar/contracts/ETHRegistrarController.sol",
+    "contractName": "TNSRegistrarController",
+    "compilerVersion": "0.5.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4",
+      "0x6F258639D183Fb7955B93d086FA9300eED79383A",
+      "0x629A5386F73283F80847154d16E359192a891f86"
+    ],
+    "standardJsonInputFile": "TNSRegistrarController_standard_input.json"
+  },
+  {
+    "name": "Resolver",
+    "address": "0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5",
+    "contractPath": "resolvers/Resolver.sol",
+    "contractName": "Resolver",
+    "compilerVersion": "0.8.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
+      "0xeA6469B9B917F06499807509ED2d1223cA85E1f9",
+      "0x78Cd4f5149060De05a84040283812b0c056972eD"
+    ],
+    "standardJsonInputFile": "Resolver_standard_input.json"
+  },
+  {
+    "name": "PaymentForwarder",
+    "address": "0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F",
+    "contractPath": "utils/PaymentForwarder.sol",
+    "contractName": "PaymentForwarder",
+    "compilerVersion": "0.8.17",
+    "optimizerEnabled": true,
+    "optimizerRuns": 200,
+    "constructorArgs": [
+      "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99"
+    ],
+    "standardJsonInputFile": "PaymentForwarder_standard_input.json"
+  }
+]
