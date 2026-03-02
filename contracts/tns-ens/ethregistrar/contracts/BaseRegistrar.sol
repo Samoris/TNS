@@ -1,11 +1,12 @@
 pragma solidity >=0.4.24;
 
 import "@ensdomains/ens/contracts/ENS.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
+import "@ensdomains/ens/contracts/HashRegistrar.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract BaseRegistrar is IERC721, Ownable {
-    uint constant public GRACE_PERIOD = 90 days;
+contract BaseRegistrar is ERC721, Ownable {
+    uint constant public GRACE_PERIOD = 30 days;
 
     event ControllerAdded(address indexed controller);
     event ControllerRemoved(address indexed controller);
@@ -13,11 +14,17 @@ contract BaseRegistrar is IERC721, Ownable {
     event NameRegistered(uint256 indexed id, address indexed owner, uint expires);
     event NameRenewed(uint256 indexed id, uint expires);
 
-    // The TNS registry
-    TNS public tns;
+    // Expiration timestamp for migrated domains.
+    uint public transferPeriodEnds;
 
-    // The namehash of the TLD this registrar owns (eg, .trust)
+    // The ENS registry
+    ENS public ens;
+
+    // The namehash of the TLD this registrar owns (eg, .eth)
     bytes32 public baseNode;
+
+    // The interim registrar
+    HashRegistrar public previousRegistrar;
 
     // A map of addresses that are authorised to register and renew names.
     mapping(address=>bool) public controllers;
@@ -27,9 +34,6 @@ contract BaseRegistrar is IERC721, Ownable {
 
     // Revoke controller permission for an address.
     function removeController(address controller) external;
-
-    // Set the resolver for the TLD this registrar manages.
-    function setResolver(address resolver) external;
 
     // Returns the expiration timestamp of the specified label hash.
     function nameExpires(uint256 id) external view returns(uint);
@@ -45,7 +49,13 @@ contract BaseRegistrar is IERC721, Ownable {
     function renew(uint256 id, uint duration) external returns(uint);
 
     /**
-     * @dev Reclaim ownership of a name in TNS, if you own it in the registrar.
+     * @dev Reclaim ownership of a name in ENS, if you own it in the registrar.
      */
-    function reclaim(uint256 id, address owner) external;
+    function reclaim(uint256 id) external;
+
+    /**
+     * @dev Transfers a registration from the initial registrar.
+     * This function is called by the initial registrar when a user calls `transferRegistrars`.
+     */
+    function acceptRegistrarTransfer(bytes32 label, Deed deed, uint) external;
 }
