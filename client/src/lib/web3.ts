@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { TNS_RESOLVER_ADDRESS, TNS_CONTROLLER_ADDRESS } from "./contracts";
+import { TNS_RESOLVER_ADDRESS, TNS_CONTROLLER_ADDRESS, TNS_REGISTRY_ADDRESS } from "./contracts";
 
 export interface NetworkConfig {
   chainId: number;
@@ -1402,6 +1402,39 @@ export class Web3Service {
   }
 
   /**
+   * Ensure the domain has its resolver set in the Registry.
+   * If not set, prompts a transaction to set it before proceeding.
+   */
+  public async ensureResolverSet(domainName: string): Promise<void> {
+    const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
+    const fullDomain = `${normalizedDomain}.trust`;
+    const node = this.namehash(fullDomain);
+
+    const provider = new ethers.BrowserProvider(this.getProvider()! as any);
+    const registryAbi = ["function resolver(bytes32 node) view returns (address)"];
+    const registry = new ethers.Contract(TNS_REGISTRY_ADDRESS, registryAbi, provider);
+    const currentResolver = await registry.resolver(node);
+
+    if (currentResolver === ethers.ZeroAddress) {
+      console.log("Resolver not set in Registry for", fullDomain, "— setting to", TNS_RESOLVER_ADDRESS);
+      const signer = await provider.getSigner();
+      const setResolverAbi = ["function setResolver(bytes32 node, address resolver)"];
+      const registryWithSigner = new ethers.Contract(TNS_REGISTRY_ADDRESS, setResolverAbi, signer);
+      const tx = await registryWithSigner.setResolver(node, TNS_RESOLVER_ADDRESS, {
+        gasLimit: 100000
+      });
+      console.log("setResolver transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) {
+        throw new Error("setResolver transaction receipt not received");
+      }
+      console.log("Resolver set in Registry for", fullDomain, "tx:", receipt.hash);
+    } else {
+      console.log("Resolver already set for", fullDomain, ":", currentResolver);
+    }
+  }
+
+  /**
    * Set the resolver contract for a domain (Registry function)
    */
   public async setResolver(registryAddress: string, registryAbi: any[], domainName: string, resolverAddress: string): Promise<string> {
@@ -1416,13 +1449,16 @@ export class Web3Service {
 
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
-      console.log("Setting resolver for domain:", normalizedDomain, "to", resolverAddress);
+      const fullDomain = `${normalizedDomain}.trust`;
+      const node = this.namehash(fullDomain);
+      console.log("Setting resolver for domain:", fullDomain, "node:", node, "to", resolverAddress);
 
       const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(registryAddress, registryAbi, signer);
+      const registryAbiWithNode = ["function setResolver(bytes32 node, address resolver)"];
+      const contract = new ethers.Contract(registryAddress, registryAbiWithNode, signer);
 
-      const tx = await contract.setResolver(normalizedDomain, resolverAddress, {
+      const tx = await contract.setResolver(node, resolverAddress, {
         gasLimit: 100000
       });
 
@@ -1450,12 +1486,15 @@ export class Web3Service {
 
     try {
       const provider = new ethers.BrowserProvider(this.getProvider()! as any);
-      const contract = new ethers.Contract(registryAddress, registryAbi, provider);
+      const registryAbiWithNode = ["function resolver(bytes32 node) view returns (address)"];
+      const contract = new ethers.Contract(registryAddress, registryAbiWithNode, provider);
 
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
-      const resolverAddress = await contract.resolver(normalizedDomain);
+      const fullDomain = `${normalizedDomain}.trust`;
+      const node = this.namehash(fullDomain);
+      const resolverAddress = await contract.resolver(node);
 
-      console.log("Resolver for", normalizedDomain, ":", resolverAddress);
+      console.log("Resolver for", fullDomain, ":", resolverAddress);
       return resolverAddress;
     } catch (error: any) {
       console.error("Get resolver error:", error);
@@ -1482,6 +1521,8 @@ export class Web3Service {
       const node = this.namehash(fullDomain);
       
       console.log("Setting address for domain:", fullDomain, "node:", node, "to", address);
+
+      await this.ensureResolverSet(domainName);
 
       const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
@@ -1555,6 +1596,8 @@ export class Web3Service {
       
       console.log("Setting text record for domain:", fullDomain, "node:", node, "key:", key, "value:", value);
 
+      await this.ensureResolverSet(domainName);
+
       const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
@@ -1620,16 +1663,20 @@ export class Web3Service {
 
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
-      console.log("Setting contenthash for domain:", normalizedDomain);
+      const fullDomain = `${normalizedDomain}.trust`;
+      const node = this.namehash(fullDomain);
+      console.log("Setting contenthash for domain:", fullDomain, "node:", node);
+
+      await this.ensureResolverSet(domainName);
 
       const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(resolverAddress, resolverAbi, signer);
+      const resolverAbiWithNode = ["function setContenthash(bytes32 node, bytes hash)"];
+      const contract = new ethers.Contract(resolverAddress, resolverAbiWithNode, signer);
 
-      // Convert hex string to bytes if needed
       const hashBytes = contenthash.startsWith('0x') ? contenthash : '0x' + contenthash;
 
-      const tx = await contract.setContenthash(normalizedDomain, hashBytes, {
+      const tx = await contract.setContenthash(node, hashBytes, {
         gasLimit: 150000
       });
 
