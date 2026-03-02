@@ -94,7 +94,13 @@ async function main() {
   // ===== 6. Deploy Root =====
   console.log("\n6. Deploying Root...");
   const Root = await ethers.getContractFactory("Root");
-  const root = await Root.deploy(await registry.getAddress());
+  // Root(TNS _tns, DNSSEC _oracle, address _registrar)
+  // For TNS deployment: use zero address for DNSSEC oracle (not used), deployer as registrar
+  const root = await Root.deploy(
+    await registry.getAddress(),
+    ethers.ZeroAddress,       // DNSSEC oracle (not used for TNS)
+    deployer.address          // registrar fallback address
+  );
   await root.waitForDeployment();
   console.log("Root deployed to:", await root.getAddress());
   
@@ -118,38 +124,28 @@ async function main() {
   let tx = await registry.setOwner(ROOT_NODE, await root.getAddress());
   await tx.wait();
   
-  // 8b. Set deployer as controller on Root
-  console.log("8b. Setting deployer as Root controller...");
-  tx = await root.setController(deployer.address, true);
-  await tx.wait();
-  
-  // 8c. Create .reverse TLD via Root
-  console.log("8c. Creating .reverse TLD...");
+  // 8b. Create .reverse TLD via Root (onlyOwner)
+  console.log("8b. Creating .reverse TLD...");
   tx = await root.setSubnodeOwner(REVERSE_LABEL, deployer.address);
   await tx.wait();
   
-  // 8d. Set up addr.reverse node
-  console.log("8d. Creating addr.reverse node...");
+  // 8c. Set up addr.reverse node
+  console.log("8c. Creating addr.reverse node...");
   tx = await registry.setSubnodeOwner(REVERSE_NODE, ADDR_LABEL, await reverseRegistrar.getAddress());
   await tx.wait();
   
-  // 8e. Transfer .trust TLD to BaseRegistrar via Root
-  console.log("8e. Transferring .trust TLD to BaseRegistrar...");
+  // 8d. Transfer .trust TLD to BaseRegistrar via Root (onlyOwner)
+  console.log("8d. Transferring .trust TLD to BaseRegistrar...");
   tx = await root.setSubnodeOwner(TRUST_LABEL, await registrar.getAddress());
   await tx.wait();
   
-  // 8f. Lock .trust TLD
-  console.log("8f. Locking .trust TLD...");
-  tx = await root.lock(TRUST_LABEL);
-  await tx.wait();
-  
-  // 8g. Add Controller to BaseRegistrar
-  console.log("8g. Adding Controller to BaseRegistrar...");
+  // 8e. Add Controller to BaseRegistrar
+  console.log("8e. Adding Controller to BaseRegistrar...");
   tx = await registrar.addController(await controller.getAddress());
   await tx.wait();
   
-  // 8h. Set Controller on ReverseRegistrar
-  console.log("8h. Setting Controller on ReverseRegistrar...");
+  // 8f. Set Controller on ReverseRegistrar
+  console.log("8f. Setting Controller on ReverseRegistrar...");
   tx = await reverseRegistrar.setController(await controller.getAddress(), true);
   await tx.wait();
   

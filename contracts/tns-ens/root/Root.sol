@@ -1,38 +1,112 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.4.24;
 
 import "@ensdomains/ens/contracts/ENS.sol";
+import "@ensdomains/dnssec-oracle/contracts/DNSSEC.sol";
+import "@ensdomains/dnssec-oracle/contracts/BytesUtils.sol";
+import "@ensdomains/dnsregistrar/contracts/DNSClaimChecker.sol";
+import "@ensdomains/buffer/contracts/Buffer.sol";
 import "./Ownable.sol";
-import "./Controllable.sol";
 
-contract Root is Ownable, Controllable {
-    bytes32 constant private ROOT_NODE = bytes32(0);
+contract Root is Ownable {
 
-    bytes4 constant private INTERFACE_META_ID = bytes4(keccak256("supportsInterface(bytes4)"));
+    using BytesUtils for bytes;
+    using Buffer for Buffer.buffer;
 
-    event TLDLocked(bytes32 indexed label);
+    bytes32 public constant ROOT_NODE = bytes32(0);
+    bytes32 public constant TRUST_NODE = keccak256("trust");
+
+    uint16 constant public CLASS_INET = 1;
+    uint16 constant public TYPE_TXT = 16;
+    uint16 constant public TYPE_SOA = 6;
 
     TNS public tns;
-    mapping(bytes32=>bool) public locked;
+    DNSSEC public oracle;
 
-    constructor(TNS _tns) public {
+    address public registrar;
+
+    event TLDRegistered(bytes32 indexed node, address indexed registrar);
+    event RegistrarChanged(address indexed registrar);
+
+    constructor(TNS _tns, DNSSEC _oracle, address _registrar) public {
         tns = _tns;
+        oracle = _oracle;
+        registrar = _registrar;
     }
 
-    function setSubnodeOwner(bytes32 label, address owner) external onlyController {
-        require(!locked[label]);
+    function proveAndRegisterTLD(bytes name, bytes input, bytes proof) external {
+        registerTLD(name, oracle.submitRRSets(input, proof));
+    }
+
+    function setSubnodeOwner(bytes32 label, address owner) external onlyOwner {
         tns.setSubnodeOwner(ROOT_NODE, label, owner);
     }
 
-    function setResolver(address resolver) external onlyOwner {
-        tns.setResolver(ROOT_NODE, resolver);
+    function setRegistrar(address _registrar) external onlyOwner {
+        require(_registrar != address(0x0));
+        registrar = _registrar;
+        emit RegistrarChanged(registrar);
     }
 
-    function lock(bytes32 label) external onlyOwner {
-        emit TLDLocked(label);
-        locked[label] = true;
+    function registerTLD(bytes name, bytes proof) public {
+        bytes32 label = getLabel(name);
+
+        address addr = getAddress(name, proof);
+        require(tns.owner(keccak256(ROOT_NODE, label)) != addr);
+        require(label != TRUST_NODE);
+
+        tns.setSubnodeOwner(ROOT_NODE, label, addr);
+        emit TLDRegistered(keccak256(ROOT_NODE, label), addr);
     }
 
-    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
-        return interfaceID == INTERFACE_META_ID;
+    function setResolver(bytes32 node, address resolver) public onlyOwner {
+        tns.setResolver(node, resolver);
+    }
+
+    function setOwner(bytes32 node, address owner) public onlyOwner {
+        tns.setOwner(node, owner);
+    }
+
+    function setTTL(bytes32 node, uint64 ttl) public onlyOwner {
+        tns.setTTL(node, ttl);
+    }
+
+    function getLabel(bytes memory name) internal view returns (bytes32) {
+        uint len = name.readUint8(0);
+
+        require(name.length == len + 2);
+
+        return name.keccak(1, len);
+    }
+
+    function getAddress(bytes name, bytes proof) internal view returns (address) {
+        // Add "nic." to the front of the name.
+        Buffer.buffer memory buf;
+        buf.init(name.length + 4);
+        buf.append("\x03nic");
+        buf.append(name);
+
+        address addr;
+        bool found;
+        (addr, found) = DNSClaimChecker.getOwnerAddress(oracle, buf.buf, proof);
+        if (!found) {
+            // If there is no TXT record, we ensure that the TLD actually exists with a SOA record.
+            // This prevents registering bogus TLDs.
+            require(getSOAHash(buf.buf) != bytes20(0));
+            return registrar;
+        }
+
+        return addr;
+    }
+
+    function getSOAHash(bytes name) internal view returns (bytes20) {
+        Buffer.buffer memory buf;
+        buf.init(name.length + 5);
+        buf.append("\x04_tns");
+        buf.append(name);
+
+        bytes20 hash;
+        (,, hash) = oracle.rrdata(TYPE_SOA, buf.buf);
+
+        return hash;
     }
 }
