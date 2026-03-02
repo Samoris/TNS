@@ -1531,7 +1531,7 @@ export class Web3Service {
       const contract = new ethers.Contract(resolverAddress, resolverAbiWithNode, signer);
 
       const tx = await contract.setAddr(node, address, {
-        gasLimit: 100000
+        gasLimit: 300000
       });
 
       console.log("Set address transaction sent:", tx.hash);
@@ -1605,7 +1605,7 @@ export class Web3Service {
       const contract = new ethers.Contract(resolverAddress, resolverAbiWithNode, signer);
 
       const tx = await contract.setText(node, key, value, {
-        gasLimit: 150000
+        gasLimit: 500000
       });
 
       console.log("Set text transaction sent:", tx.hash);
@@ -1677,7 +1677,7 @@ export class Web3Service {
       const hashBytes = contenthash.startsWith('0x') ? contenthash : '0x' + contenthash;
 
       const tx = await contract.setContenthash(node, hashBytes, {
-        gasLimit: 150000
+        gasLimit: 500000
       });
 
       console.log("Set contenthash transaction sent:", tx.hash);
