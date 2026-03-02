@@ -106,12 +106,13 @@ async function main() {
   
   // ===== 7. Deploy TNSRegistrarController =====
   console.log("\n7. Deploying TNSRegistrarController...");
+  const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS || deployer.address;
+  console.log("Treasury address:", TREASURY_ADDRESS);
   const Controller = await ethers.getContractFactory("TNSRegistrarController");
   const controller = await Controller.deploy(
     await registrar.getAddress(),
     await priceOracle.getAddress(),
-    60,     // minCommitmentAge: 60 seconds
-    86400   // maxCommitmentAge: 24 hours
+    TREASURY_ADDRESS
   );
   await controller.waitForDeployment();
   console.log("TNSRegistrarController deployed to:", await controller.getAddress());

@@ -17,16 +17,19 @@ contract TNSRegistrarController is Ownable {
 
     BaseRegistrar base;
     PriceOracle prices;
+    address payable public treasury;
 
     mapping(bytes32=>uint) public commitments;
 
     event NameRegistered(string name, address indexed owner, uint cost, uint expires);
     event NameRenewed(string name, uint cost, uint expires);
     event NewPriceOracle(address indexed oracle);
+    event NewTreasury(address indexed treasury);
 
-    constructor(BaseRegistrar _base, PriceOracle _prices) public {
+    constructor(BaseRegistrar _base, PriceOracle _prices, address payable _treasury) public {
         base = _base;
         prices = _prices;
+        treasury = _treasury;
     }
 
     function rentPrice(string memory name, uint duration) view public returns(uint) {
@@ -97,7 +100,12 @@ contract TNSRegistrarController is Ownable {
         emit NewPriceOracle(address(prices));
     }
 
+    function setTreasury(address payable _treasury) public onlyOwner {
+        treasury = _treasury;
+        emit NewTreasury(_treasury);
+    }
+
     function withdraw() public onlyOwner {
-        msg.sender.transfer(address(this).balance);
+        treasury.transfer(address(this).balance);
     }
 }
