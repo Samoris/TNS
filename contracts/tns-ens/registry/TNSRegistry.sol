@@ -1,21 +1,20 @@
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity ^0.7.0;
 
 import "./TNS.sol";
 
 /**
  * The TNS registry contract.
- * Exact port of ENS Registry for Trust Name Service.
  */
 contract TNSRegistry is TNS {
+
     struct Record {
         address owner;
         address resolver;
         uint64 ttl;
     }
 
-    mapping(bytes32 => Record) records;
-    mapping(address => mapping(address => bool)) operators;
+    mapping (bytes32 => Record) records;
+    mapping (address => mapping(address => bool)) operators;
 
     // Permits modifications only by the owner of the specified node.
     modifier authorised(bytes32 node) {
@@ -25,102 +24,78 @@ contract TNSRegistry is TNS {
     }
 
     /**
-     * @dev Constructs a new TNS registry.
+     * @dev Constructs a new TNS registrar.
      */
-    constructor() {
+    constructor() public {
         records[0x0].owner = msg.sender;
     }
 
     /**
      * @dev Sets the record for a node.
      * @param node The node to update.
-     * @param _owner The address of the new owner.
-     * @param _resolver The address of the resolver.
-     * @param _ttl The TTL in seconds.
+     * @param owner The address of the new owner.
+     * @param resolver The address of the resolver.
+     * @param ttl The TTL in seconds.
      */
-    function setRecord(
-        bytes32 node,
-        address _owner,
-        address _resolver,
-        uint64 _ttl
-    ) external virtual override {
-        setOwner(node, _owner);
-        _setResolverAndTTL(node, _resolver, _ttl);
+    function setRecord(bytes32 node, address owner, address resolver, uint64 ttl) external virtual override {
+        setOwner(node, owner);
+        _setResolverAndTTL(node, resolver, ttl);
     }
 
     /**
      * @dev Sets the record for a subnode.
      * @param node The parent node.
      * @param label The hash of the label specifying the subnode.
-     * @param _owner The address of the new owner.
-     * @param _resolver The address of the resolver.
-     * @param _ttl The TTL in seconds.
+     * @param owner The address of the new owner.
+     * @param resolver The address of the resolver.
+     * @param ttl The TTL in seconds.
      */
-    function setSubnodeRecord(
-        bytes32 node,
-        bytes32 label,
-        address _owner,
-        address _resolver,
-        uint64 _ttl
-    ) external virtual override {
-        bytes32 subnode = setSubnodeOwner(node, label, _owner);
-        _setResolverAndTTL(subnode, _resolver, _ttl);
+    function setSubnodeRecord(bytes32 node, bytes32 label, address owner, address resolver, uint64 ttl) external virtual override {
+        bytes32 subnode = setSubnodeOwner(node, label, owner);
+        _setResolverAndTTL(subnode, resolver, ttl);
     }
 
     /**
      * @dev Transfers ownership of a node to a new address. May only be called by the current owner of the node.
      * @param node The node to transfer ownership of.
-     * @param _owner The address of the new owner.
+     * @param owner The address of the new owner.
      */
-    function setOwner(
-        bytes32 node,
-        address _owner
-    ) public virtual override authorised(node) {
-        _setOwner(node, _owner);
-        emit Transfer(node, _owner);
+    function setOwner(bytes32 node, address owner) public virtual override authorised(node) {
+        _setOwner(node, owner);
+        emit Transfer(node, owner);
     }
 
     /**
      * @dev Transfers ownership of a subnode keccak256(node, label) to a new address. May only be called by the owner of the parent node.
      * @param node The parent node.
      * @param label The hash of the label specifying the subnode.
-     * @param _owner The address of the new owner.
+     * @param owner The address of the new owner.
      */
-    function setSubnodeOwner(
-        bytes32 node,
-        bytes32 label,
-        address _owner
-    ) public virtual override authorised(node) returns (bytes32) {
+    function setSubnodeOwner(bytes32 node, bytes32 label, address owner) public virtual override authorised(node) returns(bytes32) {
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        _setOwner(subnode, _owner);
-        emit NewOwner(node, label, _owner);
+        _setOwner(subnode, owner);
+        emit NewOwner(node, label, owner);
         return subnode;
     }
 
     /**
      * @dev Sets the resolver address for the specified node.
      * @param node The node to update.
-     * @param _resolver The address of the resolver.
+     * @param resolver The address of the resolver.
      */
-    function setResolver(
-        bytes32 node,
-        address _resolver
-    ) public virtual override authorised(node) {
-        emit NewResolver(node, _resolver);
-        records[node].resolver = _resolver;
+    function setResolver(bytes32 node, address resolver) public virtual override authorised(node) {
+        emit NewResolver(node, resolver);
+        records[node].resolver = resolver;
     }
 
     /**
      * @dev Sets the TTL for the specified node.
      * @param node The node to update.
-     * @param _ttl The TTL in seconds.
+     * @param ttl The TTL in seconds.
      */
-    function setTTL(
-        bytes32 node,
-        uint64 _ttl
-    ) public virtual override authorised(node) {
-        emit NewTTL(node, _ttl);
-        records[node].ttl = _ttl;
+    function setTTL(bytes32 node, uint64 ttl) public virtual override authorised(node) {
+        emit NewTTL(node, ttl);
+        records[node].ttl = ttl;
     }
 
     /**
@@ -129,10 +104,7 @@ contract TNSRegistry is TNS {
      * @param operator Address to add to the set of authorized operators.
      * @param approved True if the operator is approved, false to revoke approval.
      */
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) external virtual override {
+    function setApprovalForAll(address operator, bool approved) external virtual override {
         operators[msg.sender][operator] = approved;
         emit ApprovalForAll(msg.sender, operator, approved);
     }
@@ -142,9 +114,7 @@ contract TNSRegistry is TNS {
      * @param node The specified node.
      * @return address of the owner.
      */
-    function owner(
-        bytes32 node
-    ) public view virtual override returns (address) {
+    function owner(bytes32 node) public virtual override view returns (address) {
         address addr = records[node].owner;
         if (addr == address(this)) {
             return address(0x0);
@@ -158,9 +128,7 @@ contract TNSRegistry is TNS {
      * @param node The specified node.
      * @return address of the resolver.
      */
-    function resolver(
-        bytes32 node
-    ) public view virtual override returns (address) {
+    function resolver(bytes32 node) public virtual override view returns (address) {
         return records[node].resolver;
     }
 
@@ -169,7 +137,7 @@ contract TNSRegistry is TNS {
      * @param node The specified node.
      * @return ttl of the node.
      */
-    function ttl(bytes32 node) public view virtual override returns (uint64) {
+    function ttl(bytes32 node) public virtual override view returns (uint64) {
         return records[node].ttl;
     }
 
@@ -178,42 +146,33 @@ contract TNSRegistry is TNS {
      * @param node The specified node.
      * @return Bool if record exists
      */
-    function recordExists(
-        bytes32 node
-    ) public view virtual override returns (bool) {
+    function recordExists(bytes32 node) public virtual override view returns (bool) {
         return records[node].owner != address(0x0);
     }
 
     /**
      * @dev Query if an address is an authorized operator for another address.
-     * @param _owner The address that owns the records.
+     * @param owner The address that owns the records.
      * @param operator The address that acts on behalf of the owner.
      * @return True if `operator` is an approved operator for `owner`, false otherwise.
      */
-    function isApprovedForAll(
-        address _owner,
-        address operator
-    ) external view virtual override returns (bool) {
-        return operators[_owner][operator];
+    function isApprovedForAll(address owner, address operator) external virtual override view returns (bool) {
+        return operators[owner][operator];
     }
 
-    function _setOwner(bytes32 node, address _owner) internal virtual {
-        records[node].owner = _owner;
+    function _setOwner(bytes32 node, address owner) internal virtual {
+        records[node].owner = owner;
     }
 
-    function _setResolverAndTTL(
-        bytes32 node,
-        address _resolver,
-        uint64 _ttl
-    ) internal {
-        if (_resolver != records[node].resolver) {
-            records[node].resolver = _resolver;
-            emit NewResolver(node, _resolver);
+    function _setResolverAndTTL(bytes32 node, address resolver, uint64 ttl) internal {
+        if(resolver != records[node].resolver) {
+            records[node].resolver = resolver;
+            emit NewResolver(node, resolver);
         }
 
-        if (_ttl != records[node].ttl) {
-            records[node].ttl = _ttl;
-            emit NewTTL(node, _ttl);
+        if(ttl != records[node].ttl) {
+            records[node].ttl = ttl;
+            emit NewTTL(node, ttl);
         }
     }
 }
