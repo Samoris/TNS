@@ -76,6 +76,7 @@ contract TNSRegistrarController is Ownable {
         uint expires = base.register(uint256(label), owner, duration);
         emit NameRegistered(name, owner, cost, expires);
 
+        treasury.transfer(cost);
         if(msg.value > cost) {
             msg.sender.transfer(msg.value - cost);
         }
@@ -88,6 +89,7 @@ contract TNSRegistrarController is Ownable {
         bytes32 label = keccak256(bytes(name));
         uint expires = base.renew(uint256(label), duration);
 
+        treasury.transfer(cost);
         if(msg.value > cost) {
             msg.sender.transfer(msg.value - cost);
         }
