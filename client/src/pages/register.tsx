@@ -98,8 +98,8 @@ export default function RegisterPage() {
   const pricing = selectedDomain ? calculateDomainPrice(selectedDomain) : null;
   const totalCost = pricing ? pricing.totalCost(registrationYears) : "0";
 
-  // Timer for commitment waiting period - must match contract's MIN_COMMITMENT_AGE (1 hour = 3600 seconds)
-  const MIN_WAIT_TIME = 3600;
+  // Timer for commitment waiting period - must match contract's MIN_COMMITMENT_AGE (60 seconds)
+  const MIN_WAIT_TIME = 60;
 
   // Update timer countdown
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function RegisterPage() {
       setTimeUntilRegister(MIN_WAIT_TIME);
       toast({
         title: "Commitment successful!",
-        description: "Please wait 1 hour before completing registration to prevent front-running.",
+        description: "Please wait 1 minute before completing registration to prevent front-running.",
       });
     },
     onError: (error: any) => {
@@ -521,7 +521,7 @@ export default function RegisterPage() {
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                       {!commitmentData 
-                        ? "Step 1: Make a commitment to secure your registration against front-running. Step 2: Complete registration after 1 hour to mint your ERC-721 NFT."
+                        ? "Step 1: Make a commitment to secure your registration against front-running. Step 2: Complete registration after 1 minute to mint your ERC-721 NFT."
                         : canRegister
                         ? "Step 2: Complete your registration now! Your commitment is verified and you can mint your NFT domain."
                         : `⏳ Waiting period active. You can register in ${Math.floor(timeUntilRegister / 60)}m ${timeUntilRegister % 60}s. This prevents front-running attacks.`
