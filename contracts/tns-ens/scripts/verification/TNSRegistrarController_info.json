@@ -1,6 +1,6 @@
 {
   "name": "TNSRegistrarController",
-  "address": "0x7C553152e7e4c9d1498D921FB5bd05bDf287f268",
+  "address": "0x526EB898A97c072aCd85FccACC53bb3edff2E925",
   "contractPath": "ethregistrar/contracts/ETHRegistrarController.sol",
   "contractName": "TNSRegistrarController",
   "compilerVersion": "0.5.17",

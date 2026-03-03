@@ -88,7 +88,7 @@
   },
   {
     "name": "TNSRegistrarController",
-    "address": "0x7C553152e7e4c9d1498D921FB5bd05bDf287f268",
+    "address": "0x526EB898A97c072aCd85FccACC53bb3edff2E925",
     "contractPath": "ethregistrar/contracts/ETHRegistrarController.sol",
     "contractName": "TNSRegistrarController",
     "compilerVersion": "0.5.17",
@@ -111,7 +111,7 @@
     "optimizerRuns": 200,
     "constructorArgs": [
       "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99",
-      "0x7C553152e7e4c9d1498D921FB5bd05bDf287f268",
+      "0x526EB898A97c072aCd85FccACC53bb3edff2E925",
       "0x78Cd4f5149060De05a84040283812b0c056972eD"
     ],
     "standardJsonInputFile": "Resolver_standard_input.json"
