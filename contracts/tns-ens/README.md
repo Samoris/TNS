@@ -6,17 +6,19 @@ TNS is a **full port of ENS (Ethereum Name Service)** contracts, adapted for the
 
 ---
 
-## Deployed Contracts (Intuition Mainnet)
+## Deployed Contracts (V2 — Intuition Mainnet, March 2026)
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| **TNSRegistry** | `0x34D7648aecc10fd86A53Cdd2436125342f3d7412` | [View](https://explorer.intuition.systems/address/0x34D7648aecc10fd86A53Cdd2436125342f3d7412#code) |
-| **BaseRegistrar (ERC-721)** | `0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676` | [View](https://explorer.intuition.systems/address/0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676#code) |
-| **TNSRegistrarController** | `0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044` | [View](https://explorer.intuition.systems/address/0x57C93D875c3D4C8e377DAE5aA7EA06d35C84d044#code) |
-| **Resolver** | `0x17Adb57047EDe9eBA93A5855f8578A8E512592C5` | [View](https://explorer.intuition.systems/address/0x17Adb57047EDe9eBA93A5855f8578A8E512592C5#code) |
-| **ReverseRegistrar** | `0x5140b65d566DA2d1298fCFE75eA972850bC2E365` | [View](https://explorer.intuition.systems/address/0x5140b65d566DA2d1298fCFE75eA972850bC2E365#code) |
-| **StablePriceOracle** | `0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303` | [View](https://explorer.intuition.systems/address/0xeFD11f62A66F39fE5C2A7e43f281FAbaFceed303#code) |
-| **PaymentForwarder** | `0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0` | [View](https://explorer.intuition.systems/address/0xB0e22123Ac142e57F56Bc9fEf2077bB2Fa1141a0#code) |
+| **TNSRegistry** | `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99` | [View](https://explorer.intuition.systems/address/0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99#code) |
+| **BaseRegistrar (ERC-721)** | `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4` | [View](https://explorer.intuition.systems/address/0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4#code) |
+| **TNSRegistrarController** | `0x7C553152e7e4c9d1498D921FB5bd05bDf287f268` | [View](https://explorer.intuition.systems/address/0x7C553152e7e4c9d1498D921FB5bd05bDf287f268#code) |
+| **Resolver** | `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5` | [View](https://explorer.intuition.systems/address/0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5#code) |
+| **ReverseRegistrar** | `0x78Cd4f5149060De05a84040283812b0c056972eD` | [View](https://explorer.intuition.systems/address/0x78Cd4f5149060De05a84040283812b0c056972eD#code) |
+| **StablePriceOracle** | `0x6F258639D183Fb7955B93d086FA9300eED79383A` | [View](https://explorer.intuition.systems/address/0x6F258639D183Fb7955B93d086FA9300eED79383A#code) |
+| **DummyOracle** | `0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb` | [View](https://explorer.intuition.systems/address/0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb#code) |
+| **Root** | `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75` | [View](https://explorer.intuition.systems/address/0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75#code) |
+| **PaymentForwarder** | `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F` | [View](https://explorer.intuition.systems/address/0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F#code) |
 | **Treasury** | `0x629A5386F73283F80847154d16E359192a891f86` | [View](https://explorer.intuition.systems/address/0x629A5386F73283F80847154d16E359192a891f86) |
 
 ---

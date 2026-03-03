@@ -225,7 +225,7 @@ Key rotation is critical for security. TNS supports key rotation through domain 
 ```javascript
 // Using BaseRegistrar contract
 const registrar = new ethers.Contract(
-  '0xc08c5b051a9cFbcd81584Ebb8870ed77eFc5E676',
+  '0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4',
   ['function safeTransferFrom(address from, address to, uint256 tokenId)'],
   oldWallet
 );
