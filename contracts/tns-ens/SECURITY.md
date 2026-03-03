@@ -24,7 +24,7 @@ All TNS contracts are verified on the Intuition Explorer. You can view the sourc
 |----------|-----------------|
 | TNSRegistry | [View Code](https://explorer.intuition.systems/address/0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99#code) |
 | BaseRegistrar | [View Code](https://explorer.intuition.systems/address/0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4#code) |
-| TNSRegistrarController | [View Code](https://explorer.intuition.systems/address/0x526EB898A97c072aCd85FccACC53bb3edff2E925#code) |
+| TNSRegistrarController | [View Code](https://explorer.intuition.systems/address/0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C#code) |
 | Resolver | [View Code](https://explorer.intuition.systems/address/0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5#code) |
 | ReverseRegistrar | [View Code](https://explorer.intuition.systems/address/0x78Cd4f5149060De05a84040283812b0c056972eD#code) |
 | StablePriceOracle | [View Code](https://explorer.intuition.systems/address/0x6F258639D183Fb7955B93d086FA9300eED79383A#code) |

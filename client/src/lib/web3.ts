@@ -905,7 +905,7 @@ export class Web3Service {
   public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
     // Try ENS-style first
     try {
-      const controllerAddress = "0x526EB898A97c072aCd85FccACC53bb3edff2E925";
+      const controllerAddress = "0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C";
       return await this.checkDomainAvailabilityENS(controllerAddress, domainName);
     } catch {
       // Fall through to legacy

@@ -234,7 +234,7 @@ The following contracts have no changes beyond import path adjustments:
 | StablePriceOracle | `0x6F258639D183Fb7955B93d086FA9300eED79383A` | v0.5.17 |
 | ReverseRegistrar | `0x78Cd4f5149060De05a84040283812b0c056972eD` | v0.8.17 |
 | Root | `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75` | v0.4.26 |
-| TNSRegistrarController | `0x526EB898A97c072aCd85FccACC53bb3edff2E925` | v0.5.17 |
+| TNSRegistrarController | `0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C` | v0.5.17 |
 | Resolver | `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5` | v0.8.17 |
 | PaymentForwarder | `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F` | v0.8.17 |
 | Treasury | `0x629A5386F73283F80847154d16E359192a891f86` | N/A |

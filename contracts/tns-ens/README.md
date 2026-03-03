@@ -16,7 +16,7 @@ All contracts are verified on the [Intuition Explorer](https://explorer.intuitio
 |----------|---------|----------|----------|
 | **TNSRegistry** | `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99` | v0.8.17 | [View](https://explorer.intuition.systems/address/0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99#code) |
 | **BaseRegistrar (ERC-721)** | `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4` | v0.5.17 | [View](https://explorer.intuition.systems/address/0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4#code) |
-| **TNSRegistrarController** | `0x526EB898A97c072aCd85FccACC53bb3edff2E925` | v0.5.17 | [View](https://explorer.intuition.systems/address/0x526EB898A97c072aCd85FccACC53bb3edff2E925#code) |
+| **TNSRegistrarController** | `0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C` | v0.5.17 | [View](https://explorer.intuition.systems/address/0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C#code) |
 | **Resolver** | `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5` | v0.8.17 | [View](https://explorer.intuition.systems/address/0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5#code) |
 | **ReverseRegistrar** | `0x78Cd4f5149060De05a84040283812b0c056972eD` | v0.8.17 | [View](https://explorer.intuition.systems/address/0x78Cd4f5149060De05a84040283812b0c056972eD#code) |
 | **Root** | `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75` | v0.4.26 | [View](https://explorer.intuition.systems/address/0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75#code) |

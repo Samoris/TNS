@@ -63,7 +63,8 @@ contract TNSRegistrarController is Ownable {
 
         // If the commitment is too old, or the name is registered, stop
         if(commitments[commitment] + MAX_COMMITMENT_AGE < now || !available(name))  {
-            msg.sender.transfer(msg.value);
+            (bool refundSuccess,) = msg.sender.call.value(msg.value)("");
+            require(refundSuccess);
             return;
         }
         delete(commitments[commitment]);
@@ -76,9 +77,11 @@ contract TNSRegistrarController is Ownable {
         uint expires = base.register(uint256(label), owner, duration);
         emit NameRegistered(name, owner, cost, expires);
 
-        treasury.transfer(cost);
+        (bool treasurySuccess,) = treasury.call.value(cost)("");
+        require(treasurySuccess);
         if(msg.value > cost) {
-            msg.sender.transfer(msg.value - cost);
+            (bool senderSuccess,) = msg.sender.call.value(msg.value - cost)("");
+            require(senderSuccess);
         }
     }
 
@@ -89,9 +92,11 @@ contract TNSRegistrarController is Ownable {
         bytes32 label = keccak256(bytes(name));
         uint expires = base.renew(uint256(label), duration);
 
-        treasury.transfer(cost);
+        (bool treasurySuccess,) = treasury.call.value(cost)("");
+        require(treasurySuccess);
         if(msg.value > cost) {
-            msg.sender.transfer(msg.value - cost);
+            (bool senderSuccess,) = msg.sender.call.value(msg.value - cost)("");
+            require(senderSuccess);
         }
 
         emit NameRenewed(name, cost, expires);
@@ -108,6 +113,7 @@ contract TNSRegistrarController is Ownable {
     }
 
     function withdraw() public onlyOwner {
-        treasury.transfer(address(this).balance);
+        (bool success,) = treasury.call.value(address(this).balance)("");
+        require(success);
     }
 }
