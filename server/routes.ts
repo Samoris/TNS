@@ -237,17 +237,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
-      // If no domains in database, check the ownership cache
-      if (domainsWithRecords.length === 0) {
-        const normalizedAddress = address.toLowerCase();
-        const cachedDomains = domainOwnershipCache.filter(d => d.owner.toLowerCase() === normalizedAddress);
-        if (cachedDomains.length > 0) {
-          console.log(`Found ${cachedDomains.length} domains in cache for ${address}`);
-          return res.json({ domains: cachedDomains });
-        }
-      }
+      const normalizedAddress = address.toLowerCase();
+      const cachedDomains = domainOwnershipCache.filter(d => d.owner.toLowerCase() === normalizedAddress);
       
-      res.json({ domains: domainsWithRecords });
+      const dbDomainNames = new Set(domainsWithRecords.map(d => d.name?.toLowerCase()));
+      const uniqueCachedDomains = cachedDomains.filter(d => !dbDomainNames.has(d.name?.toLowerCase()));
+      
+      const allDomains = [...domainsWithRecords, ...uniqueCachedDomains];
+      
+      res.json({ domains: allDomains });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch domains" });
     }
@@ -336,16 +334,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       expirationDate.setFullYear(expirationDate.getFullYear() + duration);
       
       // Create domain with normalized name and real transaction hash
+      const labelhash = ethers.keccak256(ethers.toUtf8Bytes(normalizedName));
+      const realTokenId = ethers.getBigInt(labelhash).toString();
+      
       const domain = await storage.createDomain({
         name: `${normalizedName}.trust`,
         owner,
         registrant: owner,
         resolver: null,
         expirationDate,
-        tokenId: `tns_${Date.now()}`,
+        tokenId: realTokenId,
         pricePerYear: pricing.pricePerYear,
-        txHash: txHash, // Store the real blockchain transaction hash
+        txHash: txHash,
       });
+      
+      if (!allDomainNames.includes(normalizedName)) {
+        allDomainNames.push(normalizedName);
+        tokenIdToName[realTokenId] = normalizedName;
+      }
       
       res.json({ 
         message: "Domain registered successfully", 
