@@ -29,7 +29,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
-import { TNS_CONTROLLER_ADDRESS, TNS_BASE_REGISTRAR_ADDRESS } from "@/lib/contracts";
+import { TNS_CONTROLLER_ADDRESS, TNS_BASE_REGISTRAR_ADDRESS, TNS_RESOLVER_ADDRESS } from "@/lib/contracts";
 import { web3Service } from "@/lib/web3";
 import { INTUITION_TESTNET } from "@/lib/web3";
 import { ethers } from "ethers";
@@ -253,6 +253,17 @@ export default function RegisterPage() {
         
         console.log("Transaction successful:", txHash);
         console.log("NFT minted for domain:", domainName);
+        
+        // Set resolver and address record for the new domain
+        try {
+          console.log("Setting resolver and address for new domain...");
+          await web3Service.setResolver(domainName + ".trust", TNS_RESOLVER_ADDRESS);
+          console.log("Resolver set successfully");
+          await web3Service.setAddr(domainName + ".trust", address);
+          console.log("Address record set successfully");
+        } catch (postRegError: any) {
+          console.warn("Post-registration setup (resolver/addr) failed:", postRegError.message);
+        }
         
         // Register domain on backend for tracking
         const response = await apiRequest("POST", "/api/domains/register", {

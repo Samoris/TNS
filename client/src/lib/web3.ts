@@ -2188,27 +2188,17 @@ export class Web3Service {
     try {
       const normalizedDomain = domainName.toLowerCase().replace('.trust', '');
       
-      // Full ENS-style commitment parameters
+      // Contract's makeCommitment(name, secret) = keccak256(abi.encodePacked(label, secret))
       const label = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
-      const data: string[] = [];
-      const reverseRecord = true;
-      const ownerControlledFuses = 0;
-      
-      // Compute commitment hash matching contract's makeCommitment function
       const expectedCommitment = ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
-          ["bytes32", "address", "uint256", "bytes32", "address", "bytes[]", "bool", "uint16"],
-          [label, owner, durationSeconds, secret, resolver, data, reverseRecord, ownerControlledFuses]
-        )
+        ethers.solidityPacked(["bytes32", "bytes32"], [label, secret])
       );
       
-      console.log("Registering domain via TNSRegistrarController (full ENS signature):");
+      console.log("Registering domain via TNSRegistrarController:");
       console.log("- Domain:", normalizedDomain);
       console.log("- Owner:", owner);
       console.log("- Duration:", durationSeconds, "seconds");
       console.log("- Secret:", secret.substring(0, 10) + "...");
-      console.log("- Resolver:", resolver);
-      console.log("- ReverseRecord:", reverseRecord);
       console.log("- Cost:", ethers.formatEther(cost), "TRUST");
       console.log("- Expected commitment:", expectedCommitment);
 
@@ -2259,22 +2249,17 @@ export class Web3Service {
         }
       }
       
-      // Full ENS-style register function
+      // Contract: register(string name, address owner, uint duration, bytes32 secret) payable
       const controllerAbi = [
-        "function register(string name, address owner, uint256 duration, bytes32 secret, address resolver, bytes[] data, bool reverseRecord, uint16 ownerControlledFuses) payable"
+        "function register(string name, address owner, uint256 duration, bytes32 secret) payable"
       ];
       const contract = new ethers.Contract(controllerAddress, controllerAbi, signer);
 
-      // Send native TRUST with the transaction
       const tx = await contract.register(
         normalizedDomain,
         owner,
         durationSeconds,
         secret,
-        resolver,
-        data,
-        reverseRecord,
-        ownerControlledFuses,
         { value: cost, gasLimit: 500000 }
       );
 
@@ -2305,12 +2290,10 @@ export class Web3Service {
   }
 
   /**
-   * Make commitment for ENS-forked controller (Step 1 of commit-reveal)
+   * Make commitment for TNS controller (Step 1 of commit-reveal)
    * 
-   * The TNSRegistrarController uses the full ENS signature with 8 parameters for commitment:
-   * makeCommitment(name, owner, duration, secret, resolver, data, reverseRecord, ownerControlledFuses)
-   * 
-   * These same parameters must be used during registration!
+   * Contract: makeCommitment(name, secret) = keccak256(abi.encodePacked(label, secret))
+   * where label = keccak256(bytes(name))
    */
   public async makeCommitmentENS(
     controllerAddress: string,
@@ -2337,26 +2320,17 @@ export class Web3Service {
       const provider = new ethers.BrowserProvider(this.getProvider()! as any);
       const signer = await provider.getSigner();
       
-      // Full ENS-style commitment parameters (must match register call exactly)
+      // Contract's makeCommitment(name, secret) = keccak256(abi.encodePacked(label, secret))
+      // where label = keccak256(bytes(name))
       const label = ethers.keccak256(ethers.toUtf8Bytes(normalizedDomain));
-      const data: string[] = [];
-      const reverseRecord = true;
-      const ownerControlledFuses = 0;
-      
-      // Compute commitment hash matching contract's makeCommitment function
       const commitment = ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
-          ["bytes32", "address", "uint256", "bytes32", "address", "bytes[]", "bool", "uint16"],
-          [label, ownerAddress, durationSeconds, secret, resolver, data, reverseRecord, ownerControlledFuses]
-        )
+        ethers.solidityPacked(["bytes32", "bytes32"], [label, secret])
       );
 
-      console.log("Making commitment for domain (full ENS signature):", normalizedDomain);
+      console.log("Making commitment for domain:", normalizedDomain);
       console.log("- Label hash:", label);
       console.log("- Owner:", ownerAddress);
       console.log("- Duration:", durationSeconds, "seconds");
-      console.log("- Resolver:", resolver);
-      console.log("- ReverseRecord:", reverseRecord);
       console.log("- Commitment hash:", commitment);
       console.log("- Secret:", secret.substring(0, 10) + "...");
 
