@@ -2217,7 +2217,10 @@ export class Web3Service {
       
       // Verify the commitment is stored and ready
       try {
-        const verifyAbi = ["function commitments(bytes32) view returns (uint256)"];
+        const verifyAbi = [
+          "function commitments(bytes32) view returns (uint256)",
+          "function MIN_COMMITMENT_AGE() view returns (uint256)"
+        ];
         const verifyContract = new ethers.Contract(controllerAddress, verifyAbi, provider);
         const commitmentTimestamp = await verifyContract.commitments(expectedCommitment);
         
@@ -2228,12 +2231,26 @@ export class Web3Service {
           throw new Error("Commitment not found in contract! The commitment hash doesn't match what's stored.");
         }
         
-        const currentBlock = await provider.getBlock('latest');
-        const age = currentBlock!.timestamp - Number(commitmentTimestamp);
+        // Use wall-clock time for age check since the Intuition chain may have
+        // infrequent block production, making block timestamps unreliable for timing.
+        // The contract enforces MIN_COMMITMENT_AGE against block.timestamp at register time,
+        // so this is just a client-side pre-check to give a better error message.
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const age = nowSeconds - Number(commitmentTimestamp);
+        console.log("- Current time:", nowSeconds);
         console.log("- Age (seconds):", age);
         
-        if (age < 60) {
-          throw new Error(`Commitment not ready yet. Age: ${age} seconds. Need to wait at least 60 seconds.`);
+        let minAge = 3600; // default 1 hour
+        try {
+          minAge = Number(await verifyContract.MIN_COMMITMENT_AGE());
+        } catch (e) {}
+        console.log("- MIN_COMMITMENT_AGE:", minAge);
+        
+        if (age < minAge) {
+          const remaining = minAge - age;
+          const mins = Math.floor(remaining / 60);
+          const secs = remaining % 60;
+          throw new Error(`Commitment not ready yet. Age: ${age}s, need ${minAge}s. Please wait ${mins}m ${secs}s more.`);
         }
       } catch (verifyError: any) {
         console.error("Commitment verification error:", verifyError);
