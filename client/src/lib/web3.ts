@@ -905,7 +905,7 @@ export class Web3Service {
   public async checkDomainAvailability(contractAddress: string, abi: any[], domainName: string): Promise<boolean> {
     // Try ENS-style first
     try {
-      const controllerAddress = "0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C";
+      const controllerAddress = "0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80";
       return await this.checkDomainAvailabilityENS(controllerAddress, domainName);
     } catch {
       // Fall through to legacy
@@ -984,7 +984,7 @@ export class Web3Service {
         
         // Query BaseRegistrar NameRegistered events (includes migrations)
         const baseRegistrarContract = new ethers.Contract(
-          "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4",
+          "0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629",
           ["event NameRegistered(uint256 indexed id, address indexed owner, uint256 expires)", "function ownerOf(uint256) view returns (address)"],
           provider
         );
@@ -1866,7 +1866,7 @@ export class Web3Service {
     // For legacy compatibility, try ENS-style first if we're using new contracts
     try {
       // Try ENS-style reverse resolution
-      const resolverAddress = "0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5";
+      const resolverAddress = "0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b";
       const result = await this.getPrimaryDomainENS(resolverAddress, ownerAddress);
       if (result) return result;
     } catch {

@@ -72,20 +72,19 @@ TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastruc
 
 ## External Dependencies
 - **Blockchain Network**: Intuition mainnet (Chain ID: 1155, RPC URL: `https://intuition.calderachain.xyz`, Explorer URL: `https://explorer.intuition.systems`)
-- **Smart Contract Addresses (V2 — deployed March 2026)**:
-  - TNS Registry: `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99`
-  - Base Registrar (ERC-721): `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4`
-  - Controller: `0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C`
-  - Resolver: `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5`
-  - Reverse Registrar: `0x78Cd4f5149060De05a84040283812b0c056972eD`
-  - Price Oracle (Stable): `0x6F258639D183Fb7955B93d086FA9300eED79383A`
-  - Dummy Oracle: `0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb`
-  - Payment Forwarder: `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F`
-  - Root: `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75`
-  - Treasury: `0x629A5386F73283F80847154d16E359192a891f86`
+- **Smart Contract Addresses (V3 — deployed March 2026)**:
+  - TNS Registry: `0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e`
+  - Base Registrar (ERC-721): `0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629`
+  - Controller: `0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80`
+  - Resolver: `0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b`
+  - Reverse Registrar: `0xE0e5Fa6d1e88506dF21b8E84B9A9D982Ca114080`
+  - Price Oracle (Stable): `0x77C5F276dd8f7321E42580AC53E73859C080A0f2`
+  - Dummy Oracle: `0x903cc70Cda037249e8D1870Bcd6C528710B73b7E`
+  - Payment Forwarder: `0xF661722f065D8606CC6b5be84296D67D9fe7bD13`
+  - Root: `0xf3eeEd24448bE5209ddE4e8AD0078240C7b50E24`
   - Intuition EthMultiVault (Proxy): `0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e`
-- **V1 (deprecated) Contract Addresses**: Registry `0x34D7648...`, BaseRegistrar `0xc08c5b...`, Controller `0x57C93D...`, Resolver `0x17Adb5...`
-- **Migration**: All 258 domains from V1 contracts successfully migrated to V2 contracts with preserved ownership and expiry dates. Treasury now receives fees directly on register/renew.
+- **V1/V2 (deprecated)**: All previous contract addresses are deprecated. V3 deployed March 2026 with ENS-matching naming.
+- **Migration**: All 136 domains successfully migrated to V3 contracts with preserved ownership and expiry dates. Fees stay in controller, owner can withdraw.
 - **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin
 - **Styling Framework**: Tailwind CSS

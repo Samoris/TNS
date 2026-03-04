@@ -1990,8 +1990,8 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/ETHRegistrarController.sol": {
-      "lastModificationDate": 1772629927762,
-      "contentHash": "4ab874e568ea1701b582c9a7a06c5b26",
+      "lastModificationDate": 1772631140546,
+      "contentHash": "a4591136d44d3329bb01416ca4849a87",
       "sourceName": "ethregistrar/contracts/ETHRegistrarController.sol",
       "solcConfig": {
         "version": "0.5.17",

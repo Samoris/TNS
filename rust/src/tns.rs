@@ -22,8 +22,8 @@ sol! {
     }
 }
 
-pub const TNS_REGISTRY_ADDRESS: &str = "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99";
-pub const TNS_RESOLVER_ADDRESS: &str = "0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5";
+pub const TNS_REGISTRY_ADDRESS: &str = "0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e";
+pub const TNS_RESOLVER_ADDRESS: &str = "0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b";
 pub const INTUITION_RPC_URL: &str = "https://intuition.calderachain.xyz";
 pub const INTUITION_CHAIN_ID: u64 = 1155;
 

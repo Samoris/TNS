@@ -1,11 +1,10 @@
 import { ethers } from "hardhat";
 
-const BASE_REGISTRAR = "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4";
-const STABLE_PRICE_ORACLE = "0x6F258639D183Fb7955B93d086FA9300eED79383A";
-const REVERSE_REGISTRAR = "0x78Cd4f5149060De05a84040283812b0c056972eD";
-const RESOLVER = "0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5";
-const OLD_CONTROLLER = "0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C";
-const TREASURY = "0x629A5386F73283F80847154d16E359192a891f86";
+const BASE_REGISTRAR = "0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629";
+const STABLE_PRICE_ORACLE = "0x77C5F276dd8f7321E42580AC53E73859C080A0f2";
+const REVERSE_REGISTRAR = "0xE0e5Fa6d1e88506dF21b8E84B9A9D982Ca114080";
+const RESOLVER = "0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b";
+const OLD_CONTROLLER = "0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80";
 
 const REGISTRAR_ABI = [
   "function addController(address controller) external",
@@ -26,9 +25,9 @@ async function main() {
   console.log("Redeploying Controller with account:", deployer.address);
   console.log("Balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "TRUST\n");
 
-  console.log("1. Deploying new TNSRegistrarController (valid >= 3 chars)...");
-  const Controller = await ethers.getContractFactory("TNSRegistrarController");
-  const controller = await Controller.deploy(BASE_REGISTRAR, STABLE_PRICE_ORACLE, TREASURY);
+  console.log("1. Deploying new ETHRegistrarController (valid >= 3 chars)...");
+  const Controller = await ethers.getContractFactory("ETHRegistrarController");
+  const controller = await Controller.deploy(BASE_REGISTRAR, STABLE_PRICE_ORACLE);
   await controller.waitForDeployment();
   const newAddr = await controller.getAddress();
   console.log("New Controller deployed to:", newAddr);

@@ -106,10 +106,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ETHRegistrarController__factory>;
     getContractFactory(
-      name: "TNSRegistrarController",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.TNSRegistrarController__factory>;
-    getContractFactory(
       name: "Migrations",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Migrations__factory>;
@@ -354,11 +350,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ETHRegistrarController>;
     getContractAt(
-      name: "TNSRegistrarController",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.TNSRegistrarController>;
-    getContractAt(
       name: "Migrations",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -612,10 +603,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ETHRegistrarController>;
     deployContract(
-      name: "TNSRegistrarController",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.TNSRegistrarController>;
-    deployContract(
       name: "Migrations",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Migrations>;
@@ -859,11 +846,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ETHRegistrarController>;
-    deployContract(
-      name: "TNSRegistrarController",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.TNSRegistrarController>;
     deployContract(
       name: "Migrations",
       args: any[],
