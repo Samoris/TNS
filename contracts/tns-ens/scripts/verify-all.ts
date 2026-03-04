@@ -74,10 +74,10 @@ const contracts: VerifyTask[] = [
     contract: "root/Root.sol:Root",
   },
   {
-    name: "TNSRegistrarController",
+    name: "ETHRegistrarController",
     address: CONTROLLER,
-    constructorArguments: [BASE_REGISTRAR, STABLE_PRICE_ORACLE, TREASURY],
-    contract: "ethregistrar/contracts/ETHRegistrarController.sol:TNSRegistrarController",
+    constructorArguments: [BASE_REGISTRAR, STABLE_PRICE_ORACLE],
+    contract: "ethregistrar/contracts/ETHRegistrarController.sol:ETHRegistrarController",
   },
   {
     name: "Resolver",
