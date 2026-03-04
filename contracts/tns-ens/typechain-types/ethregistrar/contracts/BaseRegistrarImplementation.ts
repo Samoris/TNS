@@ -34,6 +34,7 @@ export interface BaseRegistrarImplementationInterface extends Interface {
       | "balanceOf"
       | "baseNode"
       | "controllers"
+      | "ens"
       | "getApproved"
       | "isApprovedForAll"
       | "isOwner"
@@ -50,7 +51,6 @@ export interface BaseRegistrarImplementationInterface extends Interface {
       | "safeTransferFrom(address,address,uint256,bytes)"
       | "setApprovalForAll"
       | "supportsInterface"
-      | "tns"
       | "transferFrom"
       | "transferOwnership"
       | "transferPeriodEnds"
@@ -98,6 +98,7 @@ export interface BaseRegistrarImplementationInterface extends Interface {
     functionFragment: "controllers",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(functionFragment: "ens", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "getApproved",
     values: [BigNumberish]
@@ -156,7 +157,6 @@ export interface BaseRegistrarImplementationInterface extends Interface {
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "tns", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "transferFrom",
     values: [AddressLike, AddressLike, BigNumberish]
@@ -190,6 +190,7 @@ export interface BaseRegistrarImplementationInterface extends Interface {
     functionFragment: "controllers",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "ens", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
     data: BytesLike
@@ -236,7 +237,6 @@ export interface BaseRegistrarImplementationInterface extends Interface {
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "tns", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferFrom",
     data: BytesLike
@@ -466,6 +466,8 @@ export interface BaseRegistrarImplementation extends BaseContract {
 
   controllers: TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
 
+  ens: TypedContractMethod<[], [string], "view">;
+
   getApproved: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
 
   isApprovedForAll: TypedContractMethod<
@@ -535,8 +537,6 @@ export interface BaseRegistrarImplementation extends BaseContract {
     "view"
   >;
 
-  tns: TypedContractMethod<[], [string], "view">;
-
   transferFrom: TypedContractMethod<
     [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
     [void],
@@ -587,6 +587,9 @@ export interface BaseRegistrarImplementation extends BaseContract {
   getFunction(
     nameOrSignature: "controllers"
   ): TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "ens"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "getApproved"
   ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
@@ -664,9 +667,6 @@ export interface BaseRegistrarImplementation extends BaseContract {
   getFunction(
     nameOrSignature: "supportsInterface"
   ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "tns"
-  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "transferFrom"
   ): TypedContractMethod<

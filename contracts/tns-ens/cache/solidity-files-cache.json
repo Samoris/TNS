@@ -1508,8 +1508,8 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/BaseRegistrar.sol": {
-      "lastModificationDate": 1772460214695,
-      "contentHash": "aaefeeb276d8bb96d1e9cab0d487353f",
+      "lastModificationDate": 1772629435452,
+      "contentHash": "0e7d992097eba406139afaabde179d63",
       "sourceName": "ethregistrar/contracts/BaseRegistrar.sol",
       "solcConfig": {
         "version": "0.5.17",
@@ -1990,8 +1990,8 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/ETHRegistrarController.sol": {
-      "lastModificationDate": 1772537366500,
-      "contentHash": "46fc09b3f8d3413a36116f17bdd0e0b0",
+      "lastModificationDate": 1772629927762,
+      "contentHash": "4ab874e568ea1701b582c9a7a06c5b26",
       "sourceName": "ethregistrar/contracts/ETHRegistrarController.sol",
       "solcConfig": {
         "version": "0.5.17",
@@ -2026,7 +2026,7 @@
         "^0.5.0"
       ],
       "artifacts": [
-        "TNSRegistrarController"
+        "ETHRegistrarController"
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/StablePriceOracle.sol": {
@@ -2109,8 +2109,8 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/ethregistrar/contracts/BaseRegistrarImplementation.sol": {
-      "lastModificationDate": 1772460231470,
-      "contentHash": "7e417a2dec5e32a9e70b7b7a578c71db",
+      "lastModificationDate": 1772629696027,
+      "contentHash": "335ec8845900f2aa4888b1415a6cd934",
       "sourceName": "ethregistrar/contracts/BaseRegistrarImplementation.sol",
       "solcConfig": {
         "version": "0.5.17",
@@ -2254,8 +2254,8 @@
       ]
     },
     "/home/runner/workspace/contracts/tns-ens/root/Root.sol": {
-      "lastModificationDate": 1772462879795,
-      "contentHash": "645cbd95545389d5ff429e4c3e430936",
+      "lastModificationDate": 1772630947550,
+      "contentHash": "55143e26ce4a2dec3ded89a01672189f",
       "sourceName": "root/Root.sol",
       "solcConfig": {
         "version": "0.4.26",

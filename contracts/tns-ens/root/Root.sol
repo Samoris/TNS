@@ -19,7 +19,7 @@ contract Root is Ownable {
     uint16 constant public TYPE_TXT = 16;
     uint16 constant public TYPE_SOA = 6;
 
-    ENS public tns;
+    ENS public ens;
     DNSSEC public oracle;
 
     address public registrar;
@@ -27,8 +27,8 @@ contract Root is Ownable {
     event TLDRegistered(bytes32 indexed node, address indexed registrar);
     event RegistrarChanged(address indexed registrar);
 
-    constructor(ENS _tns, DNSSEC _oracle, address _registrar) public {
-        tns = _tns;
+    constructor(ENS _ens, DNSSEC _oracle, address _registrar) public {
+        ens = _ens;
         oracle = _oracle;
         registrar = _registrar;
     }
@@ -38,7 +38,7 @@ contract Root is Ownable {
     }
 
     function setSubnodeOwner(bytes32 label, address owner) external onlyOwner {
-        tns.setSubnodeOwner(ROOT_NODE, label, owner);
+        ens.setSubnodeOwner(ROOT_NODE, label, owner);
     }
 
     function setRegistrar(address _registrar) external onlyOwner {
@@ -51,23 +51,23 @@ contract Root is Ownable {
         bytes32 label = getLabel(name);
 
         address addr = getAddress(name, proof);
-        require(tns.owner(keccak256(ROOT_NODE, label)) != addr);
+        require(ens.owner(keccak256(ROOT_NODE, label)) != addr);
         require(label != TRUST_NODE);
 
-        tns.setSubnodeOwner(ROOT_NODE, label, addr);
+        ens.setSubnodeOwner(ROOT_NODE, label, addr);
         emit TLDRegistered(keccak256(ROOT_NODE, label), addr);
     }
 
     function setResolver(bytes32 node, address resolver) public onlyOwner {
-        tns.setResolver(node, resolver);
+        ens.setResolver(node, resolver);
     }
 
     function setOwner(bytes32 node, address owner) public onlyOwner {
-        tns.setOwner(node, owner);
+        ens.setOwner(node, owner);
     }
 
     function setTTL(bytes32 node, uint64 ttl) public onlyOwner {
-        tns.setTTL(node, ttl);
+        ens.setTTL(node, ttl);
     }
 
     function getLabel(bytes memory name) internal view returns (bytes32) {
@@ -101,7 +101,7 @@ contract Root is Ownable {
     function getSOAHash(bytes name) internal view returns (bytes20) {
         Buffer.buffer memory buf;
         buf.init(name.length + 5);
-        buf.append("\x04_tns");
+        buf.append("\x04_ens");
         buf.append(name);
 
         bytes20 hash;

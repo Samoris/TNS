@@ -18,7 +18,7 @@ contract BaseRegistrar is ERC721, Ownable {
     uint public transferPeriodEnds;
 
     // The TNS registry
-    ENS public tns;
+    ENS public ens;
 
     // The namehash of the TLD this registrar owns (eg, .trust)
     bytes32 public baseNode;

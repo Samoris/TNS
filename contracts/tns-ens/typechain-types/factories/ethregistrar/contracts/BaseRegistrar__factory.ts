@@ -353,6 +353,21 @@ const _abi = [
   },
   {
     constant: true,
+    inputs: [],
+    name: "ens",
+    outputs: [
+      {
+        internalType: "contract ENS",
+        name: "",
+        type: "address",
+      },
+    ],
+    payable: false,
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    constant: true,
     inputs: [
       {
         internalType: "uint256",
@@ -671,21 +686,6 @@ const _abi = [
         internalType: "bool",
         name: "",
         type: "bool",
-      },
-    ],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [],
-    name: "tns",
-    outputs: [
-      {
-        internalType: "contract ENS",
-        name: "",
-        type: "address",
       },
     ],
     payable: false,

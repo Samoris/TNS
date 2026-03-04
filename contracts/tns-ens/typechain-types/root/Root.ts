@@ -31,10 +31,10 @@ export interface RootInterface extends Interface {
       | "proveAndRegisterTLD"
       | "registrar"
       | "isOwner"
+      | "ens"
       | "ROOT_NODE"
       | "CLASS_INET"
       | "setOwner"
-      | "tns"
       | "oracle"
       | "TYPE_SOA"
       | "registerTLD"
@@ -67,6 +67,7 @@ export interface RootInterface extends Interface {
     functionFragment: "isOwner",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(functionFragment: "ens", values?: undefined): string;
   encodeFunctionData(functionFragment: "ROOT_NODE", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "CLASS_INET",
@@ -76,7 +77,6 @@ export interface RootInterface extends Interface {
     functionFragment: "setOwner",
     values: [BytesLike, AddressLike]
   ): string;
-  encodeFunctionData(functionFragment: "tns", values?: undefined): string;
   encodeFunctionData(functionFragment: "oracle", values?: undefined): string;
   encodeFunctionData(functionFragment: "TYPE_SOA", values?: undefined): string;
   encodeFunctionData(
@@ -113,10 +113,10 @@ export interface RootInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "registrar", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "isOwner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "ens", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ROOT_NODE", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "CLASS_INET", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setOwner", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "tns", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "oracle", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "TYPE_SOA", data: BytesLike): Result;
   decodeFunctionResult(
@@ -230,6 +230,8 @@ export interface Root extends BaseContract {
 
   isOwner: TypedContractMethod<[addr: AddressLike], [boolean], "view">;
 
+  ens: TypedContractMethod<[], [string], "view">;
+
   ROOT_NODE: TypedContractMethod<[], [string], "view">;
 
   CLASS_INET: TypedContractMethod<[], [bigint], "view">;
@@ -239,8 +241,6 @@ export interface Root extends BaseContract {
     [void],
     "nonpayable"
   >;
-
-  tns: TypedContractMethod<[], [string], "view">;
 
   oracle: TypedContractMethod<[], [string], "view">;
 
@@ -308,6 +308,9 @@ export interface Root extends BaseContract {
     nameOrSignature: "isOwner"
   ): TypedContractMethod<[addr: AddressLike], [boolean], "view">;
   getFunction(
+    nameOrSignature: "ens"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "ROOT_NODE"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -320,9 +323,6 @@ export interface Root extends BaseContract {
     [void],
     "nonpayable"
   >;
-  getFunction(
-    nameOrSignature: "tns"
-  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "oracle"
   ): TypedContractMethod<[], [string], "view">;

@@ -66,6 +66,8 @@ export type { BaseRegistrarImplementation } from "./ethregistrar/contracts/BaseR
 export { BaseRegistrarImplementation__factory } from "./factories/ethregistrar/contracts/BaseRegistrarImplementation__factory";
 export type { DummyOracle } from "./ethregistrar/contracts/DummyOracle";
 export { DummyOracle__factory } from "./factories/ethregistrar/contracts/DummyOracle__factory";
+export type { ETHRegistrarController } from "./ethregistrar/contracts/ETHRegistrarController.sol/ETHRegistrarController";
+export { ETHRegistrarController__factory } from "./factories/ethregistrar/contracts/ETHRegistrarController.sol/ETHRegistrarController__factory";
 export type { TNSRegistrarController } from "./ethregistrar/contracts/ETHRegistrarController.sol/TNSRegistrarController";
 export { TNSRegistrarController__factory } from "./factories/ethregistrar/contracts/ETHRegistrarController.sol/TNSRegistrarController__factory";
 export type { Migrations } from "./ethregistrar/contracts/Migrations";
