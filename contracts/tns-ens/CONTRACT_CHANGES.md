@@ -8,8 +8,7 @@ All changes fall into these categories:
 1. **Naming**: `ENS` -> `TNS`, `.eth` -> `.trust`, `ens` -> `tns`
 2. **Pragma**: Updated Solidity versions for cross-version compatibility
 3. **Import Paths**: Adjusted to match the project's directory structure
-4. **Treasury Addition**: Fees forward directly to treasury on register/renew (user-approved)
-5. **New Contracts**: PaymentForwarder and Resolver (TNS-specific utilities)
+4. **New Contracts**: PaymentForwarder and Resolver (TNS-specific utilities)
 
 ---
 
@@ -17,7 +16,7 @@ All changes fall into these categories:
 
 ### 1. TNSRegistry (`registry/TNSRegistry.sol`)
 **ENS Original**: `ENSRegistry.sol` from `@ensdomains/ens`
-**Compiler**: Solidity 0.8.17
+**Compiler**: Solidity 0.7.6
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -75,26 +74,23 @@ All changes fall into these categories:
 
 ---
 
-### 5. TNSRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)
+### 5. ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)
 **ENS Original**: `ETHRegistrarController.sol` from `ens_ethregistrar`
 **Compiler**: Solidity 0.5.17
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Contract name | `ETHRegistrarController` | `TNSRegistrarController` |
-| Treasury | Not present | Added `address payable public treasury` |
-| Constructor | `(BaseRegistrar _base, PriceOracle _prices)` | `(BaseRegistrar _base, PriceOracle _prices, address payable _treasury)` |
-| `register()` | Funds stay in contract | `treasury.transfer(cost)` — fees sent to treasury immediately |
-| `renew()` | Funds stay in contract | `treasury.transfer(cost)` — fees sent to treasury immediately |
-| `withdraw()` | Sends to `owner()` | `treasury.transfer(address(this).balance)` |
-| New function | N/A | `setTreasury(address payable _treasury)` — owner can update treasury |
-| New event | N/A | `event NewTreasury(address indexed treasury)` |
+| Contract name | `ETHRegistrarController` | `ETHRegistrarController` (unchanged in V3) |
+| Constructor | `(BaseRegistrar _base, PriceOracle _prices)` | `(BaseRegistrar _base, PriceOracle _prices)` (matches ENS) |
+| `register()` | Funds stay in contract | Funds stay in contract (matches ENS) |
+| `renew()` | Funds stay in contract | Funds stay in contract (matches ENS) |
+| `withdraw()` | Sends to `owner()` | Sends to `owner()` (matches ENS) |
 | `valid()` | `name.strlen() >= 3` | `name.strlen() >= 3` (matches ENS standard) |
 | `makeCommitment()` | Includes `owner` param | Simplified to `(name, secret)` only |
 | `commit()` | `require(commitments[commitment] == 0)` | `require(commitments[commitment] + MAX_COMMITMENT_AGE < now)` |
 
 **Logic changes**:
-- **Treasury**: Registration and renewal fees are forwarded directly to the treasury address on every transaction. This eliminates the need for a separate `withdraw()` call and ensures the treasury receives funds immediately.
+- **Fee handling**: Registration and renewal fees stay in the controller contract. Owner can withdraw using `withdraw()`. This matches the standard ENS pattern.
 - **Name length**: Minimum valid name length is 3 characters, matching ENS standard. Enforced by the `valid()` function.
 - **Commitment**: Simplified `makeCommitment` doesn't include `owner` in the hash. The `commit` function allows re-committing after the previous commitment expires (vs ENS which requires commitment == 0).
 
@@ -224,21 +220,39 @@ The following contracts have no changes beyond import path adjustments:
 
 ---
 
-## Deployed Contract Addresses (V2 — March 2026)
+## Deployed Contract Addresses (V3 — March 2026)
 
-| Contract | Address | Compiler |
-|----------|---------|----------|
-| TNSRegistry | `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99` | v0.8.17 |
-| BaseRegistrarImplementation | `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4` | v0.5.17 |
-| DummyOracle | `0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb` | v0.8.17 |
-| StablePriceOracle | `0x6F258639D183Fb7955B93d086FA9300eED79383A` | v0.5.17 |
-| ReverseRegistrar | `0x78Cd4f5149060De05a84040283812b0c056972eD` | v0.8.17 |
-| Root | `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75` | v0.4.26 |
-| TNSRegistrarController | `0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C` | v0.5.17 |
-| Resolver | `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5` | v0.8.17 |
-| PaymentForwarder | `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F` | v0.8.17 |
-| Treasury | `0x629A5386F73283F80847154d16E359192a891f86` | N/A |
+| Contract | Address | Compiler | Verified |
+|----------|---------|----------|----------|
+| TNSRegistry | `0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e` | v0.7.6 | Yes |
+| BaseRegistrarImplementation | `0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629` | v0.5.17 | Yes |
+| DummyOracle | `0x903cc70Cda037249e8D1870Bcd6C528710B73b7E` | v0.8.17 | Yes |
+| StablePriceOracle | `0x77C5F276dd8f7321E42580AC53E73859C080A0f2` | v0.5.17 | Yes |
+| ReverseRegistrar | `0xE0e5Fa6d1e88506dF21b8E84B9A9D982Ca114080` | v0.8.17 | Yes |
+| Root | `0xf3eeEd24448bE5209ddE4e8AD0078240C7b50E24` | v0.4.26 | Yes |
+| ETHRegistrarController | `0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80` | v0.5.17 | Yes |
+| Resolver | `0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b` | v0.8.17 | Yes |
+| PaymentForwarder | `0xF661722f065D8606CC6b5be84296D67D9fe7bD13` | v0.8.17 | Yes |
+
+## Version History
+
+### V3 (Current — March 2026)
+- Renamed controller back to `ETHRegistrarController` to match ENS naming exactly
+- Removed treasury forwarding — fees stay in controller (owner can withdraw), matching ENS pattern
+- All 9 contracts source-code verified on Intuition Explorer
+- 143 active domains, 111 unique holders
+
+### V2 (Deprecated)
+- Used `TNSRegistrarController` with treasury forwarding
+- All domains migrated to V3
+
+### V1 (Deprecated)
+- Initial deployment
+- All domains migrated to V2, then V3
 
 ## Migration
 
-All 258 domains from V1 contracts were successfully migrated to V2 with preserved ownership and expiry dates. V1 contracts are deprecated.
+All domains have been successfully migrated through V1 → V2 → V3 with preserved ownership and expiry dates:
+- **143 active on-chain domains** on V3
+- **111 unique holders**
+- V1 and V2 controllers permanently disabled

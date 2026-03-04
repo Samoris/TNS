@@ -8,120 +8,119 @@ See [CONTRACT_CHANGES.md](./CONTRACT_CHANGES.md) for a detailed diff of every ch
 
 ---
 
-## Deployed Contracts (V2 — Intuition Mainnet, March 2026)
+## Deployed Contracts (V3 — Intuition Mainnet, March 2026)
 
-All contracts are verified on the [Intuition Explorer](https://explorer.intuition.systems).
+All 9 contracts are source-code verified on the [Intuition Explorer](https://explorer.intuition.systems).
 
 | Contract | Address | Compiler | Explorer |
 |----------|---------|----------|----------|
-| **TNSRegistry** | `0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99` | v0.8.17 | [View](https://explorer.intuition.systems/address/0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99#code) |
-| **BaseRegistrar (ERC-721)** | `0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4` | v0.5.17 | [View](https://explorer.intuition.systems/address/0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4#code) |
-| **TNSRegistrarController** | `0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C` | v0.5.17 | [View](https://explorer.intuition.systems/address/0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C#code) |
-| **Resolver** | `0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5` | v0.8.17 | [View](https://explorer.intuition.systems/address/0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5#code) |
-| **ReverseRegistrar** | `0x78Cd4f5149060De05a84040283812b0c056972eD` | v0.8.17 | [View](https://explorer.intuition.systems/address/0x78Cd4f5149060De05a84040283812b0c056972eD#code) |
-| **Root** | `0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75` | v0.4.26 | [View](https://explorer.intuition.systems/address/0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75#code) |
-| **StablePriceOracle** | `0x6F258639D183Fb7955B93d086FA9300eED79383A` | v0.5.17 | [View](https://explorer.intuition.systems/address/0x6F258639D183Fb7955B93d086FA9300eED79383A#code) |
-| **DummyOracle** | `0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb` | v0.8.17 | [View](https://explorer.intuition.systems/address/0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb#code) |
-| **PaymentForwarder** | `0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F` | v0.8.17 | [View](https://explorer.intuition.systems/address/0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F#code) |
-| **Treasury** | `0x629A5386F73283F80847154d16E359192a891f86` | N/A | [View](https://explorer.intuition.systems/address/0x629A5386F73283F80847154d16E359192a891f86) |
+| **TNSRegistry** | `0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e` | v0.7.6 | [View](https://explorer.intuition.systems/address/0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e#code) |
+| **BaseRegistrar (ERC-721)** | `0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629` | v0.5.17 | [View](https://explorer.intuition.systems/address/0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629#code) |
+| **ETHRegistrarController** | `0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80` | v0.5.17 | [View](https://explorer.intuition.systems/address/0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80#code) |
+| **Resolver** | `0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b` | v0.8.17 | [View](https://explorer.intuition.systems/address/0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b#code) |
+| **ReverseRegistrar** | `0xE0e5Fa6d1e88506dF21b8E84B9A9D982Ca114080` | v0.8.17 | [View](https://explorer.intuition.systems/address/0xE0e5Fa6d1e88506dF21b8E84B9A9D982Ca114080#code) |
+| **Root** | `0xf3eeEd24448bE5209ddE4e8AD0078240C7b50E24` | v0.4.26 | [View](https://explorer.intuition.systems/address/0xf3eeEd24448bE5209ddE4e8AD0078240C7b50E24#code) |
+| **StablePriceOracle** | `0x77C5F276dd8f7321E42580AC53E73859C080A0f2` | v0.5.17 | [View](https://explorer.intuition.systems/address/0x77C5F276dd8f7321E42580AC53E73859C080A0f2#code) |
+| **DummyOracle** | `0x903cc70Cda037249e8D1870Bcd6C528710B73b7E` | v0.8.17 | [View](https://explorer.intuition.systems/address/0x903cc70Cda037249e8D1870Bcd6C528710B73b7E#code) |
+| **PaymentForwarder** | `0xF661722f065D8606CC6b5be84296D67D9fe7bD13` | v0.8.17 | [View](https://explorer.intuition.systems/address/0xF661722f065D8606CC6b5be84296D67D9fe7bD13#code) |
 
 ---
 
 ## Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              TNS ARCHITECTURE                                │
-└─────────────────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------------------+
+|                              TNS ARCHITECTURE                                |
++-----------------------------------------------------------------------------+
 
-                              ┌──────────────────┐
-                              │   Frontend App   │
-                              │   (React/Vite)   │
-                              └────────┬─────────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    │                  │                  │
-                    ▼                  ▼                  ▼
-┌───────────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
-│  TNSRegistrarController│  │ PaymentForwarder │  │   ReverseRegistrar   │
-│  (Registration)        │  │ (Send Payments)  │  │  (Primary Domain)    │
-└───────────┬───────────┘  └────────┬─────────┘  └──────────┬───────────┘
-            │                       │                       │
-            │ commit/register       │ resolve/sendTo        │ setName
-            ▼                       ▼                       ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│                              TNSRegistry                                   │
-│                   (Core Registry - namehash → owner/resolver)              │
-└─────────────────────────────────┬─────────────────────────────────────────┘
-                                  │
-            ┌─────────────────────┼─────────────────────┐
-            │                     │                     │
-            ▼                     ▼                     ▼
-┌───────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
-│  BaseRegistrar    │  │     Resolver     │  │  StablePriceOracle   │
-│  (ERC-721 NFT)    │  │  (Domain Data)   │  │  (Tiered Pricing)    │
-└───────────────────┘  └──────────────────┘  └──────────────────────┘
-        │                       │                     │
-        │ ownerOf               │ addr/text/          │ rentPrice
-        │ nameExpires           │ contenthash         │ (via DummyOracle)
-        ▼                       ▼                     ▼
-┌───────────────────┐  ┌──────────────────┐  ┌──────────────────────┐
-│   Domain Owner    │  │  Domain Records  │  │      Root            │
-│   (NFT Holder)    │  │  (address, IPFS, │  │  (TLD Management)    │
-│                   │  │   text records)  │  │                      │
-└───────────────────┘  └──────────────────┘  └──────────────────────┘
-
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           REGISTRATION FLOW                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-  User                    Controller              BaseRegistrar        Treasury
-   │                          │                        │                   │
-   │  1. makeCommitment()     │                        │                   │
-   │─────────────────────────>│                        │                   │
-   │                          │                        │                   │
-   │  2. commit(commitment)   │                        │                   │
-   │─────────────────────────>│                        │                   │
-   │                          │                        │                   │
-   │      ⏳ Wait 60s-24h     │                        │                   │
-   │                          │                        │                   │
-   │  3. register(name,...)   │                        │                   │
-   │  + TRUST payment ────────│                        │                   │
-   │─────────────────────────>│                        │                   │
-   │                          │  4. register()         │                   │
-   │                          │───────────────────────>│                   │
-   │                          │                        │                   │
-   │                          │  5. Forward TRUST ─────│───────────────────>│
-   │                          │                        │                   │
-   │                          │  6. Mint NFT           │                   │
-   │                          │<───────────────────────│                   │
-   │                          │                        │                   │
-   │  7. NFT Ownership        │                        │                   │
-   │<─────────────────────────│                        │                   │
+                              +------------------+
+                              |   Frontend App   |
+                              |   (React/Vite)   |
+                              +--------+---------+
+                                       |
+                    +------------------+------------------+
+                    |                  |                  |
+                    v                  v                  v
++-----------------------+  +------------------+  +----------------------+
+| ETHRegistrarController|  | PaymentForwarder |  |   ReverseRegistrar   |
+|  (Registration)       |  | (Send Payments)  |  |  (Primary Domain)    |
++-----------+-----------+  +--------+---------+  +----------+-----------+
+            |                       |                       |
+            | commit/register       | resolve/sendTo        | setName
+            v                       v                       v
++---------------------------------------------------------------------------+
+|                              TNSRegistry                                   |
+|                   (Core Registry - namehash -> owner/resolver)             |
++---------------------------------+-----------------------------------------+
+                                  |
+            +---------------------+---------------------+
+            |                     |                     |
+            v                     v                     v
++-------------------+  +------------------+  +----------------------+
+|  BaseRegistrar    |  |     Resolver     |  |  StablePriceOracle   |
+|  (ERC-721 NFT)    |  |  (Domain Data)   |  |  (Tiered Pricing)    |
++-------------------+  +------------------+  +----------------------+
+        |                       |                     |
+        | ownerOf               | addr/text/          | rentPrice
+        | nameExpires           | contenthash         | (via DummyOracle)
+        v                       v                     v
++-------------------+  +------------------+  +----------------------+
+|   Domain Owner    |  |  Domain Records  |  |      Root            |
+|   (NFT Holder)    |  |  (address, IPFS, |  |  (TLD Management)    |
+|                   |  |   text records)  |  |                      |
++-------------------+  +------------------+  +----------------------+
 
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PAYMENT FORWARDING                                 │
-└─────────────────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------------------+
+|                           REGISTRATION FLOW                                  |
++-----------------------------------------------------------------------------+
+
+  User                    Controller              BaseRegistrar
+   |                          |                        |
+   |  1. makeCommitment()     |                        |
+   |------------------------->|                        |
+   |                          |                        |
+   |  2. commit(commitment)   |                        |
+   |------------------------->|                        |
+   |                          |                        |
+   |      Wait 60s-24h        |                        |
+   |                          |                        |
+   |  3. register(name,...)   |                        |
+   |  + TRUST payment --------|                        |
+   |------------------------->|                        |
+   |                          |  4. register()         |
+   |                          |----------------------->|
+   |                          |                        |
+   |                          |  5. Mint NFT           |
+   |                          |<-----------------------|
+   |                          |                        |
+   |  6. NFT Ownership        |                        |
+   |<-------------------------|                        |
+   |                          |                        |
+   |  Fees stay in controller. Owner can withdraw().   |
+
+
++-----------------------------------------------------------------------------+
+|                           PAYMENT FORWARDING                                 |
++-----------------------------------------------------------------------------+
 
   Sender              PaymentForwarder           Registry           Resolver
-   │                          │                      │                  │
-   │  sendTo("alice") + TRUST │                      │                  │
-   │─────────────────────────>│                      │                  │
-   │                          │  resolver(node)      │                  │
-   │                          │─────────────────────>│                  │
-   │                          │<─────────────────────│                  │
-   │                          │                      │                  │
-   │                          │  addr(node)          │                  │
-   │                          │─────────────────────────────────────────>│
-   │                          │<─────────────────────────────────────────│
-   │                          │                      │                  │
-   │                          │  Forward TRUST to recipient             │
-   │                          │──────────────────────────────────────────────>│
-   │                          │                      │                  │    Recipient
-   │  Success                 │                      │                  │
-   │<─────────────────────────│                      │                  │
+   |                          |                      |                  |
+   |  sendTo("alice") + TRUST |                      |                  |
+   |------------------------->|                      |                  |
+   |                          |  resolver(node)      |                  |
+   |                          |--------------------->|                  |
+   |                          |<---------------------|                  |
+   |                          |                      |                  |
+   |                          |  addr(node)          |                  |
+   |                          |--------------------------------------->|
+   |                          |<---------------------------------------|
+   |                          |                      |                  |
+   |                          |  Forward TRUST to recipient             |
+   |                          |---------------------------------------------->|
+   |                          |                      |                  |    Recipient
+   |  Success                 |                      |                  |
+   |<-------------------------|                      |                  |
 ```
 
 ---
@@ -132,13 +131,13 @@ All contracts are verified on the [Intuition Explorer](https://explorer.intuitio
 contracts/tns-ens/
 ├── registry/
 │   ├── TNS.sol                         # Interface (ENS.sol equivalent)
-│   └── TNSRegistry.sol                 # Core registry (namehash → owner/resolver)
+│   └── TNSRegistry.sol                 # Core registry (namehash -> owner/resolver)
 ├── ethregistrar/
 │   ├── IBaseRegistrar.sol              # Registrar interface
 │   └── contracts/
 │       ├── BaseRegistrar.sol           # Abstract base registrar
 │       ├── BaseRegistrarImplementation.sol  # ERC-721 domain NFT
-│       ├── ETHRegistrarController.sol  # TNSRegistrarController (commit-reveal registration)
+│       ├── ETHRegistrarController.sol  # Registration controller (commit-reveal)
 │       ├── StablePriceOracle.sol       # Tiered pricing (via DSValue oracle)
 │       ├── DummyOracle.sol             # Fixed-price oracle (DSValue implementation)
 │       ├── SimplePriceOracle.sol       # Alternative price oracle
@@ -148,7 +147,7 @@ contracts/tns-ens/
 │       └── Migrations.sol              # Truffle migration helper
 ├── reverseRegistrar/
 │   ├── IReverseRegistrar.sol           # Reverse registrar interface
-│   ├── ReverseRegistrar.sol            # Address → name resolution (primary domain)
+│   ├── ReverseRegistrar.sol            # Address -> name resolution (primary domain)
 │   └── ReverseClaimer.sol              # Auto-claim reverse for contracts
 ├── resolvers/
 │   ├── Resolver.sol                    # Public resolver (addr, text, contenthash, name)
@@ -159,7 +158,7 @@ contracts/tns-ens/
 │       ├── ITextResolver.sol           # Text records interface (email, avatar, etc.)
 │       └── IContentHashResolver.sol    # IPFS/content hash interface
 ├── root/
-│   ├── Root.sol                        # Root node owner — manages TLD registration
+│   ├── Root.sol                        # Root node owner - manages TLD registration
 │   ├── Ownable.sol                     # Legacy ownership pattern (for Root.sol)
 │   └── Controllable.sol                # Controller access management
 ├── utils/
@@ -169,12 +168,14 @@ contracts/tns-ens/
 │   ├── INameWrapper.sol                # NameWrapper interface (not deployed)
 │   └── NameWrapper.sol                 # Name wrapping (not deployed)
 ├── scripts/
-│   ├── deploy.ts                       # Full deployment script
+│   ├── deploy-all-v3.ts                # V3 deployment script
 │   ├── verify-all.ts                   # Verify all 9 contracts on explorer
 │   ├── redeploy-controller.ts          # Redeploy controller with fixes
-│   ├── migrate-events.ts              # Event-based domain migration (V1 → V2)
+│   ├── migrate-v1-remaining.ts         # V1 domain migration
+│   ├── migrate-v2-stragglers.ts        # V2 straggler migration
+│   ├── migrate-duplicates.ts           # Duplicate domain migration
 │   └── generate-verify-inputs.ts       # Generate Standard JSON Input for verification
-├── CONTRACT_CHANGES.md                 # Detailed diff of all ENS → TNS changes
+├── CONTRACT_CHANGES.md                 # Detailed diff of all ENS -> TNS changes
 ├── SECURITY.md                         # Security verification guide
 └── hardhat.config.ts                   # Hardhat configuration (Intuition network)
 ```
@@ -189,7 +190,7 @@ contracts/tns-ens/
 | Payment Token | ETH | TRUST (native token) |
 | Network | Ethereum (Chain ID: 1) | Intuition (Chain ID: 1155) |
 | Base Node | `ETH_NODE` | `TRUST_NODE` |
-| Fee Handling | Fees stay in controller, `withdraw()` to owner | Fees forwarded directly to treasury on `register()` / `renew()` |
+| Fee Handling | Fees stay in controller, `withdraw()` to owner | Same as ENS — fees stay in controller, `withdraw()` to owner |
 | Payment Forwarding | Not included | PaymentForwarder contract (send TRUST to `.trust` names) |
 | Price Oracle | Chainlink `AggregatorInterface` | `DSValue` interface (`DummyOracle` with fixed 1:1 rate) |
 | Min Name Length | 3 characters | 3 characters (same as ENS) |
@@ -280,7 +281,7 @@ The registration process uses a **commit-reveal scheme** to prevent front-runnin
 1. **Make Commitment** (off-chain) — Compute `commitment = keccak256(name, owner, secret)`
 2. **Commit** (on-chain) — Submit `commitment` hash to the controller. This reserves the name without revealing it.
 3. **Wait** — Minimum 60 seconds, maximum 24 hours. This waiting period ensures the commitment is mined before the reveal.
-4. **Register** (on-chain) — Reveal the name, owner, and secret along with TRUST payment. The controller verifies the commitment matches, registers the domain on the BaseRegistrar, mints an ERC-721 NFT, and forwards the fee to the treasury.
+4. **Register** (on-chain) — Reveal the name, owner, and secret along with TRUST payment. The controller verifies the commitment matches, registers the domain on the BaseRegistrar, and mints an ERC-721 NFT. Fees stay in the controller contract.
 5. **Set Records** (optional) — Owner can set resolver records (ETH address, text records, content hash) and configure a primary domain for reverse resolution.
 
 The `registerWithConfig` function additionally sets the resolver and ETH address in the same transaction as registration.
@@ -316,7 +317,7 @@ cp .env.example .env
 ### Deploy
 
 ```bash
-npx hardhat run scripts/deploy.ts --network intuition
+npx hardhat run scripts/deploy-all-v3.ts --network intuition
 ```
 
 ### Post-Deployment Setup
@@ -334,7 +335,7 @@ After deploying all contracts, the following configuration steps are required:
 
 ## Contract Verification
 
-All 9 contracts are verified on the Intuition Explorer (Blockscout).
+All 9 contracts are source-code verified on the Intuition Explorer (Blockscout).
 
 ### Verify All Contracts
 
@@ -370,7 +371,7 @@ See [SECURITY.md](./SECURITY.md) for a comprehensive security verification guide
 |-----------|--------|----------------|-------|
 | TNSRegistry | ENS Fork | High | Battle-tested, minimal changes |
 | BaseRegistrar | ENS Fork | High | Standard ERC-721, minimal changes |
-| TNSRegistrarController | ENS Fork | High | Commit-reveal, treasury addition |
+| ETHRegistrarController | ENS Fork | High | Commit-reveal, ENS-matching fee handling |
 | StablePriceOracle | ENS Fork | High | DSValue oracle instead of Chainlink |
 | ReverseRegistrar | ENS Fork | High | Controllable inheritance added |
 | Root | ENS Fork | High | TLD management, minimal changes |
@@ -380,14 +381,21 @@ See [SECURITY.md](./SECURITY.md) for a comprehensive security verification guide
 
 ---
 
-## Migration (V1 → V2)
+## Migration History
 
-All 258 domains from V1 contracts were successfully migrated to V2 in March 2026:
+### V1 -> V2 -> V3
 
-- Domain ownership preserved (same NFT token IDs)
-- Expiry dates preserved exactly
-- Migration performed via `migrate-events.ts` script (event-based batch migration)
-- V1 contracts are deprecated and no longer in use
+All domains have been migrated through three contract versions with preserved ownership and expiry dates:
+
+- **V1** (initial deployment): First set of contracts, deprecated
+- **V2** (deprecated): Used `TNSRegistrarController` with treasury forwarding, deprecated
+- **V3** (current): Uses `ETHRegistrarController` matching ENS naming, fees stay in controller
+
+**Final V3 state:**
+- 143 active on-chain domains
+- 111 unique holders
+- All V1 and V2 controllers permanently disabled
+- Migration performed via event-based batch scripts
 
 ---
 

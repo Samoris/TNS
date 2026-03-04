@@ -2161,7 +2161,7 @@ export class Web3Service {
    * The user sends TRUST directly with the transaction (payable function)
    * No ERC-20 approval is needed.
    * 
-   * The TNSRegistrarController uses the full ENS signature with 8 parameters:
+   * The ETHRegistrarController uses the full ENS signature with 8 parameters:
    * register(name, owner, duration, secret, resolver, data, reverseRecord, ownerControlledFuses)
    */
   public async registerDomainENS(
@@ -2194,7 +2194,7 @@ export class Web3Service {
         ethers.solidityPacked(["bytes32", "bytes32"], [label, secret])
       );
       
-      console.log("Registering domain via TNSRegistrarController:");
+      console.log("Registering domain via ETHRegistrarController:");
       console.log("- Domain:", normalizedDomain);
       console.log("- Owner:", owner);
       console.log("- Duration:", durationSeconds, "seconds");

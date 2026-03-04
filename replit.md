@@ -28,7 +28,7 @@ Core features include domain registration with a 2-step commit-reveal process, a
 - **NFT Metadata**: ERC-721 compliant metadata with dynamic SVG images and attributes like domain length, pricing tier, and dates.
 
 ### System Design Choices
-The smart contracts are exact clones of the audited ENS contracts (from `intuition-box/ens_ethregistrar-tns-diff` and `intuition-box/ens_root-tns-diff`), with only `ENS` → `TNS`, `.eth` → `.trust`, and TNS-specific pricing as changes. The contract set includes: `TNSRegistry`, `BaseRegistrarImplementation` (ERC-721), `TNSRegistrarController` (commit-reveal with `registerWithConfig`), `StablePriceOracle` (USD-based via Chainlink `AggregatorInterface`), `Root` (root node ownership with TLD locking), `ReverseRegistrar`, `Resolver`, and `PaymentForwarder`. Supporting contracts include `DummyOracle`, `SimplePriceOracle`, `SafeMath`, `StringUtils`, `Ownable`, and `Controllable`. Migrated domains are handled gracefully, ensuring address resolution and payment forwarding work even without resolver records.
+The smart contracts are exact clones of the audited ENS contracts (from `intuition-box/ens_ethregistrar-tns-diff` and `intuition-box/ens_root-tns-diff`), with only `ENS` → `TNS`, `.eth` → `.trust`, and TNS-specific pricing as changes. The contract set includes: `TNSRegistry`, `BaseRegistrarImplementation` (ERC-721), `ETHRegistrarController` (commit-reveal with `registerWithConfig`), `StablePriceOracle` (USD-based via `DSValue` oracle interface), `Root` (root node ownership with TLD locking), `ReverseRegistrar`, `Resolver`, and `PaymentForwarder`. Supporting contracts include `DummyOracle`, `SimplePriceOracle`, `SafeMath`, `StringUtils`, `Ownable`, and `Controllable`. Fees stay in the controller contract (owner can withdraw), matching the standard ENS pattern. Migrated domains are handled gracefully, ensuring address resolution and payment forwarding work even without resolver records.
 The frontend is built with React, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query, and Wouter. The backend uses Express.js and TypeScript, providing APIs for domain availability, registration, and user account management.
 
 ### Data Persistence
@@ -84,7 +84,7 @@ TNS integrates with Intuition's Knowledge Graph for AI agent identity infrastruc
   - Root: `0xf3eeEd24448bE5209ddE4e8AD0078240C7b50E24`
   - Intuition EthMultiVault (Proxy): `0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e`
 - **V1/V2 (deprecated)**: All previous contract addresses are deprecated. V3 deployed March 2026 with ENS-matching naming.
-- **Migration**: All 136 domains successfully migrated to V3 contracts with preserved ownership and expiry dates. Fees stay in controller, owner can withdraw.
+- **Migration**: All 143 domains (111 unique holders) successfully migrated to V3 contracts with preserved ownership and expiry dates. Fees stay in controller, owner can withdraw. V1 and V2 controllers permanently disabled.
 - **Wallet Integration**: MetaMask
 - **Smart Contract Libraries**: OpenZeppelin
 - **Styling Framework**: Tailwind CSS

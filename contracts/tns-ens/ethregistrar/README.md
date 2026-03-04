@@ -20,9 +20,9 @@ BaseRegistrar is the contract that owns the TLD in the TNS registry. This contra
 
 This separation of concerns provides name owners strong guarantees over continued ownership of their existing names, while still permitting innovation and change in the way names are registered and renewed via the controller mechanism.
 
-### [TnsRegistrarController](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol)
+### [ETHRegistrarController](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol)
 
-TnsRegistrarController is the first implementation of a registration controller for the new registrar. This contract implements the following functionality:
+ETHRegistrarController is the first implementation of a registration controller for the new registrar. This contract implements the following functionality:
 
  - The owner of the registrar may set a price oracle contract, which determines the cost of registrations and renewals based on the name and the desired registration or renewal duration.
  - The owner of the registrar may withdraw any collected funds to their account.

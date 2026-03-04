@@ -18,19 +18,19 @@ This guide explains how to verify the security of the TNS (Trust Name Service) s
 
 ### Step 1: Verify Contracts on Explorer
 
-All TNS contracts are verified on the Intuition Explorer. You can view the source code directly:
+All TNS V3 contracts are verified on the Intuition Explorer. You can view the source code directly:
 
 | Contract | Verified Source |
 |----------|-----------------|
-| TNSRegistry | [View Code](https://explorer.intuition.systems/address/0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99#code) |
-| BaseRegistrar | [View Code](https://explorer.intuition.systems/address/0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4#code) |
-| TNSRegistrarController | [View Code](https://explorer.intuition.systems/address/0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C#code) |
-| Resolver | [View Code](https://explorer.intuition.systems/address/0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5#code) |
-| ReverseRegistrar | [View Code](https://explorer.intuition.systems/address/0x78Cd4f5149060De05a84040283812b0c056972eD#code) |
-| StablePriceOracle | [View Code](https://explorer.intuition.systems/address/0x6F258639D183Fb7955B93d086FA9300eED79383A#code) |
-| Root | [View Code](https://explorer.intuition.systems/address/0x46BAEACf2B083634FE4FC6b1140B3e809D61cf75#code) |
-| DummyOracle | [View Code](https://explorer.intuition.systems/address/0xE4DA8E7A4378756B49Ca664C4690499A8e9B26cb#code) |
-| PaymentForwarder | [View Code](https://explorer.intuition.systems/address/0xDdecb17b645a3d9540a9B9061D0182eC2ef88a7F#code) |
+| TNSRegistry | [View Code](https://explorer.intuition.systems/address/0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e#code) |
+| BaseRegistrar | [View Code](https://explorer.intuition.systems/address/0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629#code) |
+| ETHRegistrarController | [View Code](https://explorer.intuition.systems/address/0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80#code) |
+| Resolver | [View Code](https://explorer.intuition.systems/address/0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b#code) |
+| ReverseRegistrar | [View Code](https://explorer.intuition.systems/address/0xE0e5Fa6d1e88506dF21b8E84B9A9D982Ca114080#code) |
+| StablePriceOracle | [View Code](https://explorer.intuition.systems/address/0x77C5F276dd8f7321E42580AC53E73859C080A0f2#code) |
+| Root | [View Code](https://explorer.intuition.systems/address/0xf3eeEd24448bE5209ddE4e8AD0078240C7b50E24#code) |
+| DummyOracle | [View Code](https://explorer.intuition.systems/address/0x903cc70Cda037249e8D1870Bcd6C528710B73b7E#code) |
+| PaymentForwarder | [View Code](https://explorer.intuition.systems/address/0xF661722f065D8606CC6b5be84296D67D9fe7bD13#code) |
 
 ### Step 2: Compare with Repository
 
@@ -48,7 +48,7 @@ npm install
 npx hardhat compile
 
 # Compare bytecode (example for TNSRegistry)
-npx hardhat verify --network intuition 0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99
+npx hardhat verify --network intuition 0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e
 ```
 
 ---
@@ -74,7 +74,7 @@ Use a diff tool to compare TNS contracts with ENS originals:
 |--------------|--------------|---------------------|
 | `registry/TNSRegistry.sol` | `registry/ENSRegistry.sol` | Interface name only |
 | `ethregistrar/BaseRegistrarImplementation.sol` | `ethregistrar/BaseRegistrarImplementation.sol` | Minimal changes |
-| `ethregistrar/TNSRegistrarController.sol` | `ethregistrar/ETHRegistrarController.sol` | TRUST payments, node constants |
+| `ethregistrar/ETHRegistrarController.sol` | `ethregistrar/ETHRegistrarController.sol` | Simplified makeCommitment, re-commit logic |
 | `resolvers/Resolver.sol` | `resolvers/PublicResolver.sol` | Simplified version |
 | `reverseRegistrar/ReverseRegistrar.sol` | `reverseRegistrar/ReverseRegistrar.sol` | Minimal changes |
 
@@ -88,9 +88,9 @@ grep -r "1155" contracts/         # Chain ID
 ```
 
 **Expected modifications:**
-- `ETH_NODE` → `TRUST_NODE` (namehash constant)
-- Interface imports: `ENS` → `TNS`
-- Token name in comments: ETH → TRUST
+- `ETH_NODE` -> `TRUST_NODE` (namehash constant)
+- Interface imports: `ENS` -> `TNS`
+- Token name in comments: ETH -> TRUST
 
 ---
 
@@ -105,25 +105,25 @@ The PaymentForwarder is the **only non-ENS contract**. Review it carefully:
 #### Security Checklist
 
 ```solidity
-// ✅ No storage variables (stateless)
+// No storage variables (stateless)
 TNS public immutable tns;
 
-// ✅ No admin/owner functions (permissionless)
+// No admin/owner functions (permissionless)
 // No onlyOwner modifiers
 
-// ✅ No upgradeable patterns (immutable)
+// No upgradeable patterns (immutable)
 // No proxy, no delegatecall
 
-// ✅ Explicit error handling
+// Explicit error handling
 error DomainNotRegistered(string name);
 error NoResolverSet(string name);
 error NoAddressSet(string name);
 error PaymentFailed();
 
-// ✅ CEI pattern (Checks-Effects-Interactions)
+// CEI pattern (Checks-Effects-Interactions)
 // All checks happen before the external call
 
-// ✅ Event emission for tracking
+// Event emission for tracking
 event PaymentForwarded(string indexed name, address indexed from, address indexed to, uint256 amount);
 ```
 
@@ -153,11 +153,11 @@ const { ethers } = require("ethers");
 
 const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
 
-// Contract addresses
-const REGISTRY = "0x6C9B42e582ce2b5d514cDa74acc476d519cd1c99";
-const REGISTRAR = "0xABD2b0a55420b6D99205e561F7Fb27BE884C1dc4";
-const CONTROLLER = "0x8A5F965e8D5e6330f99B81674670aC6f643F1A8C";
-const RESOLVER = "0xF8Fc1F7c4B206349278Dbd7DA433F18887276be5";
+// V3 Contract addresses
+const REGISTRY = "0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e";
+const REGISTRAR = "0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629";
+const CONTROLLER = "0xf21CD9f92eB1B5E484dF2eeE9EbC86bCAd25Ca80";
+const RESOLVER = "0x133fAc43bf991dA5B71DBE3a934F4CC607F5545b";
 
 // Calculate TRUST_NODE
 const TRUST_LABEL = ethers.keccak256(ethers.toUtf8Bytes("trust"));
@@ -189,15 +189,16 @@ console.log("Controller authorized:", isController);
 // Expected: true
 ```
 
-### Step 3: Verify Treasury Configuration
+### Step 3: Verify Fee Handling
 
 ```javascript
-// Check treasury address in Controller
-const controllerAbi = ["function treasury() view returns (address)"];
+// In V3, fees stay in the controller contract
+// Owner can withdraw using withdraw()
+const controllerAbi = ["function owner() view returns (address)"];
 const controller = new ethers.Contract(CONTROLLER, controllerAbi, provider);
-const treasury = await controller.treasury();
-console.log("Treasury:", treasury);
-// Expected: 0x629A5386F73283F80847154d16E359192a891f86
+const owner = await controller.owner();
+console.log("Controller owner (can withdraw fees):", owner);
+// Expected: 0xDC1DE801d1a38cBCFBc91Ca019c0F2fCcAf1AD14
 ```
 
 ---
@@ -208,41 +209,41 @@ console.log("Treasury:", treasury);
 
 | Vulnerability | Status | Notes |
 |---------------|--------|-------|
-| Unauthorized ownership changes | ✅ Safe | Only owner can transfer |
-| Resolver manipulation | ✅ Safe | Only owner can set |
-| Subdomain attacks | ✅ Safe | Requires parent ownership |
+| Unauthorized ownership changes | Safe | Only owner can transfer |
+| Resolver manipulation | Safe | Only owner can set |
+| Subdomain attacks | Safe | Requires parent ownership |
 
 ### Registrar (BaseRegistrarImplementation.sol)
 
 | Vulnerability | Status | Notes |
 |---------------|--------|-------|
-| Unauthorized minting | ✅ Safe | Controller-only |
-| Transfer during grace | ✅ Safe | NFT frozen during grace |
-| Expiry manipulation | ✅ Safe | Only extends, never reduces |
+| Unauthorized minting | Safe | Controller-only |
+| Transfer during grace | Safe | NFT frozen during grace |
+| Expiry manipulation | Safe | Only extends, never reduces |
 
-### Controller (TNSRegistrarController.sol)
+### Controller (ETHRegistrarController.sol)
 
 | Vulnerability | Status | Notes |
 |---------------|--------|-------|
-| Front-running | ✅ Safe | Commit-reveal scheme |
-| Commitment replay | ✅ Safe | Consumed on register |
-| Price manipulation | ✅ Safe | Oracle is immutable |
-| Reentrancy | ✅ Safe | ReentrancyGuard used |
+| Front-running | Safe | Commit-reveal scheme |
+| Commitment replay | Safe | Consumed on register |
+| Price manipulation | Safe | Oracle is immutable |
+| Reentrancy | Safe | ReentrancyGuard used |
 
 ### Resolver (Resolver.sol)
 
 | Vulnerability | Status | Notes |
 |---------------|--------|-------|
-| Unauthorized record changes | ✅ Safe | Owner/authorized only |
-| Multicall issues | ✅ Safe | Delegatecall protected |
+| Unauthorized record changes | Safe | Owner/authorized only |
+| Multicall issues | Safe | Delegatecall protected |
 
 ### PaymentForwarder (PaymentForwarder.sol)
 
 | Vulnerability | Status | Notes |
 |---------------|--------|-------|
-| Reentrancy | ⚠️ Low Risk | No state after call |
-| Resolver trust | ⚠️ Medium | Domain owner controls |
-| Zero address | ✅ Safe | Explicit revert |
+| Reentrancy | Low Risk | No state after call |
+| Resolver trust | Medium | Domain owner controls |
+| Zero address | Safe | Explicit revert |
 
 ---
 
@@ -250,13 +251,13 @@ console.log("Treasury:", treasury);
 
 | Component | Origin | Security Level | Notes |
 |-----------|--------|----------------|-------|
-| TNSRegistry | ENS Fork | ✅ High | Battle-tested |
-| BaseRegistrar | ENS Fork | ✅ High | ERC-721 standard |
-| TNSRegistrarController | ENS Fork | ✅ High | Commit-reveal secure |
-| Resolver | ENS Fork | ✅ High | Standard pattern |
-| ReverseRegistrar | ENS Fork | ✅ High | Minimal changes |
-| StablePriceOracle | ENS Fork | ✅ High | Simple pricing |
-| PaymentForwarder | Custom | ⚠️ Medium | Needs review |
+| TNSRegistry | ENS Fork | High | Battle-tested |
+| BaseRegistrar | ENS Fork | High | ERC-721 standard |
+| ETHRegistrarController | ENS Fork | High | Commit-reveal secure |
+| Resolver | ENS Fork | High | Standard pattern |
+| ReverseRegistrar | ENS Fork | High | Minimal changes |
+| StablePriceOracle | ENS Fork | High | Simple pricing |
+| PaymentForwarder | Custom | Medium | Needs review |
 
 **Overall Assessment**: The core TNS contracts inherit the security of the well-audited ENS codebase. The custom PaymentForwarder is simple and low-risk but should be reviewed independently.
 

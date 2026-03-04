@@ -380,7 +380,7 @@ app.get('/api/owners/:address/domains', async (req, res) => {
 import { ethers } from 'ethers';
 import { createDomainAtom, createDomainTriples } from '../server/intuition';
 
-const TNS_REGISTRY_ADDRESS = '0x7C365AF9034b00dadc616dE7f38221C678D423Fa';
+const TNS_REGISTRY_ADDRESS = '0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e';
 const INTUITION_RPC = 'https://intuition.calderachain.xyz';
 
 async function syncAllDomains() {
@@ -442,7 +442,7 @@ syncAllDomains();
 import { ethers } from 'ethers';
 import { createDomainAtom, createDomainTriples } from './intuition';
 
-const TNS_REGISTRY_ADDRESS = '0x7C365AF9034b00dadc616dE7f38221C678D423Fa';
+const TNS_REGISTRY_ADDRESS = '0x3220B4EDbA3a1661F02f1D8D241DBF55EDcDa09e';
 const INTUITION_RPC = 'wss://intuition.calderachain.xyz/ws';
 
 export function startEventListener() {
