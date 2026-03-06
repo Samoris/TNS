@@ -12,10 +12,13 @@ Full side-by-side diffs of every change from the original ENS contracts are avai
 ## Change Categories
 
 All changes fall into these categories:
-1. **Naming**: `ENS` -> `TNS`, `.eth` -> `.trust`, `ens` -> `tns`
-2. **Pragma**: Updated Solidity versions for cross-version compatibility
-3. **Import Paths**: Adjusted to match the project's directory structure
-4. **New Contracts**: PaymentForwarder and Resolver (TNS-specific utilities)
+1. **Naming (partial)**: Only the newer contracts (TNSRegistry, ReverseRegistrar, Resolver, PaymentForwarder) rename to `TNS` type and `tns` variable. The ethregistrar contracts (BaseRegistrar, BaseRegistrarImplementation, ETHRegistrarController, StablePriceOracle) and Root keep the original `ENS` type and `ens` variable from `@ensdomains/ens`. Comment references updated to "TNS" and ".trust" across all contracts.
+2. **TLD**: `.eth` → `.trust` (Root's `TRUST_NODE` restriction)
+3. **Pragma**: Updated Solidity versions for cross-version compatibility
+4. **Import Paths**: Adjusted to match the project's directory structure
+5. **Simplified registration**: `register(name, owner, duration, secret)` instead of ENS's `registerWithConfig`; `makeCommitment(name, secret)` instead of `makeCommitmentWithConfig`
+6. **Oracle**: `DSValue` interface (MakerDAO-style `read()`) instead of Chainlink's `AggregatorInterface`
+7. **New Contracts**: PaymentForwarder and Resolver (TNS-specific utilities)
 
 ---
 
@@ -23,7 +26,7 @@ All changes fall into these categories:
 
 ### 1. TNSRegistry (`registry/TNSRegistry.sol`)
 **ENS Original**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
-**Compiler**: Solidity 0.7.6
+**Compiler**: Solidity ^0.7.0
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -40,7 +43,7 @@ All changes fall into these categories:
 
 ### 2. TNS Interface (`registry/TNS.sol`)
 **ENS Original**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
-**Compiler**: Solidity 0.8.17
+**Compiler**: Solidity >=0.7.0
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -54,61 +57,68 @@ All changes fall into these categories:
 
 ### 3. BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)
 **ENS Original**: [`BaseRegistrar.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
-**Compiler**: Solidity 0.5.17
+**Compiler**: Solidity >=0.4.24
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ENS public ens` | `ENS public tns` |
+| Variable name | `ENS public ens` | `ENS public ens` (unchanged — keeps `ens` variable and `ENS` type from `@ensdomains/ens`) |
+| Grace period | `GRACE_PERIOD = 90 days` | `GRACE_PERIOD = 30 days` |
 | Comments | "The ENS registry" | "The TNS registry" |
 | Comments | ".eth" references | ".trust" references |
 | Comments | "Reclaim ownership in ENS" | "Reclaim ownership in TNS" |
 
-**Logic changes**: None. Variable rename only.
+**Logic changes**: Grace period reduced from 90 days to 30 days. Variable name `ens` and type `ENS` are kept as-is from the original ENS imports. Only comments updated to reference TNS/.trust.
 
 ---
 
 ### 4. BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)
 **ENS Original**: [`BaseRegistrarImplementation.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
-**Compiler**: Solidity 0.5.17
+**Compiler**: Solidity ^0.5.0
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ens` | `tns` |
-| Constructor | `(ENS _ens, bytes32 _baseNode)` | `(ENS _tns, bytes32 _baseNode, uint _transferPeriodEnds)` |
+| Variable name | `ens` | `ens` (unchanged — keeps original `ens` variable and `ENS` type) |
+| Constructor | `(ENS _ens, bytes32 _baseNode)` | `(ENS _ens, bytes32 _baseNode, uint _transferPeriodEnds)` |
+| All internal refs | `ens.xxx()` | `ens.xxx()` (unchanged) |
 | Comments | "ENS" references | "TNS" references |
 
-**Logic changes**: Added `transferPeriodEnds` constructor parameter for migration period handling. This was already present in the ENS codebase for the .eth migration from the interim registrar.
+**Logic changes**: Added `transferPeriodEnds` constructor parameter for migration period handling. This was already present in the ENS codebase for the .eth migration from the interim registrar. Variable name `ens` and type `ENS` are kept as-is from the original.
 
 ---
 
 ### 5. ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)
 **ENS Original**: [`ETHRegistrarController.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
-**Compiler**: Solidity 0.5.17
+**Compiler**: Solidity ^0.5.0
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
 | Contract name | `ETHRegistrarController` | `ETHRegistrarController` (unchanged in V3) |
-| Constructor | `(BaseRegistrar _base, PriceOracle _prices)` | `(BaseRegistrar _base, PriceOracle _prices)` (matches ENS) |
-| `register()` | Funds stay in contract | Funds stay in contract (matches ENS) |
-| `renew()` | Funds stay in contract | Funds stay in contract (matches ENS) |
+| Constructor | `(BaseRegistrar _base, PriceOracle _prices, uint _minCommitmentAge, uint _maxCommitmentAge)` | `(BaseRegistrar _base, PriceOracle _prices)` — commitment ages are constants instead of constructor params |
+| `MIN_COMMITMENT_AGE` | Constructor parameter | `uint constant public MIN_COMMITMENT_AGE = 1 minutes` |
+| `MAX_COMMITMENT_AGE` | Constructor parameter | `uint constant public MAX_COMMITMENT_AGE = 48 hours` |
+| `MIN_REGISTRATION_DURATION` | N/A | `uint constant public MIN_REGISTRATION_DURATION = 28 days` |
+| `register()` | `registerWithConfig(name, owner, duration, secret, resolver, addr)` | Simplified to `register(name, owner, duration, secret)` — no resolver/addr params, no auto-setup at registration |
+| `makeCommitment()` | `makeCommitmentWithConfig(name, owner, secret, resolver, addr)` | Simplified to `makeCommitment(name, secret)` — no owner, resolver, or addr in hash |
+| `commit()` | `require(commitments[commitment] == 0)` | `require(commitments[commitment] + MAX_COMMITMENT_AGE < now)` — allows re-committing after expiry |
+| `register()` refund | Reverts on failure | Returns funds on expired commitment or unavailable name instead of reverting |
 | `withdraw()` | Sends to `owner()` | Sends to `owner()` (matches ENS) |
-| `valid()` | `name.strlen() >= 3` | `name.strlen() >= 3` (matches ENS standard) |
-| `makeCommitment()` | Includes `owner` param | Simplified to `(name, secret)` only |
-| `commit()` | `require(commitments[commitment] == 0)` | `require(commitments[commitment] + MAX_COMMITMENT_AGE < now)` |
+| `valid()` | `name.strlen() >= 3` | `name.strlen() >= 3` (matches ENS) |
 
 **Logic changes**:
-- **Fee handling**: Registration and renewal fees stay in the controller contract. Owner can withdraw using `withdraw()`. This matches the standard ENS pattern.
-- **Name length**: Minimum valid name length is 3 characters, matching ENS standard. Enforced by the `valid()` function.
-- **Commitment**: Simplified `makeCommitment` doesn't include `owner` in the hash. The `commit` function allows re-committing after the previous commitment expires (vs ENS which requires commitment == 0).
+- **Simplified registration**: No `registerWithConfig` — the `register(name, owner, duration, secret)` function only registers the domain via `base.register()`. It does NOT automatically set a resolver or address record. Users must set resolver records separately after registration.
+- **Commitment ages hardcoded**: `MIN_COMMITMENT_AGE` (1 minute) and `MAX_COMMITMENT_AGE` (48 hours) are constants rather than constructor parameters.
+- **Commitment**: Simplified `makeCommitment` hashes only `(label, secret)` — doesn't include `owner` in the hash. The `commit` function allows re-committing after the previous commitment expires (vs ENS which requires commitment == 0).
+- **Graceful failure**: If the commitment is too old or the name is taken, `register()` refunds `msg.value` and returns instead of reverting.
+- **Fee handling**: Registration and renewal fees stay in the controller contract. Owner can withdraw using `withdraw()`.
 
 ---
 
 ### 6. StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)
 **ENS Original**: [`StablePriceOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
-**Compiler**: Solidity 0.5.17
+**Compiler**: Solidity ^0.5.0
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -122,37 +132,39 @@ All changes fall into these categories:
 
 ### 7. DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)
 **ENS Original**: [`DummyOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
-**Compiler**: Solidity 0.8.17
+**Compiler**: Solidity >=0.4.24
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| No significant changes | Implements `DSValue` interface | Same — returns stored value via `read()` |
+| Oracle interface | Chainlink `AggregatorInterface` | `DSValue`-compatible — `read()` returns `bytes32` instead of `latestAnswer()` |
+| Functions | `latestAnswer() returns (int256)` | `read() returns (bytes32)`, `set(uint)` |
 
-**Logic changes**: None. Functionally identical mock oracle.
+**Logic changes**: Adapted to use `DSValue`-style `read()` interface (returns `bytes32`) instead of Chainlink's `latestAnswer()` (returns `int256`). Stores a `uint` value set by owner, returned as `bytes32`. Works with the `StablePriceOracle`'s `DSValue` interface.
 
 ---
 
 ### 8. Root (`root/Root.sol`)
 **ENS Original**: [`Root.sol`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) from [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
-**Compiler**: Solidity 0.4.26
+**Compiler**: Solidity ^0.4.24
 **Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ENS public ens` | `ENS public tns` |
-| All references | `ens.xxx()` | `tns.xxx()` |
-| DNS SOA hash | `\x04_ens` | `\x04_tns` |
-| TLD restriction | `ETH_NODE` | `TRUST_NODE` = `keccak256("trust")` |
+| Variable name | `ENS public ens` | `ENS public ens` (unchanged — keeps `ens` variable and `ENS` type) |
+| All references | `ens.xxx()` | `ens.xxx()` (unchanged) |
+| DNS SOA hash | `\x04_ens` | `\x04_ens` (unchanged) |
+| TLD restriction | `ETH_NODE` = `keccak256("eth")` | `TRUST_NODE` = `keccak256("trust")` |
 | Import | External Ownable | Local `./Ownable.sol` |
+| Constructor | `(ENS _ens, DNSSEC _oracle)` | `(ENS _ens, DNSSEC _oracle, address _registrar)` — added registrar param |
 
-**Logic changes**: The `registerTLD` function restricts registration of the `.trust` label (instead of `.eth`). DNS SOA lookup uses `_tns` suffix. Variable renamed throughout.
+**Logic changes**: The `registerTLD` function restricts registration of the `.trust` label (instead of `.eth`) via `require(label != TRUST_NODE)`. Constructor takes an additional `_registrar` address parameter. Variable name `ens`, type `ENS`, and DNS SOA hash `_ens` are all kept as-is from the original ENS source.
 
 ---
 
 ### 9. Ownable (`root/Ownable.sol`)
 **ENS Original**: [`Ownable.sol`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) from [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
-**Compiler**: Solidity 0.4.26
+**Compiler**: Solidity ^0.4.24
 **Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -178,41 +190,43 @@ All changes fall into these categories:
 
 ### 11. ReverseRegistrar (`reverseRegistrar/ReverseRegistrar.sol`)
 **ENS Original**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
-**Compiler**: Solidity 0.8.17
+**Compiler**: Solidity >=0.8.4
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ENS ens` | `TNS tns` |
+| Type & variable | `ENS public ens` | `TNS public immutable tns` (type changed to `TNS`, variable renamed, marked `immutable`) |
 | Import | `@ensdomains/ens-contracts/...` | `../registry/TNS.sol` |
 | Inheritance | `Ownable` | `Ownable, Controllable` |
-| Constructor | Basic | Added `oldRegistrar` migration logic |
+| Constructor | `(ENS ensAddr)` | `(TNS tnsAddr)` — added `oldRegistrar` migration logic |
 
-**Logic changes**: Inherits from `Controllable` to allow controllers to manage reverse records. Constructor checks for an existing old registrar at the reverse node and migrates if found.
+**Logic changes**: Uses `TNS` type and `tns` variable (renamed from ENS). Inherits from `Controllable` to allow controllers to manage reverse records. Constructor checks for an existing old registrar at the reverse node and calls `claim()` to migrate ownership if found.
 
 ---
 
 ### 12. Resolver (`resolvers/Resolver.sol`)
 **ENS Original**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
-**Compiler**: Solidity 0.8.17
+**Compiler**: Solidity >=0.8.17 <0.9.0
 
 This is a **simplified but functionally equivalent** version of the ENS PublicResolver.
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ENS ens` | `TNS tns` |
-| Authorization | Registry owner only | Added `trustedController` and `trustedReverseRegistrar` roles |
+| Type & variable | `ENS ens` | `TNS public immutable tns` (type changed to `TNS`, variable renamed, marked `immutable`) |
+| Authorization | Registry owner + operator approvals | Added `trustedController` and `trustedReverseRegistrar` roles (bypass node ownership check) |
 | Storage | Multiple inherited profile contracts | Single contract with `versionable_` mappings |
 | Admin | N/A | `setTrustedController()`, `setTrustedReverseRegistrar()`, `transferOwnership()` |
+| Record versioning | Uses `recordVersions` mapping with inherited profiles | Uses `recordVersions` mapping with inline `versionable_` storage mappings |
+| Approval | `OperatorApprovals` + `TokenApprovals` | Same pattern with `_operatorApprovals` and `_tokenApprovals` |
 
-**Logic changes**: Combines all resolver profiles (addr, name, text, contenthash) into a single contract with manual record versioning. Adds trusted role authorization so the controller and reverse registrar can set records automatically during registration.
+**Logic changes**: Uses `TNS` type and `tns` variable (renamed from ENS). Combines all resolver profiles (addr, name, text, contenthash) into a single contract with manual record versioning. Adds trusted role authorization so the controller and reverse registrar can set records automatically during registration. Implements `clearRecords()` for record version bumping.
 
 ---
 
 ### 13. PaymentForwarder (`utils/PaymentForwarder.sol`)
 **ENS Original**: None — **TNS-specific new contract**
-**Compiler**: Solidity 0.8.17
+**Compiler**: Solidity ~0.8.17
 
-A utility contract that enables sending native TRUST tokens to `.trust` domain names. It resolves the domain name through the TNS registry/resolver and forwards the payment to the resolved address.
+A utility contract that enables sending native TRUST tokens to `.trust` domain names. Uses the `TNS` type and `tns` variable (immutable). Resolves the domain name through the TNS registry/resolver and forwards the payment to the resolved address. Includes `sendTo(name)` for payments, `resolve(name)` for address lookups, and `namehash(name)` for computing node hashes. Uses custom errors (`DomainNotRegistered`, `NoResolverSet`, `NoAddressSet`, `PaymentFailed`) for gas-efficient reverts.
 
 ---
 
