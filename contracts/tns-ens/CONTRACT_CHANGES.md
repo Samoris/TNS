@@ -2,6 +2,13 @@
 
 This document catalogs every change made to the audited ENS contracts when adapting them for the Trust Name Service (TNS). The guiding principle is: **contracts are exact clones of audited ENS source with only the minimal changes listed below**.
 
+## Diff Reviews
+
+Full side-by-side diffs of every change from the original ENS contracts are available for review:
+
+- **ethregistrar contracts diff**: [intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
+- **root contracts diff**: [intuition-box/diff_root-contracts_ENS-TNS/pull/2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
+
 ## Change Categories
 
 All changes fall into these categories:
@@ -15,7 +22,7 @@ All changes fall into these categories:
 ## Contract-by-Contract Changes
 
 ### 1. TNSRegistry (`registry/TNSRegistry.sol`)
-**ENS Original**: `ENSRegistry.sol` from `@ensdomains/ens`
+**ENS Original**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
 **Compiler**: Solidity 0.7.6
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -32,7 +39,7 @@ All changes fall into these categories:
 ---
 
 ### 2. TNS Interface (`registry/TNS.sol`)
-**ENS Original**: `ENS.sol` interface from `@ensdomains/ens`
+**ENS Original**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
 **Compiler**: Solidity 0.8.17
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -46,8 +53,9 @@ All changes fall into these categories:
 ---
 
 ### 3. BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)
-**ENS Original**: `BaseRegistrar.sol` from `ens_ethregistrar`
+**ENS Original**: [`BaseRegistrar.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrar.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar)
 **Compiler**: Solidity 0.5.17
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -61,8 +69,9 @@ All changes fall into these categories:
 ---
 
 ### 4. BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)
-**ENS Original**: `BaseRegistrarImplementation.sol` from `ens_ethregistrar`
+**ENS Original**: [`BaseRegistrarImplementation.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrarImplementation.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar)
 **Compiler**: Solidity 0.5.17
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -75,8 +84,9 @@ All changes fall into these categories:
 ---
 
 ### 5. ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)
-**ENS Original**: `ETHRegistrarController.sol` from `ens_ethregistrar`
+**ENS Original**: [`ETHRegistrarController.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar)
 **Compiler**: Solidity 0.5.17
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -97,8 +107,9 @@ All changes fall into these categories:
 ---
 
 ### 6. StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)
-**ENS Original**: `StablePriceOracle.sol` from `ens_ethregistrar`
+**ENS Original**: [`StablePriceOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/StablePriceOracle.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar)
 **Compiler**: Solidity 0.5.17
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -110,8 +121,9 @@ All changes fall into these categories:
 ---
 
 ### 7. DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)
-**ENS Original**: `DummyOracle.sol` from `ens_ethregistrar`
+**ENS Original**: [`DummyOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/DummyOracle.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar)
 **Compiler**: Solidity 0.8.17
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -122,8 +134,9 @@ All changes fall into these categories:
 ---
 
 ### 8. Root (`root/Root.sol`)
-**ENS Original**: `Root.sol` from `ens_root`
+**ENS Original**: [`Root.sol`](https://github.com/ensdomains/root/blob/master/contracts/Root.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
 **Compiler**: Solidity 0.4.26
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -138,8 +151,9 @@ All changes fall into these categories:
 ---
 
 ### 9. Ownable (`root/Ownable.sol`)
-**ENS Original**: Simplified Ownable from ENS root package
+**ENS Original**: [`Ownable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Ownable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
 **Compiler**: Solidity 0.4.26
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -150,8 +164,9 @@ All changes fall into these categories:
 ---
 
 ### 10. Controllable (`root/Controllable.sol`)
-**ENS Original**: Controller pattern from ENS
+**ENS Original**: [`Controllable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
 **Compiler**: Solidity 0.8.0
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -162,7 +177,7 @@ All changes fall into these categories:
 ---
 
 ### 11. ReverseRegistrar (`reverseRegistrar/ReverseRegistrar.sol`)
-**ENS Original**: `ReverseRegistrar.sol` from `@ensdomains/ens-contracts`
+**ENS Original**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
 **Compiler**: Solidity 0.8.17
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -177,7 +192,7 @@ All changes fall into these categories:
 ---
 
 ### 12. Resolver (`resolvers/Resolver.sol`)
-**ENS Original**: Based on ENS `PublicResolver` architecture
+**ENS Original**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
 **Compiler**: Solidity 0.8.17
 
 This is a **simplified but functionally equivalent** version of the ENS PublicResolver.
@@ -204,19 +219,32 @@ A utility contract that enables sending native TRUST tokens to `.trust` domain n
 ### 14. Other Unchanged Contracts
 
 The following contracts have no changes beyond import path adjustments:
-- `ethregistrar/contracts/SafeMath.sol` — Identical
-- `ethregistrar/contracts/StringUtils.sol` — Identical
-- `ethregistrar/contracts/PriceOracle.sol` — Identical interface
-- `ethregistrar/contracts/SimplePriceOracle.sol` — Identical
+- [`SafeMath.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/SafeMath.sol) — Identical
+- [`StringUtils.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/StringUtils.sol) — Identical
+- [`PriceOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/PriceOracle.sol) — Identical interface
+- [`SimplePriceOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/SimplePriceOracle.sol) — Identical
 - `ethregistrar/contracts/Migrations.sol` — Identical
-- `ethregistrar/IBaseRegistrar.sol` — Variable `ens` -> `tns` in comments only
-- `resolvers/Multicallable.sol` — Standard multicall utility
-- `resolvers/profiles/*.sol` — Standard resolver interfaces
-- `reverseRegistrar/IReverseRegistrar.sol` — Interface only
-- `reverseRegistrar/ReverseClaimer.sol` — Uses TNS import
-- `wrapper/INameWrapper.sol` — Interface only
+- [`IBaseRegistrar.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/IBaseRegistrar.sol) — Variable `ens` -> `tns` in comments only
+- [`Multicallable.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/Multicallable.sol) — Standard multicall utility
+- `resolvers/profiles/*.sol` — Standard resolver interfaces from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts/tree/master/contracts/resolvers/profiles)
+- [`IReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/IReverseRegistrar.sol) — Interface only
+- [`ReverseClaimer.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseClaimer.sol) — Uses TNS import
+- [`INameWrapper.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/wrapper/INameWrapper.sol) — Interface only
 - `wrapper/NameWrapper.sol` — Not deployed
 - `utils/ERC20Recoverable.sol` — Utility, not deployed
+
+---
+
+## Original ENS Repositories
+
+The TNS contracts are forked from the following audited ENS repositories:
+
+| Repository | Description | Link |
+|------------|-------------|------|
+| `ensdomains/ens` | Core ENS registry and interface | [github.com/ensdomains/ens](https://github.com/ensdomains/ens) |
+| `ensdomains/ethregistrar` | ETH registrar, controller, price oracles | [github.com/ensdomains/ethregistrar](https://github.com/ensdomains/ethregistrar) |
+| `ensdomains/root` | Root contract, Ownable, Controllable | [github.com/ensdomains/root](https://github.com/ensdomains/root) |
+| `ensdomains/ens-contracts` | Reverse registrar, resolver, wrapper | [github.com/ensdomains/ens-contracts](https://github.com/ensdomains/ens-contracts) |
 
 ---
 
