@@ -35,7 +35,7 @@ export default function DocsPage() {
             "Address resolution and payment forwarding",
             "Reverse resolution (display domain instead of address)",
             "Domain extension/renewal system",
-            "30-day grace period for expired domains (set in BaseRegistrar)",
+            "90-day grace period for expired domains (set in BaseRegistrar)",
             "Custom resolver records (addresses, content hashes, text records)"
           ]
         }
@@ -130,7 +130,7 @@ export default function DocsPage() {
         {
           heading: "Grace Period",
           items: [
-            "30-day grace period after domain expiration (GRACE_PERIOD = 30 days in BaseRegistrar)",
+            "90-day grace period after domain expiration (GRACE_PERIOD = 90 days in BaseRegistrar)",
             "Only the original owner can renew during grace period",
             "Domain cannot be re-registered or burned during grace period",
             "After grace period ends, anyone can burn the NFT or re-register the domain"

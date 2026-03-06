@@ -16,9 +16,8 @@ All changes fall into these categories:
 2. **TLD**: `.eth` → `.trust` (Root's `TRUST_NODE` restriction)
 3. **Pragma**: Updated Solidity versions for cross-version compatibility
 4. **Import Paths**: Adjusted to match the project's directory structure
-5. **Simplified registration**: `register(name, owner, duration, secret)` instead of ENS's `registerWithConfig`; `makeCommitment(name, secret)` instead of `makeCommitmentWithConfig`
-6. **Oracle**: `DSValue` interface (MakerDAO-style `read()`) instead of Chainlink's `AggregatorInterface`
-7. **New Contracts**: PaymentForwarder and Resolver (TNS-specific utilities)
+5. **Oracle**: `DSValue` interface (MakerDAO-style `read()`) instead of Chainlink's `AggregatorInterface`
+6. **New Contracts**: PaymentForwarder (TNS-specific utilities)
 
 ---
 
@@ -63,12 +62,12 @@ All changes fall into these categories:
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
 | Variable name | `ENS public ens` | `ENS public ens` (unchanged — keeps `ens` variable and `ENS` type from `@ensdomains/ens`) |
-| Grace period | `GRACE_PERIOD = 90 days` | `GRACE_PERIOD = 30 days` |
+| Grace period | `GRACE_PERIOD = 90 days` | `GRACE_PERIOD = 90 days` (unchanged — matches ENS original) |
 | Comments | "The ENS registry" | "The TNS registry" |
 | Comments | ".eth" references | ".trust" references |
 | Comments | "Reclaim ownership in ENS" | "Reclaim ownership in TNS" |
 
-**Logic changes**: Grace period reduced from 90 days to 30 days. Variable name `ens` and type `ENS` are kept as-is from the original ENS imports. Only comments updated to reference TNS/.trust.
+**Logic changes**: None beyond comment updates. Grace period remains 90 days, matching the ENS original. Variable name `ens` and type `ENS` are kept as-is from the original ENS imports. Only comments updated to reference TNS/.trust.
 
 ---
 
