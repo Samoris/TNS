@@ -23,42 +23,9 @@ All changes fall into these categories:
 
 ---
 
-## Contract-by-Contract Changes
+## ENS: Changes Over Audit
 
-### 1. [TNSRegistry (`registry/TNSRegistry.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNSRegistry.sol)
-
-**Audited ENS Source**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
-
-**Compiler**: Solidity ^0.7.0
-
-| Change | Original (ENS) | Modified (TNS) |
-|--------|----------------|-----------------|
-| Contract name | `ENSRegistry is ENS` | `TNSRegistry is TNS` |
-| Pragma | `^0.5.0` | `^0.7.0` |
-| Import | `./ENS.sol` | `./TNS.sol` |
-| Function modifiers | Basic | Added `virtual override` (required by 0.7.x) |
-| Internal functions | `_setOwner` (not virtual) | `_setOwner` marked `internal virtual` |
-| Comments | References "ENS" | References "TNS" |
-
-**Logic changes**: None. Core state variables, events, authorization, and record management are identical.
-
----
-
-### 2. [TNS Interface (`registry/TNS.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNS.sol)
-
-**Audited ENS Source**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
-
-**Compiler**: Solidity >=0.7.0
-
-| Change | Original (ENS) | Modified (TNS) |
-|--------|----------------|-----------------|
-| Interface name | `interface ENS` | `interface TNS` |
-| Pragma | `>=0.4.24` | `>=0.7.0` |
-| Function modifiers | `external` | `external virtual` (required by 0.7.x) |
-
-**Logic changes**: None. Identical interface definitions.
-
----
+These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope). Changes from the audited source are documented below.
 
 ### 3. [BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrar.sol)
 
@@ -231,9 +198,48 @@ All changes fall into these categories:
 
 ---
 
+## ENS: Contracts Not Part of the Audit
+
+These contracts are based on ENS source code but were **not included** in the [ConsenSys Diligence ENS audit (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope).
+
+### 1. [TNSRegistry (`registry/TNSRegistry.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNSRegistry.sol)
+
+**ENS Source**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
+
+**Compiler**: Solidity ^0.7.0
+
+| Change | Original (ENS) | Modified (TNS) |
+|--------|----------------|-----------------|
+| Contract name | `ENSRegistry is ENS` | `TNSRegistry is TNS` |
+| Pragma | `^0.5.0` | `^0.7.0` |
+| Import | `./ENS.sol` | `./TNS.sol` |
+| Function modifiers | Basic | Added `virtual override` (required by 0.7.x) |
+| Internal functions | `_setOwner` (not virtual) | `_setOwner` marked `internal virtual` |
+| Comments | References "ENS" | References "TNS" |
+
+**Logic changes**: None. Core state variables, events, authorization, and record management are identical.
+
+---
+
+### 2. [TNS Interface (`registry/TNS.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNS.sol)
+
+**ENS Source**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
+
+**Compiler**: Solidity >=0.7.0
+
+| Change | Original (ENS) | Modified (TNS) |
+|--------|----------------|-----------------|
+| Interface name | `interface ENS` | `interface TNS` |
+| Pragma | `>=0.4.24` | `>=0.7.0` |
+| Function modifiers | `external` | `external virtual` (required by 0.7.x) |
+
+**Logic changes**: None. Identical interface definitions.
+
+---
+
 ### 11. [ReverseRegistrar (`reverseRegistrar/ReverseRegistrar.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/reverseRegistrar/ReverseRegistrar.sol)
 
-**Audited ENS Source**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
+**ENS Source**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
 
 **Compiler**: Solidity >=0.8.4
 
@@ -250,7 +256,7 @@ All changes fall into these categories:
 
 ### 12. [Resolver (`resolvers/Resolver.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/resolvers/Resolver.sol)
 
-**Audited ENS Source**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
+**ENS Source**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
 
 **Compiler**: Solidity >=0.8.17 <0.9.0
 
@@ -269,6 +275,10 @@ This is a **simplified but functionally equivalent** version of the ENS PublicRe
 
 ---
 
+## Custom TNS Contract
+
+This contract is **TNS-specific** and has no ENS equivalent.
+
 ### 13. [PaymentForwarder (`utils/PaymentForwarder.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/utils/PaymentForwarder.sol)
 
 **ENS Original**: None — **TNS-specific new contract**
@@ -279,7 +289,7 @@ A utility contract that enables sending native TRUST tokens to `.trust` domain n
 
 ---
 
-### 14. Other Unchanged Contracts
+## Other Unchanged Contracts
 
 The following contracts have no changes beyond import path adjustments:
 
