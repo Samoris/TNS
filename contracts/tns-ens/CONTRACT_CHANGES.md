@@ -24,7 +24,9 @@ All changes fall into these categories:
 ## Contract-by-Contract Changes
 
 ### 1. TNSRegistry (`registry/TNSRegistry.sol`)
+
 **ENS Original**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
+
 **Compiler**: Solidity ^0.7.0
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -41,7 +43,9 @@ All changes fall into these categories:
 ---
 
 ### 2. TNS Interface (`registry/TNS.sol`)
+
 **ENS Original**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
+
 **Compiler**: Solidity >=0.7.0
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -55,8 +59,11 @@ All changes fall into these categories:
 ---
 
 ### 3. BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)
+
 **ENS Original**: [`BaseRegistrar.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+
 **Compiler**: Solidity >=0.4.24
+
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -72,8 +79,11 @@ All changes fall into these categories:
 ---
 
 ### 4. BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)
+
 **ENS Original**: [`BaseRegistrarImplementation.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+
 **Compiler**: Solidity ^0.5.0
+
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -88,8 +98,11 @@ All changes fall into these categories:
 ---
 
 ### 5. ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)
+
 **ENS Original**: [`ETHRegistrarController.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+
 **Compiler**: Solidity ^0.5.0
+
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -116,8 +129,11 @@ All changes fall into these categories:
 ---
 
 ### 6. StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)
+
 **ENS Original**: [`StablePriceOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+
 **Compiler**: Solidity ^0.5.0
+
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -130,8 +146,11 @@ All changes fall into these categories:
 ---
 
 ### 7. DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)
+
 **ENS Original**: [`DummyOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+
 **Compiler**: Solidity >=0.4.24
+
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -144,8 +163,11 @@ All changes fall into these categories:
 ---
 
 ### 8. Root (`root/Root.sol`)
+
 **ENS Original**: [`Root.sol`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) from [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
+
 **Compiler**: Solidity ^0.4.24
+
 **Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -162,8 +184,11 @@ All changes fall into these categories:
 ---
 
 ### 9. Ownable (`root/Ownable.sol`)
+
 **ENS Original**: [`Ownable.sol`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) from [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
+
 **Compiler**: Solidity ^0.4.24
+
 **Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -175,8 +200,11 @@ All changes fall into these categories:
 ---
 
 ### 10. Controllable (`root/Controllable.sol`)
+
 **ENS Original**: [`Controllable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
+
 **Compiler**: Solidity 0.8.0
+
 **Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -188,7 +216,9 @@ All changes fall into these categories:
 ---
 
 ### 11. ReverseRegistrar (`reverseRegistrar/ReverseRegistrar.sol`)
+
 **ENS Original**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
+
 **Compiler**: Solidity >=0.8.4
 
 | Change | Original (ENS) | Modified (TNS) |
@@ -203,7 +233,9 @@ All changes fall into these categories:
 ---
 
 ### 12. Resolver (`resolvers/Resolver.sol`)
+
 **ENS Original**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
+
 **Compiler**: Solidity >=0.8.17 <0.9.0
 
 This is a **simplified but functionally equivalent** version of the ENS PublicResolver.
@@ -222,7 +254,9 @@ This is a **simplified but functionally equivalent** version of the ENS PublicRe
 ---
 
 ### 13. PaymentForwarder (`utils/PaymentForwarder.sol`)
+
 **ENS Original**: None — **TNS-specific new contract**
+
 **Compiler**: Solidity ~0.8.17
 
 A utility contract that enables sending native TRUST tokens to `.trust` domain names. Uses the `TNS` type and `tns` variable (immutable). Resolves the domain name through the TNS registry/resolver and forwards the payment to the resolved address. Includes `sendTo(name)` for payments, `resolve(name)` for address lookups, and `namehash(name)` for computing node hashes. Uses custom errors (`DomainNotRegistered`, `NoResolverSet`, `NoAddressSet`, `PaymentFailed`) for gas-efficient reverts.
@@ -232,6 +266,7 @@ A utility contract that enables sending native TRUST tokens to `.trust` domain n
 ### 14. Other Unchanged Contracts
 
 The following contracts have no changes beyond import path adjustments:
+
 - [`SafeMath.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical
 - [`StringUtils.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical
 - [`PriceOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical interface
