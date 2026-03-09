@@ -139,9 +139,8 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 **Compiler**: Solidity ^0.4.24
 
-**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)
-
-**Logic changes**: Unchanged
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)     
+Logic changes: Unchanged
 ---
 
 
@@ -279,8 +278,8 @@ The TNS contracts are forked from the following audited ENS repositories:
 | Repository | Description | Link |
 |------------|-------------|------|
 | `ensdomains/ens` | Core ENS registry and interface | [github.com/ensdomains/ens](https://github.com/ensdomains/ens) |
-| `intuition-box/diff_ethregistrar-contracts_ENS-TNS` | ETH registrar, controller, price oracles | [github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) |
-| `intuition-box/diff_root-contracts_ENS-TNS` | Root contract, Ownable | [github.com/intuition-box/diff_root-contracts_ENS-TNS](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) |
+| `ethregistrar-contracts_ENS-TNS` | ETH registrar, controller, price oracles | [ensdomains/ens-contracts/tree/staging/contracts/ethregistrar](https://github.com/ensdomains/ens-contracts/tree/staging/contracts/ethregistrar) |
+| `root-contracts_ENS-TNS` | Root contract, Ownable | [ensdomains/ens-contracts/tree/staging/contracts/root](https://github.com/ensdomains/ens-contracts/tree/staging/contracts/root) |
 | `ensdomains/root` (Controllable) | Controllable contract | [github.com/ensdomains/root/.../Controllable.sol](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) |
 | `ensdomains/ens-contracts` | Reverse registrar, resolver, wrapper | [github.com/ensdomains/ens-contracts](https://github.com/ensdomains/ens-contracts) |
 
