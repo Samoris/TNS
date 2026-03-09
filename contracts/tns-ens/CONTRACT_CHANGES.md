@@ -8,8 +8,8 @@ This document catalogs every change made to the audited ENS contracts when adapt
 
 Full side-by-side diffs of every change from the original ENS contracts are available for review:
 
-- **ethregistrar contracts diff**: [intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
-- **root contracts diff**: [intuition-box/diff_root-contracts_ENS-TNS/pull/2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
+- **ethregistrar contracts diff**: [intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
+- **root contracts diff**: [intuition-box/diff_root-contracts_ENS-TNS/pull/2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)
 
 ## Change Categories
 
@@ -68,7 +68,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity >=0.4.24
 
-**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -90,7 +90,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity ^0.5.0
 
-**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -111,7 +111,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity ^0.5.0
 
-**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -144,7 +144,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity ^0.5.0
 
-**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -163,7 +163,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity >=0.4.24
 
-**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3)
+**Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -182,7 +182,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity ^0.4.24
 
-**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -205,7 +205,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity ^0.4.24
 
-**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
@@ -221,7 +221,7 @@ All changes fall into these categories:
 
 **Compiler**: Solidity 0.8.0
 
-**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2)
+**Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
