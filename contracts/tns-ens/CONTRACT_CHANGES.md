@@ -2,6 +2,8 @@
 
 This document catalogs every change made to the audited ENS contracts when adapting them for the Trust Name Service (TNS). The guiding principle is: **contracts are exact clones of audited ENS source with only the minimal changes listed below**.
 
+**Audited ENS Source**: The original ENS contracts were audited by ConsenSys Diligence. The full audit report is available here: [ConsenSys Diligence ENS Audit Report (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
 ## Diff Reviews
 
 Full side-by-side diffs of every change from the original ENS contracts are available for review:
@@ -23,9 +25,9 @@ All changes fall into these categories:
 
 ## Contract-by-Contract Changes
 
-### 1. TNSRegistry (`registry/TNSRegistry.sol`)
+### 1. [TNSRegistry (`registry/TNSRegistry.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNSRegistry.sol)
 
-**ENS Original**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
+**Audited ENS Source**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
 **Compiler**: Solidity ^0.7.0
 
@@ -42,9 +44,9 @@ All changes fall into these categories:
 
 ---
 
-### 2. TNS Interface (`registry/TNS.sol`)
+### 2. [TNS Interface (`registry/TNS.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNS.sol)
 
-**ENS Original**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
+**Audited ENS Source**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
 **Compiler**: Solidity >=0.7.0
 
@@ -58,9 +60,11 @@ All changes fall into these categories:
 
 ---
 
-### 3. BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)
+### 3. [BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrar.sol)
 
-**ENS Original**: [`BaseRegistrar.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+**Audited ENS Source**: [`BaseRegistrar.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrar.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
 
 **Compiler**: Solidity >=0.4.24
 
@@ -78,9 +82,11 @@ All changes fall into these categories:
 
 ---
 
-### 4. BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)
+### 4. [BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrarImplementation.sol)
 
-**ENS Original**: [`BaseRegistrarImplementation.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+**Audited ENS Source**: [`BaseRegistrarImplementation.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrarImplementation.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
 
 **Compiler**: Solidity ^0.5.0
 
@@ -97,9 +103,11 @@ All changes fall into these categories:
 
 ---
 
-### 5. ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)
+### 5. [ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/ETHRegistrarController.sol)
 
-**ENS Original**: [`ETHRegistrarController.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+**Audited ENS Source**: [`ETHRegistrarController.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
 
 **Compiler**: Solidity ^0.5.0
 
@@ -128,9 +136,11 @@ All changes fall into these categories:
 
 ---
 
-### 6. StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)
+### 6. [StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/StablePriceOracle.sol)
 
-**ENS Original**: [`StablePriceOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+**Audited ENS Source**: [`StablePriceOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/StablePriceOracle.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
 
 **Compiler**: Solidity ^0.5.0
 
@@ -145,9 +155,11 @@ All changes fall into these categories:
 
 ---
 
-### 7. DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)
+### 7. [DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/DummyOracle.sol)
 
-**ENS Original**: [`DummyOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) from [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
+**Audited ENS Source**: [`DummyOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/DummyOracle.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_ethregistrar-contracts_ENS-TNS`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS)
 
 **Compiler**: Solidity >=0.4.24
 
@@ -162,9 +174,11 @@ All changes fall into these categories:
 
 ---
 
-### 8. Root (`root/Root.sol`)
+### 8. [Root (`root/Root.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Root.sol)
 
-**ENS Original**: [`Root.sol`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) from [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
+**Audited ENS Source**: [`Root.sol`](https://github.com/ensdomains/root/blob/master/contracts/Root.sol) from [`ensdomains/root`](https://github.com/ensdomains/root) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
 
 **Compiler**: Solidity ^0.4.24
 
@@ -183,9 +197,11 @@ All changes fall into these categories:
 
 ---
 
-### 9. Ownable (`root/Ownable.sol`)
+### 9. [Ownable (`root/Ownable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Ownable.sol)
 
-**ENS Original**: [`Ownable.sol`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) from [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
+**Audited ENS Source**: [`Ownable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Ownable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
+
+**TNS Fork**: [`intuition-box/diff_root-contracts_ENS-TNS`](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts)
 
 **Compiler**: Solidity ^0.4.24
 
@@ -199,9 +215,9 @@ All changes fall into these categories:
 
 ---
 
-### 10. Controllable (`root/Controllable.sol`)
+### 10. [Controllable (`root/Controllable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Controllable.sol)
 
-**ENS Original**: [`Controllable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
+**Audited ENS Source**: [`Controllable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
 
 **Compiler**: Solidity 0.8.0
 
@@ -215,9 +231,9 @@ All changes fall into these categories:
 
 ---
 
-### 11. ReverseRegistrar (`reverseRegistrar/ReverseRegistrar.sol`)
+### 11. [ReverseRegistrar (`reverseRegistrar/ReverseRegistrar.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/reverseRegistrar/ReverseRegistrar.sol)
 
-**ENS Original**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
+**Audited ENS Source**: [`ReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseRegistrar.sol) from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
 
 **Compiler**: Solidity >=0.8.4
 
@@ -232,9 +248,9 @@ All changes fall into these categories:
 
 ---
 
-### 12. Resolver (`resolvers/Resolver.sol`)
+### 12. [Resolver (`resolvers/Resolver.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/resolvers/Resolver.sol)
 
-**ENS Original**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
+**Audited ENS Source**: Based on [`PublicResolver.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/PublicResolver.sol) architecture from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts)
 
 **Compiler**: Solidity >=0.8.17 <0.9.0
 
@@ -253,7 +269,7 @@ This is a **simplified but functionally equivalent** version of the ENS PublicRe
 
 ---
 
-### 13. PaymentForwarder (`utils/PaymentForwarder.sol`)
+### 13. [PaymentForwarder (`utils/PaymentForwarder.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/utils/PaymentForwarder.sol)
 
 **ENS Original**: None — **TNS-specific new contract**
 
@@ -267,19 +283,19 @@ A utility contract that enables sending native TRUST tokens to `.trust` domain n
 
 The following contracts have no changes beyond import path adjustments:
 
-- [`SafeMath.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical
-- [`StringUtils.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical
-- [`PriceOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical interface
-- [`SimplePriceOracle.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Identical
-- `ethregistrar/contracts/Migrations.sol` — Identical
-- [`IBaseRegistrar.sol`](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS) — Variable `ens` -> `tns` in comments only
-- [`Multicallable.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/resolvers/Multicallable.sol) — Standard multicall utility
+- [`SafeMath.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/SafeMath.sol) — Identical
+- [`StringUtils.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/StringUtils.sol) — Identical
+- [`PriceOracle.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/PriceOracle.sol) — Identical interface
+- [`SimplePriceOracle.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/SimplePriceOracle.sol) — Identical
+- [`Migrations.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/Migrations.sol) — Identical
+- [`IBaseRegistrar.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/IBaseRegistrar.sol) — Variable `ens` -> `tns` in comments only
+- [`Multicallable.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/resolvers/Multicallable.sol) — Standard multicall utility
 - `resolvers/profiles/*.sol` — Standard resolver interfaces from [`ensdomains/ens-contracts`](https://github.com/ensdomains/ens-contracts/tree/master/contracts/resolvers/profiles)
-- [`IReverseRegistrar.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/IReverseRegistrar.sol) — Interface only
-- [`ReverseClaimer.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/reverseRegistrar/ReverseClaimer.sol) — Uses TNS import
-- [`INameWrapper.sol`](https://github.com/ensdomains/ens-contracts/blob/master/contracts/wrapper/INameWrapper.sol) — Interface only
+- [`IReverseRegistrar.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/reverseRegistrar/IReverseRegistrar.sol) — Interface only
+- [`ReverseClaimer.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/reverseRegistrar/ReverseClaimer.sol) — Uses TNS import
+- [`INameWrapper.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/wrapper/INameWrapper.sol) — Interface only
 - `wrapper/NameWrapper.sol` — Not deployed
-- `utils/ERC20Recoverable.sol` — Utility, not deployed
+- [`ERC20Recoverable.sol`](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/utils/ERC20Recoverable.sol) — Utility, not deployed
 
 ---
 
@@ -294,6 +310,8 @@ The TNS contracts are forked from the following audited ENS repositories:
 | `intuition-box/diff_root-contracts_ENS-TNS` | Root contract, Ownable | [github.com/intuition-box/diff_root-contracts_ENS-TNS](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/tree/ens-audit/contracts) |
 | `ensdomains/root` (Controllable) | Controllable contract | [github.com/ensdomains/root/.../Controllable.sol](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) |
 | `ensdomains/ens-contracts` | Reverse registrar, resolver, wrapper | [github.com/ensdomains/ens-contracts](https://github.com/ensdomains/ens-contracts) |
+
+**Audit Report**: [ConsenSys Diligence ENS Audit Report (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
 ---
 
