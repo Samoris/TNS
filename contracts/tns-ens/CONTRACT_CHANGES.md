@@ -1,6 +1,6 @@
 # ENS change over the Audit
 
-This document catalogs every change made to the audited ENS contracts when adapting them for the Trust Name Service (TNS). The guiding principle is: **contracts are exact clones of audited ENS source with only the minimal changes listed below**.
+This section catalogs every change made to the audited ENS contracts when adapting them for the Trust Name Service (TNS). The guiding principle is: **contracts are exact clones of audited ENS source with only the minimal changes listed below**.
 
 **Audited ENS Source**: The original ENS contracts were audited by ConsenSys Diligence. The full audit report is available here: [ConsenSys Diligence ENS Audit Report (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
