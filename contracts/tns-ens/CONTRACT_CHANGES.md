@@ -39,8 +39,6 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ENS public ens` | `ENS public ens` (unchanged — keeps `ens` variable and `ENS` type from `@ensdomains/ens`) |
-| Grace period | `GRACE_PERIOD = 90 days` | `GRACE_PERIOD = 90 days` (unchanged — matches ENS original) |
 | Comments | "The ENS registry" | "The TNS registry" |
 | Comments | ".eth" references | ".trust" references |
 | Comments | "Reclaim ownership in ENS" | "Reclaim ownership in TNS" |
@@ -61,12 +59,8 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ens` | `ens` (unchanged — keeps original `ens` variable and `ENS` type) |
-| Constructor | `(ENS _ens, bytes32 _baseNode)` | `(ENS _ens, bytes32 _baseNode, uint _transferPeriodEnds)` |
-| All internal refs | `ens.xxx()` | `ens.xxx()` (unchanged) |
 | Comments | "ENS" references | "TNS" references |
 
-**Logic changes**: Added `transferPeriodEnds` constructor parameter for migration period handling. This was already present in the ENS codebase for the .eth migration from the interim registrar. Variable name `ens` and type `ENS` are kept as-is from the original.
 
 ---
 
@@ -85,21 +79,8 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 | Contract name | `ETHRegistrarController` | `ETHRegistrarController` (unchanged in V3) |
 | Constructor | `(BaseRegistrar _base, PriceOracle _prices, uint _minCommitmentAge, uint _maxCommitmentAge)` | `(BaseRegistrar _base, PriceOracle _prices)` — commitment ages are constants instead of constructor params |
 | `MIN_COMMITMENT_AGE` | Constructor parameter | `uint constant public MIN_COMMITMENT_AGE = 1 minutes` |
-| `MAX_COMMITMENT_AGE` | Constructor parameter | `uint constant public MAX_COMMITMENT_AGE = 48 hours` |
-| `MIN_REGISTRATION_DURATION` | N/A | `uint constant public MIN_REGISTRATION_DURATION = 28 days` |
-| `register()` | `registerWithConfig(name, owner, duration, secret, resolver, addr)` | Simplified to `register(name, owner, duration, secret)` — no resolver/addr params, no auto-setup at registration |
-| `makeCommitment()` | `makeCommitmentWithConfig(name, owner, secret, resolver, addr)` | Simplified to `makeCommitment(name, secret)` — no owner, resolver, or addr in hash |
-| `commit()` | `require(commitments[commitment] == 0)` | `require(commitments[commitment] + MAX_COMMITMENT_AGE < now)` — allows re-committing after expiry |
-| `register()` refund | Reverts on failure | Returns funds on expired commitment or unavailable name instead of reverting |
-| `withdraw()` | Sends to `owner()` | Sends to `owner()` (matches ENS) |
-| `valid()` | `name.strlen() >= 3` | `name.strlen() >= 3` (matches ENS) |
+| `valid()` | `name.strlen() >= 6` | `name.strlen() >= 3`  |
 
-**Logic changes**:
-- **Simplified registration**: No `registerWithConfig` — the `register(name, owner, duration, secret)` function only registers the domain via `base.register()`. It does NOT automatically set a resolver or address record. Users must set resolver records separately after registration.
-- **Commitment ages hardcoded**: `MIN_COMMITMENT_AGE` (1 minute) and `MAX_COMMITMENT_AGE` (48 hours) are constants rather than constructor parameters.
-- **Commitment**: Simplified `makeCommitment` hashes only `(label, secret)` — doesn't include `owner` in the hash. The `commit` function allows re-committing after the previous commitment expires (vs ENS which requires commitment == 0).
-- **Graceful failure**: If the commitment is too old or the name is taken, `register()` refunds `msg.value` and returns instead of reverting.
-- **Fee handling**: Registration and renewal fees stay in the controller contract. Owner can withdraw using `withdraw()`.
 
 ---
 
@@ -113,12 +94,9 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
-| Change | Original (ENS) | Modified (TNS) |
-|--------|----------------|-----------------|
-| Oracle interface | Chainlink `AggregatorInterface` | `DSValue` (MakerDAO-style `read()` returns `bytes32`) |
-| Imports | `@chainlink/...` | Uses local `DSValue` interface |
 
-**Logic changes**: Uses `DSValue.read()` instead of Chainlink's `latestAnswer()`. The pricing calculation logic (rent prices array indexed by name length, USD conversion) is otherwise identical.
+
+**Logic changes**: Unchanged
 
 ---
 
@@ -132,12 +110,8 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 **Diff**: [ethregistrar diff PR #3](https://github.com/intuition-box/diff_ethregistrar-contracts_ENS-TNS/pull/3/changes)
 
-| Change | Original (ENS) | Modified (TNS) |
-|--------|----------------|-----------------|
-| Oracle interface | Chainlink `AggregatorInterface` | `DSValue`-compatible — `read()` returns `bytes32` instead of `latestAnswer()` |
-| Functions | `latestAnswer() returns (int256)` | `read() returns (bytes32)`, `set(uint)` |
 
-**Logic changes**: Adapted to use `DSValue`-style `read()` interface (returns `bytes32`) instead of Chainlink's `latestAnswer()` (returns `int256`). Stores a `uint` value set by owner, returned as `bytes32`. Works with the `StablePriceOracle`'s `DSValue` interface.
+**Logic changes**: Unchanged
 
 ---
 
@@ -153,14 +127,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 | Change | Original (ENS) | Modified (TNS) |
 |--------|----------------|-----------------|
-| Variable name | `ENS public ens` | `ENS public ens` (unchanged — keeps `ens` variable and `ENS` type) |
-| All references | `ens.xxx()` | `ens.xxx()` (unchanged) |
-| DNS SOA hash | `\x04_ens` | `\x04_ens` (unchanged) |
 | TLD restriction | `ETH_NODE` = `keccak256("eth")` | `TRUST_NODE` = `keccak256("trust")` |
-| Import | External Ownable | Local `./Ownable.sol` |
-| Constructor | `(ENS _ens, DNSSEC _oracle)` | `(ENS _ens, DNSSEC _oracle, address _registrar)` — added registrar param |
-
-**Logic changes**: The `registerTLD` function restricts registration of the `.trust` label (instead of `.eth`) via `require(label != TRUST_NODE)`. Constructor takes an additional `_registrar` address parameter. Variable name `ens`, type `ENS`, and DNS SOA hash `_ens` are all kept as-is from the original ENS source.
 
 ---
 
@@ -174,13 +141,13 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 **Diff**: [root diff PR #2](https://github.com/intuition-box/diff_root-contracts_ENS-TNS/pull/2/changes)
 
-| Change | Original (ENS) | Modified (TNS) |
-|--------|----------------|-----------------|
-| No significant changes | Legacy Ownable pattern | Same |
-
-**Logic changes**: None. Basic owner/transferOwnership pattern.
-
+**Logic changes**: Unchanged
 ---
+
+
+## ENS: Contracts Not Part of the Audit
+
+These contracts are based on ENS source code but were **not included** in the [ConsenSys Diligence ENS audit (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope).
 
 ### 8. [Controllable (`root/Controllable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Controllable.sol)
 
@@ -197,10 +164,6 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 **Logic changes**: None. Standard controller mapping with `setController`/`onlyController`.
 
 ---
-
-## ENS: Contracts Not Part of the Audit
-
-These contracts are based on ENS source code but were **not included** in the [ConsenSys Diligence ENS audit (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope).
 
 ### 9. [TNSRegistry (`registry/TNSRegistry.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNSRegistry.sol)
 
