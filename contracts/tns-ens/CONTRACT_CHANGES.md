@@ -1,4 +1,4 @@
-# TNS Contract Changes from ENS Originals
+# ENS change over the Audit
 
 This document catalogs every change made to the audited ENS contracts when adapting them for the Trust Name Service (TNS). The guiding principle is: **contracts are exact clones of audited ENS source with only the minimal changes listed below**.
 
@@ -27,7 +27,7 @@ All changes fall into these categories:
 
 These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope). Changes from the audited source are documented below.
 
-### 3. [BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrar.sol)
+### 1. [BaseRegistrar (`ethregistrar/contracts/BaseRegistrar.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrar.sol)
 
 **Audited ENS Source**: [`BaseRegistrar.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrar.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -49,7 +49,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 4. [BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrarImplementation.sol)
+### 2. [BaseRegistrarImplementation (`ethregistrar/contracts/BaseRegistrarImplementation.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/BaseRegistrarImplementation.sol)
 
 **Audited ENS Source**: [`BaseRegistrarImplementation.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/BaseRegistrarImplementation.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -70,7 +70,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 5. [ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/ETHRegistrarController.sol)
+### 3. [ETHRegistrarController (`ethregistrar/contracts/ETHRegistrarController.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/ETHRegistrarController.sol)
 
 **Audited ENS Source**: [`ETHRegistrarController.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/ETHRegistrarController.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -103,7 +103,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 6. [StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/StablePriceOracle.sol)
+### 4. [StablePriceOracle (`ethregistrar/contracts/StablePriceOracle.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/StablePriceOracle.sol)
 
 **Audited ENS Source**: [`StablePriceOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/StablePriceOracle.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -122,7 +122,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 7. [DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/DummyOracle.sol)
+### 5. [DummyOracle (`ethregistrar/contracts/DummyOracle.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/ethregistrar/contracts/DummyOracle.sol)
 
 **Audited ENS Source**: [`DummyOracle.sol`](https://github.com/ensdomains/ethregistrar/blob/master/contracts/DummyOracle.sol) from [`ensdomains/ethregistrar`](https://github.com/ensdomains/ethregistrar) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -141,7 +141,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 8. [Root (`root/Root.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Root.sol)
+### 6. [Root (`root/Root.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Root.sol)
 
 **Audited ENS Source**: [`Root.sol`](https://github.com/ensdomains/root/blob/master/contracts/Root.sol) from [`ensdomains/root`](https://github.com/ensdomains/root) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -164,7 +164,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 9. [Ownable (`root/Ownable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Ownable.sol)
+### 7. [Ownable (`root/Ownable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Ownable.sol)
 
 **Audited ENS Source**: [`Ownable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Ownable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root) — [Audit scope](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope)
 
@@ -182,7 +182,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 ---
 
-### 10. [Controllable (`root/Controllable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Controllable.sol)
+### 8. [Controllable (`root/Controllable.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/root/Controllable.sol)
 
 **Audited ENS Source**: [`Controllable.sol`](https://github.com/ensdomains/root/blob/master/contracts/Controllable.sol) from [`ensdomains/root`](https://github.com/ensdomains/root)
 
@@ -202,7 +202,7 @@ These contracts are part of the [ConsenSys Diligence ENS audit (2019-02)](https:
 
 These contracts are based on ENS source code but were **not included** in the [ConsenSys Diligence ENS audit (2019-02)](https://github.com/ConsenSysDiligence/ens-audit-report-2019-02?tab=readme-ov-file#scope).
 
-### 1. [TNSRegistry (`registry/TNSRegistry.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNSRegistry.sol)
+### 9. [TNSRegistry (`registry/TNSRegistry.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNSRegistry.sol)
 
 **ENS Source**: [`ENSRegistry.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENSRegistry.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
 
@@ -221,7 +221,7 @@ These contracts are based on ENS source code but were **not included** in the [C
 
 ---
 
-### 2. [TNS Interface (`registry/TNS.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNS.sol)
+### 10. [TNS Interface (`registry/TNS.sol`)](https://github.com/Samoris/TNS/blob/main/contracts/tns-ens/registry/TNS.sol)
 
 **ENS Source**: [`ENS.sol`](https://github.com/ensdomains/ens/blob/master/contracts/ENS.sol) from [`@ensdomains/ens`](https://github.com/ensdomains/ens)
 
