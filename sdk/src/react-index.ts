@@ -2,7 +2,9 @@ export { TNSClient } from "./client";
 export type { TNSClientConfig, DomainInfo, PriceInfo } from "./client";
 export {
   useTNSResolve,
+  useTNSResolveName,
   useTNSLookup,
+  useTNSDisplayName,
   useTNSAvailability,
   useTNSDomainInfo,
   TNSNamePicker,

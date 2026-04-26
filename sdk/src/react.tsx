@@ -18,6 +18,91 @@ export interface UseTNSResolveResult {
 }
 
 /**
+ * Smart-resolve any input — accepts either a `.trust` name OR an address.
+ * - Address input → returned as-is (checksummed).
+ * - Name input → resolved to its address.
+ *
+ * Drop-in replacement for "user typed a recipient" inputs.
+ *
+ * @example
+ * const { address, loading } = useTNSResolveName(input);
+ */
+export function useTNSResolveName(
+  input: string | null | undefined,
+  client?: TNSClient
+): UseTNSResolveResult {
+  const [address, setAddress] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const tns = getClient(client);
+
+  useEffect(() => {
+    if (!input) {
+      setAddress(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    tns
+      .resolveName(input)
+      .then((addr) => {
+        if (!cancelled) {
+          setAddress(addr);
+          setLoading(false);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(String(e?.message ?? e));
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [input]);
+
+  return { address, loading, error };
+}
+
+/**
+ * Smart display — accepts either an address OR a `.trust` name.
+ * Returns the primary name (if set), or a shortened address otherwise.
+ *
+ * @example
+ * const { displayName } = useTNSDisplayName("0xabc…");
+ */
+export function useTNSDisplayName(
+  input: string | null | undefined,
+  client?: TNSClient
+): { displayName: string; loading: boolean } {
+  const [displayName, setDisplayName] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const tns = getClient(client);
+
+  useEffect(() => {
+    if (!input) {
+      setDisplayName("");
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    tns.displayName(input).then((name) => {
+      if (!cancelled) {
+        setDisplayName(name);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [input]);
+
+  return { displayName, loading };
+}
+
+/**
  * Resolve a .trust name to an address.
  *
  * @example

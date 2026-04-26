@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Contract, BigNumberish, formatEther } from "ethers";
+import { JsonRpcProvider, Contract, BigNumberish, formatEther, isAddress, getAddress } from "ethers";
 import { namehash, labelhash, normalise, toFullName } from "./namehash";
 import {
   TNS_REGISTRY_ABI,
@@ -63,9 +63,52 @@ export class TNSClient {
   }
 
   /**
+   * Smart resolve — accepts EITHER a `.trust` name OR an address.
+   * - If input is already an address (0x…), returns it normalised (checksummed).
+   * - If input is a .trust name (or bare label), resolves it to an address.
+   * - Returns null if a name is given but unregistered / has no address.
+   *
+   * This is the recommended method for apps that accept user input.
+   *
+   * @example
+   * await tns.resolveName("alice.trust");          // → "0x1234…"
+   * await tns.resolveName("alice");                // → "0x1234…"
+   * await tns.resolveName("0xabc…");               // → "0xAbC…" (checksummed)
+   */
+  async resolveName(input: string): Promise<string | null> {
+    const trimmed = (input ?? "").trim();
+    if (!trimmed) return null;
+
+    if (isAddress(trimmed)) {
+      try {
+        return getAddress(trimmed);
+      } catch {
+        return null;
+      }
+    }
+
+    return this.resolve(trimmed);
+  }
+
+  /**
+   * Detect what kind of input was given.
+   * Returns "address", "name", or "unknown".
+   */
+  identify(input: string): "address" | "name" | "unknown" {
+    const trimmed = (input ?? "").trim();
+    if (!trimmed) return "unknown";
+    if (isAddress(trimmed)) return "address";
+    const label = normalise(trimmed).replace(/\.trust$/, "");
+    if (/^[a-z0-9-]{1,}$/.test(label)) return "name";
+    return "unknown";
+  }
+
+  /**
    * Resolve a .trust name to an address.
    * Accepts "alice", "alice.trust", etc.
    * Returns null if not registered or no address set.
+   *
+   * For input that may be either a name OR an address, prefer `resolveName()`.
    */
   async resolve(name: string): Promise<string | null> {
     const fullName = toFullName(normalise(name));
@@ -79,10 +122,35 @@ export class TNSClient {
       const address: string = await resolver.addr(node);
       if (!address || address === ZERO_ADDRESS) return null;
 
-      return address;
+      return getAddress(address);
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Smart display name — accepts EITHER an address OR a `.trust` name.
+   * - If input is an address with a primary `.trust` name set, returns the name.
+   * - If input is a `.trust` name, returns it normalised.
+   * - Otherwise returns a shortened address (e.g. "0x1234…abcd").
+   *
+   * Useful for displaying user-facing identifiers in UI.
+   *
+   * @example
+   * await tns.displayName("0x1234…");        // → "alice.trust" (if set), else "0x1234…abcd"
+   * await tns.displayName("alice.trust");    // → "alice.trust"
+   */
+  async displayName(input: string): Promise<string> {
+    const trimmed = (input ?? "").trim();
+    if (!trimmed) return "";
+
+    if (isAddress(trimmed)) {
+      const name = await this.lookupAddress(trimmed);
+      if (name) return name;
+      return `${trimmed.slice(0, 6)}…${trimmed.slice(-4)}`;
+    }
+
+    return toFullName(normalise(trimmed));
   }
 
   /**

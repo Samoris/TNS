@@ -20,18 +20,46 @@ yarn add @tns/sdk ethers
 
 ## Quick Start
 
-### Resolve a name → address
+### Smart resolve (recommended)
+
+Accepts **either** a `.trust` name OR an address — auto-detects and returns an address. Use this for any input field where a user types a recipient.
 
 ```ts
 import { TNSClient } from "@tns/sdk";
 
 const tns = new TNSClient();
 
+await tns.resolveName("alice.trust");   // → "0x1234…"
+await tns.resolveName("alice");         // → "0x1234…"
+await tns.resolveName("0xAbC…");        // → "0xAbC…" (returned as-is, checksummed)
+```
+
+### Smart display name
+
+Accepts an address or name and returns the best human-readable label — primary `.trust` name if set, otherwise a shortened address.
+
+```ts
+await tns.displayName("0x1234…");       // → "alice.trust" (if primary set)
+                                        // → "0x1234…abcd" (if not set)
+await tns.displayName("alice.trust");   // → "alice.trust"
+```
+
+### Detect input type
+
+```ts
+tns.identify("alice.trust");  // → "name"
+tns.identify("0xAbC…");       // → "address"
+tns.identify("???");          // → "unknown"
+```
+
+### Resolve a name → address (name only)
+
+```ts
 const address = await tns.resolve("alice.trust");
 console.log(address); // "0x1234..."
 ```
 
-### Reverse-resolve address → name
+### Reverse-resolve address → name (address only)
 
 ```ts
 const name = await tns.lookupAddress("0x1234...");
@@ -87,11 +115,32 @@ Import from `@tns/sdk/react`. React 18+ is a peer dependency.
 
 ```tsx
 import {
-  useTNSResolve,
-  useTNSLookup,
+  useTNSResolveName,    // smart: name OR address → address
+  useTNSDisplayName,    // smart: address OR name → display label
+  useTNSResolve,        // name → address only
+  useTNSLookup,         // address → name only
   useTNSAvailability,
   useTNSDomainInfo,
 } from "@tns/sdk/react";
+
+// Smart resolve — works for ANY user input (name or address)
+function RecipientField() {
+  const [input, setInput] = useState("");
+  const { address, loading } = useTNSResolveName(input);
+  return (
+    <>
+      <input value={input} onChange={(e) => setInput(e.target.value)}
+             placeholder="alice.trust or 0x…" />
+      {loading ? "Resolving…" : address && <span>→ {address}</span>}
+    </>
+  );
+}
+
+// Smart display name — show .trust name if set, else shortened address
+function UserBadge({ identity }: { identity: string }) {
+  const { displayName } = useTNSDisplayName(identity);
+  return <span>{displayName}</span>;
+}
 
 // Resolve name → address
 function AddressDisplay({ name }: { name: string }) {
