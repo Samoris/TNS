@@ -214,7 +214,7 @@ export class TNSClient {
 
     try {
       const expiry: bigint = await this.baseRegistrar().nameExpires(tokenId);
-      if (expiry === 0n) return null;
+      if (expiry === BigInt(0)) return null;
       return new Date(Number(expiry) * 1000);
     } catch {
       return null;
@@ -279,7 +279,7 @@ export class TNSClient {
 
     const [available, expiry, owner, resolverAddress] = await Promise.allSettled([
       this.controller().available(label).catch(() => true),
-      this.baseRegistrar().nameExpires(tokenId).catch(() => 0n),
+      this.baseRegistrar().nameExpires(tokenId).catch(() => BigInt(0)),
       this.registry().owner(node).catch(() => ZERO_ADDRESS),
       this.registry().resolver(node).catch(() => ZERO_ADDRESS),
     ]);

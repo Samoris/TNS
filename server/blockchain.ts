@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { TNSClient } from "@tns/sdk";
 
 // Intuition mainnet configuration
 const CHAIN_ID = 1155;
@@ -97,10 +98,11 @@ export class BlockchainService {
   private resolver: ethers.Contract;
   private reverseRegistrar: ethers.Contract;
   private priceOracle: ethers.Contract;
+  private tns: TNSClient;
 
   constructor() {
     this.provider = new ethers.JsonRpcProvider(RPC_URL);
-    
+
     this.multivaultContract = new ethers.Contract(
       INTUITION_MULTIVAULT_ADDRESS,
       INTUITION_MULTIVAULT_ABI,
@@ -114,6 +116,9 @@ export class BlockchainService {
     this.resolver = new ethers.Contract(TNS_RESOLVER_ADDRESS_NEW, TNS_RESOLVER_ABI_NEW, this.provider);
     this.reverseRegistrar = new ethers.Contract(TNS_REVERSE_REGISTRAR_ADDRESS, TNS_REVERSE_REGISTRAR_ABI, this.provider);
     this.priceOracle = new ethers.Contract(TNS_PRICE_ORACLE_ADDRESS, TNS_PRICE_ORACLE_ABI, this.provider);
+
+    // Shared TNS SDK client — used for resolve / lookup / text records / pricing
+    this.tns = new TNSClient({ provider: this.provider });
   }
 
   /**
@@ -350,13 +355,11 @@ export class BlockchainService {
 
   /**
    * Get resolved address for a domain using ENS-forked resolver
+   * (delegates to @tns/sdk)
    */
   async getResolvedAddress(domainName: string): Promise<string | null> {
     try {
-      const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
-      const node = this.namehash(fullName);
-      const addr = await this.resolver.addr(node);
-      return addr === ethers.ZeroAddress ? null : addr;
+      return await this.tns.resolve(domainName);
     } catch (error) {
       console.error(`Error getting resolved address for ${domainName}:`, error);
       return null;
@@ -365,12 +368,11 @@ export class BlockchainService {
 
   /**
    * Get reverse resolved name for an address
+   * (delegates to @tns/sdk)
    */
   async getReverseName(address: string): Promise<string | null> {
     try {
-      const reverseNode = await this.reverseRegistrar.node(address);
-      const name = await this.resolver.name(reverseNode);
-      return name || null;
+      return await this.tns.lookupAddress(address);
     } catch (error) {
       console.error(`Error getting reverse name for ${address}:`, error);
       return null;
@@ -394,13 +396,11 @@ export class BlockchainService {
 
   /**
    * Get text record for a domain using ENS-forked resolver
+   * (delegates to @tns/sdk)
    */
   async getTextRecord(domainName: string, key: string): Promise<string | null> {
     try {
-      const fullName = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
-      const node = this.namehash(fullName);
-      const value = await this.resolver.text(node, key);
-      return value || null;
+      return await this.tns.getTextRecord(domainName, key);
     } catch (error) {
       console.error(`Error getting text record ${key} for ${domainName}:`, error);
       return null;
