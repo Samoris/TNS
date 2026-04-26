@@ -21,7 +21,7 @@ export interface TNSProviderOptions {
  * just like with `.eth` names on Ethereum mainnet.
  *
  * @example
- * import { TNSProvider } from "@tns/sdk";
+ * import { TNSProvider } from "@samoris/tns-sdk";
  *
  * const provider = new TNSProvider();
  * const address = await provider.resolveName("alice.trust");
@@ -76,7 +76,7 @@ export class TNSProvider extends JsonRpcProvider {
  *
  * @example
  * import { BrowserProvider } from "ethers";
- * import { withTNS } from "@tns/sdk";
+ * import { withTNS } from "@samoris/tns-sdk";
  *
  * const provider = withTNS(new BrowserProvider(window.ethereum));
  * const addr = await provider.resolveName("alice.trust");

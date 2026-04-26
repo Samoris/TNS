@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { TNSClient } from "@tns/sdk";
+import { TNSClient } from "@samoris/tns-sdk";
 
 // Intuition mainnet configuration
 const CHAIN_ID = 1155;
@@ -355,7 +355,7 @@ export class BlockchainService {
 
   /**
    * Get resolved address for a domain using ENS-forked resolver
-   * (delegates to @tns/sdk)
+   * (delegates to @samoris/tns-sdk)
    */
   async getResolvedAddress(domainName: string): Promise<string | null> {
     try {
@@ -368,7 +368,7 @@ export class BlockchainService {
 
   /**
    * Get reverse resolved name for an address
-   * (delegates to @tns/sdk)
+   * (delegates to @samoris/tns-sdk)
    */
   async getReverseName(address: string): Promise<string | null> {
     try {
@@ -396,7 +396,7 @@ export class BlockchainService {
 
   /**
    * Get text record for a domain using ENS-forked resolver
-   * (delegates to @tns/sdk)
+   * (delegates to @samoris/tns-sdk)
    */
   async getTextRecord(domainName: string, key: string): Promise<string | null> {
     try {

@@ -18,8 +18,8 @@
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"],
-      "@tns/sdk": ["./sdk/src/index"],
-      "@tns/sdk/react": ["./sdk/src/react-index"]
+      "@samoris/tns-sdk": ["./sdk/src/index"],
+      "@samoris/tns-sdk/react": ["./sdk/src/react-index"]
     }
   }
 }

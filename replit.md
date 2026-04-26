@@ -32,10 +32,10 @@ The smart contracts are exact clones of the audited ENS contracts (from [`intuit
 The frontend is built with React, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query, and Wouter. The backend uses Express.js and TypeScript, providing APIs for domain availability, registration, and user account management.
 
 ### TNS SDK (`sdk/`)
-A standalone npm package (`@tns/sdk`) that lets any app integrate `.trust` name resolution. Two entry points:
-- **`@tns/sdk`** — framework-agnostic core. Exports `TNSClient` (smart `resolveName`/`displayName`/`identify`, plus `resolve`, `lookupAddress`, `isAvailable`, `getPrice`, `getTextRecord`, `getDomainInfo`), `TNSProvider` (a true ethers `JsonRpcProvider` subclass — `provider.resolveName("alice.trust")` works exactly like ENS), `withTNS()` to patch any existing provider, and `tnsBrowserProvider()` for MetaMask.
-- **`@tns/sdk/react`** — React 18 bindings: `useTNSResolveName`, `useTNSDisplayName`, `useTNSResolve`, `useTNSLookup`, `useTNSAvailability`, `useTNSDomainInfo`, plus a `TNSNamePicker` component.
-- Tested via Vitest (`sdk/test/sdk.test.ts`). Path-aliased as `@tns/sdk` in the root `tsconfig.json`. The server's `BlockchainService` already uses the SDK internally for `getResolvedAddress`, `getReverseName`, and `getTextRecord`.
+A standalone npm package (`@samoris/tns-sdk`) that lets any app integrate `.trust` name resolution. Two entry points:
+- **`@samoris/tns-sdk`** — framework-agnostic core. Exports `TNSClient` (smart `resolveName`/`displayName`/`identify`, plus `resolve`, `lookupAddress`, `isAvailable`, `getPrice`, `getTextRecord`, `getDomainInfo`), `TNSProvider` (a true ethers `JsonRpcProvider` subclass — `provider.resolveName("alice.trust")` works exactly like ENS), `withTNS()` to patch any existing provider, and `tnsBrowserProvider()` for MetaMask.
+- **`@samoris/tns-sdk/react`** — React 18 bindings: `useTNSResolveName`, `useTNSDisplayName`, `useTNSResolve`, `useTNSLookup`, `useTNSAvailability`, `useTNSDomainInfo`, plus a `TNSNamePicker` component.
+- Tested via Vitest (`sdk/test/sdk.test.ts`). Path-aliased as `@samoris/tns-sdk` in the root `tsconfig.json`. The server's `BlockchainService` already uses the SDK internally for `getResolvedAddress`, `getReverseName`, and `getTextRecord`.
 
 ### Data Persistence
 TNS uses a **PostgreSQL database** for permanent storage of:
