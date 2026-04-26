@@ -1,0 +1,42 @@
+{
+  "name": "@tns/sdk",
+  "version": "1.0.0",
+  "description": "SDK for integrating Trust Name Service (.trust) into your application",
+  "keywords": ["tns", "trust", "ens", "naming", "web3", "blockchain", "intuition"],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react-index.mjs",
+      "require": "./dist/react-index.js",
+      "types": "./dist/react-index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/react-index.ts --format cjs,esm --dts --clean --out-dir dist"
+  },
+  "peerDependencies": {
+    "ethers": "^6.0.0",
+    "react": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
