@@ -1,8 +1,16 @@
 {
-  "name": "@tns/sdk",
+  "name": "@samoris/tns-sdk",
   "version": "1.0.0",
   "description": "SDK for integrating Trust Name Service (.trust) into your application",
-  "keywords": ["tns", "trust", "ens", "naming", "web3", "blockchain", "intuition"],
+  "keywords": [
+    "tns",
+    "trust",
+    "ens",
+    "naming",
+    "web3",
+    "blockchain",
+    "intuition"
+  ],
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
