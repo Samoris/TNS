@@ -20,6 +20,53 @@ yarn add @tns/sdk ethers
 
 ## Quick Start
 
+### Drop-in ethers Provider (ENS-style)
+
+The cleanest way — works **exactly** like ENS does in ethers. Use a `TNSProvider` and `.trust` names just work everywhere ethers expects an address.
+
+```ts
+import { TNSProvider } from "@tns/sdk";
+import { parseEther, Wallet } from "ethers";
+
+const provider = new TNSProvider();
+
+// Same API as ethers — like ENS for .eth names:
+await provider.resolveName("alice.trust");      // → "0x1234…"
+await provider.lookupAddress("0xabc…");         // → "alice.trust"
+
+// Even better — use names directly in transactions:
+const wallet = new Wallet(PRIVATE_KEY, provider);
+await wallet.sendTransaction({
+  to: "alice.trust",                            // ← name resolved automatically
+  value: parseEther("1"),
+});
+```
+
+### MetaMask / window.ethereum
+
+```ts
+import { tnsBrowserProvider } from "@tns/sdk";
+
+const provider = tnsBrowserProvider(window.ethereum);
+const addr = await provider.resolveName("alice.trust");   // ← works the same
+```
+
+### Wrap an existing provider
+
+```ts
+import { BrowserProvider } from "ethers";
+import { withTNS } from "@tns/sdk";
+
+const provider = withTNS(new BrowserProvider(window.ethereum));
+await provider.resolveName("alice.trust");
+```
+
+---
+
+## Standalone Client API
+
+If you don't want to swap your provider, use `TNSClient` directly.
+
 ### Smart resolve (recommended)
 
 Accepts **either** a `.trust` name OR an address — auto-detects and returns an address. Use this for any input field where a user types a recipient.

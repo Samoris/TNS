@@ -1,4 +1,12 @@
-import { JsonRpcProvider, Contract, BigNumberish, formatEther, isAddress, getAddress } from "ethers";
+import {
+  JsonRpcProvider,
+  Contract,
+  BigNumberish,
+  formatEther,
+  isAddress,
+  getAddress,
+  type Provider,
+} from "ethers";
 import { namehash, labelhash, normalise, toFullName } from "./namehash";
 import {
   TNS_REGISTRY_ABI,
@@ -9,7 +17,11 @@ import {
 import { CONTRACT_ADDRESSES, INTUITION_NETWORK, ZERO_ADDRESS } from "./constants";
 
 export interface TNSClientConfig {
+  /** RPC URL (defaults to Intuition mainnet). Ignored if `provider` is supplied. */
   rpcUrl?: string;
+  /** Pass an existing ethers Provider (e.g. a BrowserProvider from MetaMask). */
+  provider?: Provider;
+  /** Override individual contract addresses. */
   contracts?: Partial<typeof CONTRACT_ADDRESSES>;
 }
 
@@ -33,13 +45,13 @@ export interface PriceInfo {
 }
 
 export class TNSClient {
-  private provider: JsonRpcProvider;
+  private provider: Provider;
   private addresses: typeof CONTRACT_ADDRESSES;
 
   constructor(config: TNSClientConfig = {}) {
-    this.provider = new JsonRpcProvider(
-      config.rpcUrl ?? INTUITION_NETWORK.rpcUrl
-    );
+    this.provider =
+      config.provider ??
+      new JsonRpcProvider(config.rpcUrl ?? INTUITION_NETWORK.rpcUrl);
     this.addresses = {
       ...CONTRACT_ADDRESSES,
       ...config.contracts,
