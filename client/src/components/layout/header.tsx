@@ -95,9 +95,6 @@ export function Header() {
                   alt="TNS Logo" 
                   className="h-8 sm:h-10 w-auto object-contain"
                 />
-                <Badge variant="secondary" className="ml-1 sm:ml-2 text-xs bg-trust-violet/10 text-trust-violet">
-                  BETA
-                </Badge>
               </Link>
 
               <div className="hidden md:ml-8 md:flex md:space-x-8">
