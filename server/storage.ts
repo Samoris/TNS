@@ -12,17 +12,22 @@ import {
   type DomainWithRecords,
   type Agent,
   type InsertAgent,
+  type ReferralCode,
+  type Referral,
   users,
   domains,
   domainRecords,
   domainCommits,
   domainSyncStatus,
   agents,
-  PRICING_TIERS
+  referralCodes,
+  referrals,
+  PRICING_TIERS,
+  POINTS_PER_REFERRAL,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, like, gte } from "drizzle-orm";
+import { eq, and, like, gte, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -78,6 +83,14 @@ export interface IStorage {
   deleteAgent(domain: string): Promise<boolean>;
   discoverAgents(filters: { capability?: string; type?: string; minReputation?: number }): Promise<Agent[]>;
 
+  // Referrals
+  getOrCreateReferralCode(walletAddress: string): Promise<ReferralCode>;
+  getReferralCodeByCode(code: string): Promise<ReferralCode | undefined>;
+  getReferralCodeByWallet(walletAddress: string): Promise<ReferralCode | undefined>;
+  getReferralsByReferrer(walletAddress: string): Promise<Referral[]>;
+  getReferralByDomain(domainName: string): Promise<Referral | undefined>;
+  recordReferral(input: { referrerCode: string; referrerAddress: string; refereeAddress: string; domainName: string }): Promise<Referral>;
+  getReferralLeaderboard(limit?: number): Promise<ReferralCode[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -614,5 +627,83 @@ export class DatabaseStorage implements IStorage {
   }
 
 }
+
+function generateReferralCode(): string {
+  return Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 4);
+}
+
+// MemStorage stubs (not actively used; DatabaseStorage is the export)
+MemStorage.prototype.getOrCreateReferralCode = async function () { throw new Error("MemStorage: referrals not implemented"); } as any;
+MemStorage.prototype.getReferralCodeByCode = async function () { return undefined; } as any;
+MemStorage.prototype.getReferralCodeByWallet = async function () { return undefined; } as any;
+MemStorage.prototype.getReferralsByReferrer = async function () { return []; } as any;
+MemStorage.prototype.getReferralByDomain = async function () { return undefined; } as any;
+MemStorage.prototype.recordReferral = async function () { throw new Error("MemStorage: referrals not implemented"); } as any;
+MemStorage.prototype.getReferralLeaderboard = async function () { return []; } as any;
+
+// Referral methods on DatabaseStorage
+DatabaseStorage.prototype.getReferralCodeByCode = async function (code: string): Promise<ReferralCode | undefined> {
+  const [row] = await db.select().from(referralCodes).where(eq(referralCodes.code, code));
+  return row;
+};
+
+DatabaseStorage.prototype.getReferralCodeByWallet = async function (walletAddress: string): Promise<ReferralCode | undefined> {
+  const [row] = await db.select().from(referralCodes).where(eq(referralCodes.walletAddress, walletAddress.toLowerCase()));
+  return row;
+};
+
+DatabaseStorage.prototype.getOrCreateReferralCode = async function (walletAddress: string): Promise<ReferralCode> {
+  const lower = walletAddress.toLowerCase();
+  const existing = await this.getReferralCodeByWallet(lower);
+  if (existing) return existing;
+  // Generate a unique code, retry on rare collision
+  for (let i = 0; i < 5; i++) {
+    const code = generateReferralCode();
+    const collision = await this.getReferralCodeByCode(code);
+    if (collision) continue;
+    try {
+      const [row] = await db.insert(referralCodes).values({ walletAddress: lower, code }).returning();
+      return row;
+    } catch (err) {
+      // Race: another request created the row first; return it
+      const again = await this.getReferralCodeByWallet(lower);
+      if (again) return again;
+    }
+  }
+  throw new Error("Failed to generate unique referral code");
+};
+
+DatabaseStorage.prototype.getReferralsByReferrer = async function (walletAddress: string): Promise<Referral[]> {
+  return db.select().from(referrals).where(eq(referrals.referrerAddress, walletAddress.toLowerCase())).orderBy(desc(referrals.createdAt));
+};
+
+DatabaseStorage.prototype.getReferralByDomain = async function (domainName: string): Promise<Referral | undefined> {
+  const [row] = await db.select().from(referrals).where(eq(referrals.domainName, domainName.toLowerCase()));
+  return row;
+};
+
+DatabaseStorage.prototype.recordReferral = async function (input: { referrerCode: string; referrerAddress: string; refereeAddress: string; domainName: string }): Promise<Referral> {
+  const referrerAddress = input.referrerAddress.toLowerCase();
+  const refereeAddress = input.refereeAddress.toLowerCase();
+  const domainName = input.domainName.toLowerCase();
+  const [row] = await db.insert(referrals).values({
+    referrerCode: input.referrerCode,
+    referrerAddress,
+    refereeAddress,
+    domainName,
+    pointsAwarded: POINTS_PER_REFERRAL,
+  }).returning();
+  await db.update(referralCodes)
+    .set({
+      totalPoints: sql`${referralCodes.totalPoints} + ${POINTS_PER_REFERRAL}`,
+      totalReferrals: sql`${referralCodes.totalReferrals} + 1`,
+    })
+    .where(eq(referralCodes.walletAddress, referrerAddress));
+  return row;
+};
+
+DatabaseStorage.prototype.getReferralLeaderboard = async function (limit: number = 10): Promise<ReferralCode[]> {
+  return db.select().from(referralCodes).orderBy(desc(referralCodes.totalPoints)).limit(limit);
+};
 
 export const storage = new DatabaseStorage();

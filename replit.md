@@ -37,6 +37,16 @@ A standalone npm package (`@samoris/tns-sdk`) that lets any app integrate `.trus
 - **`@samoris/tns-sdk/react`** — React 18 bindings: `useTNSResolveName`, `useTNSDisplayName`, `useTNSResolve`, `useTNSLookup`, `useTNSAvailability`, `useTNSDomainInfo`, plus a `TNSNamePicker` component.
 - Tested via Vitest (`sdk/test/sdk.test.ts`). Path-aliased as `@samoris/tns-sdk` in the root `tsconfig.json`. The server's `BlockchainService` already uses the SDK internally for `getResolvedAddress`, `getReverseName`, and `getTextRecord`.
 
+### Referrals
+Off-chain referral system that rewards users with **points** (XP-style) for bringing new registrations:
+- Each connected wallet automatically gets a unique 8-char referral code on first visit to `/referrals`
+- Sharable link format: `/register?ref=CODE`. The code is captured on landing (any page) and persisted in `localStorage` as `tns_referral_code`
+- When a referee registers a `.trust` domain, the registration `onSuccess` handler calls `POST /api/referrals/credit` and the referrer earns **100 points**
+- Self-referrals are blocked; each domain can only credit one referrer (DB unique constraint on `domainName`)
+- Tables: `referralCodes` (wallet → code, totals) and `referrals` (one row per credited registration)
+- API: `GET /api/referrals/me/:address`, `GET /api/referrals/code/:code`, `GET /api/referrals/leaderboard`, `POST /api/referrals/credit`
+- Frontend page at `/referrals` shows the user's link with copy/share, stats, recent referrals, and a top-10 leaderboard
+
 ### Data Persistence
 TNS uses a **PostgreSQL database** for permanent storage of:
 - **Agent registrations** - All registered AI agents with their metadata, capabilities, endpoints

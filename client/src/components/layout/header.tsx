@@ -78,6 +78,7 @@ export function Header() {
     { name: "Send Payment", href: "/send-payment", active: location === "/send-payment" },
     { name: "Agents", href: "/agents", active: location === "/agents" || location === "/agent-register" || location === "/agent-test" },
     { name: "Sync", href: "/sync", active: location === "/sync" },
+    { name: "Referrals", href: "/referrals", active: location === "/referrals" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 

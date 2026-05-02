@@ -301,7 +301,30 @@ export default function RegisterPage() {
         title: "🎉 NFT Domain registered successfully!",
         description: `${selectedDomain} is now yours as an ERC-721 NFT! Now syncing to Knowledge Graph...`,
       });
-      
+
+      // Credit a referral if the user landed via a referral link
+      try {
+        const refCode = localStorage.getItem("tns_referral_code");
+        const fullName = data.domain?.name || (selectedDomain?.endsWith(".trust") ? selectedDomain : `${selectedDomain}.trust`);
+        if (refCode && address && fullName) {
+          const creditRes = await apiRequest("POST", "/api/referrals/credit", {
+            code: refCode,
+            refereeAddress: address,
+            domainName: fullName,
+          });
+          if (creditRes.ok) {
+            // Clear the code so it doesn't get applied again on a future registration
+            localStorage.removeItem("tns_referral_code");
+            toast({
+              title: "Referral applied",
+              description: "Your referrer just earned 100 points 🎉",
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Referral credit skipped:", err);
+      }
+
       // Automatically trigger Knowledge Graph sync
       const domainName = data.domain?.name || selectedDomain?.replace('.trust', '');
       if (domainName) {

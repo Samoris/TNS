@@ -18,6 +18,7 @@ import Support from "@/pages/support";
 import AgentTest from "@/pages/AgentTest";
 import AgentRegister from "@/pages/AgentRegister";
 import Agents from "@/pages/Agents";
+import Referrals from "@/pages/referrals";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
@@ -40,6 +41,7 @@ function Router() {
           <Route path="/agents" component={Agents} />
           <Route path="/agent-test" component={AgentTest} />
           <Route path="/agent-register" component={AgentRegister} />
+          <Route path="/referrals" component={Referrals} />
           <Route component={NotFound} />
         </Switch>
       </main>
@@ -55,6 +57,17 @@ function App() {
     
     if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
       document.documentElement.classList.add("dark");
+    }
+
+    // Capture ?ref=CODE from any landing URL and persist it for the registration flow
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref && /^[a-z0-9]{4,16}$/i.test(ref)) {
+        localStorage.setItem("tns_referral_code", ref);
+      }
+    } catch {
+      // ignore
     }
   }, []);
 

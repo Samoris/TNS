@@ -76,6 +76,27 @@ export const agents = pgTable("agents", {
   stakeholders: integer("stakeholders"),
 });
 
+// Referral codes - one per wallet
+export const referralCodes = pgTable("referral_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  walletAddress: text("wallet_address").notNull().unique(),
+  code: text("code").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  totalPoints: integer("total_points").notNull().default(0),
+  totalReferrals: integer("total_referrals").notNull().default(0),
+});
+
+// Individual referral events (one row per credited registration)
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerCode: text("referrer_code").notNull(),
+  referrerAddress: text("referrer_address").notNull(),
+  refereeAddress: text("referee_address").notNull(),
+  domainName: text("domain_name").notNull().unique(),
+  pointsAwarded: integer("points_awarded").notNull().default(100),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -141,6 +162,11 @@ export type DomainSyncStatus = typeof domainSyncStatus.$inferSelect;
 
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type Agent = typeof agents.$inferSelect;
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type Referral = typeof referrals.$inferSelect;
+
+export const POINTS_PER_REFERRAL = 100;
 
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;

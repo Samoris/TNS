@@ -2610,6 +2610,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============= REFERRALS =============
+
+  // Get or create the user's referral code + their stats
+  app.get("/api/referrals/me/:address", async (req, res) => {
+    try {
+      const address = req.params.address;
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid wallet address" });
+      }
+      const code = await storage.getOrCreateReferralCode(address);
+      const recent = await storage.getReferralsByReferrer(address);
+      res.json({
+        code: code.code,
+        walletAddress: code.walletAddress,
+        totalPoints: code.totalPoints,
+        totalReferrals: code.totalReferrals,
+        recentReferrals: recent.slice(0, 25),
+      });
+    } catch (error: any) {
+      console.error("Referral fetch error:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch referral data" });
+    }
+  });
+
+  // Resolve a referral code to its owner (used to validate links before registration)
+  app.get("/api/referrals/code/:code", async (req, res) => {
+    try {
+      const row = await storage.getReferralCodeByCode(req.params.code);
+      if (!row) return res.status(404).json({ message: "Code not found" });
+      res.json({ code: row.code, walletAddress: row.walletAddress });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Top referrers
+  app.get("/api/referrals/leaderboard", async (_req, res) => {
+    try {
+      const top = await storage.getReferralLeaderboard(10);
+      res.json(top.map((r) => ({
+        walletAddress: r.walletAddress,
+        code: r.code,
+        totalPoints: r.totalPoints,
+        totalReferrals: r.totalReferrals,
+      })));
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Credit a referral when a domain is registered through a code
+  app.post("/api/referrals/credit", async (req, res) => {
+    try {
+      const { code, refereeAddress, domainName } = req.body;
+      if (!code || !refereeAddress || !domainName) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      if (!/^0x[a-fA-F0-9]{40}$/.test(refereeAddress)) {
+        return res.status(400).json({ message: "Invalid referee address" });
+      }
+      const referrer = await storage.getReferralCodeByCode(code);
+      if (!referrer) return res.status(404).json({ message: "Referral code not found" });
+
+      // Block self-referral
+      if (referrer.walletAddress.toLowerCase() === refereeAddress.toLowerCase()) {
+        return res.status(400).json({ message: "Cannot refer yourself" });
+      }
+
+      // One credit per domain (domainName is unique in the table; check first for friendly error)
+      const existing = await storage.getReferralByDomain(domainName);
+      if (existing) {
+        return res.status(409).json({ message: "Domain already credited" });
+      }
+
+      const referral = await storage.recordReferral({
+        referrerCode: code,
+        referrerAddress: referrer.walletAddress,
+        refereeAddress,
+        domainName,
+      });
+      res.json({ message: "Referral credited", referral });
+    } catch (error: any) {
+      console.error("Referral credit error:", error);
+      res.status(500).json({ message: error.message || "Failed to credit referral" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
