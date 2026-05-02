@@ -67,7 +67,7 @@ export default function ReferralsPage() {
   });
 
   const referralLink = me
-    ? `${window.location.origin}/register?ref=${me.code}`
+    ? `https://tns.intuition.box/register?ref=${me.code}`
     : "";
 
   const copyLink = async () => {
