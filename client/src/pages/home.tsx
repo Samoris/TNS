@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DomainSearch } from "@/components/domain-search";
 import { PricingSection } from "@/components/pricing-card";
 import { ContractStats } from "@/components/contract-stats";
-import { Shield, Coins, Award, ArrowRight, Zap, Users, Globe } from "lucide-react";
+import { Shield, Coins, Award, ArrowRight, Zap, Users, Globe, Sparkles } from "lucide-react";
 
 export default function Home() {
   const [selectedDomain, setSelectedDomain] = useState<{ name: string; pricing: any } | null>(null);
@@ -115,6 +115,33 @@ export default function Home() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Share & Earn Callout */}
+      <section className="py-8 sm:py-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/referrals" data-testid="link-referrals-callout">
+            <div className="group cursor-pointer relative overflow-hidden rounded-2xl bg-gradient-to-r from-trust-violet to-trust-blue p-6 sm:p-8 text-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-6 w-6 sm:h-7 sm:w-7" />
+                  </div>
+                  <div>
+                    <div className="text-lg sm:text-xl font-bold">Share & earn 100 points</div>
+                    <div className="text-sm sm:text-base text-white/90">
+                      Get a referral link and earn points for every friend who registers a .trust domain.
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-medium bg-white/15 hover:bg-white/25 transition-colors px-4 py-2 rounded-full self-start sm:self-auto">
+                  Get your link
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
       </section>
 

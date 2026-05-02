@@ -22,6 +22,7 @@ import {
   Plus,
   Loader2,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { DomainSearch } from "@/components/domain-search";
 import { WalletConnection } from "@/components/wallet-connection";
@@ -654,6 +655,26 @@ export default function RegisterPage() {
                       <div>{new Date(registeredDomain.expirationDate).toLocaleDateString()}</div>
                     </div>
                   </div>
+
+                  {/* Share & Earn callout */}
+                  <a
+                    href="/referrals"
+                    className="block mb-6 group rounded-xl bg-gradient-to-r from-trust-violet to-trust-blue p-4 sm:p-5 text-white hover:shadow-lg transition-shadow"
+                    data-testid="link-referrals-from-success"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm sm:text-base">Earn 100 points per friend</div>
+                        <div className="text-xs sm:text-sm text-white/90">
+                          Share your referral link — get points whenever someone registers a .trust through it.
+                        </div>
+                      </div>
+                      <ExternalLink className="h-4 w-4 opacity-80 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                    </div>
+                  </a>
 
                   {/* Knowledge Graph Sync Section */}
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
