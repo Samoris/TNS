@@ -479,7 +479,7 @@ export default function AgentTest() {
               <div className="space-y-3">
                 {results.map((result, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    {result.status === 'running' && <Loader2 className="w-5 h-5 animate-spin text-blue-500 mt-0.5" />}
+                    {result.status === 'running' && <Loader2 className="w-5 h-5 animate-spin text-trust-violet mt-0.5" />}
                     {result.status === 'success' && <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />}
                     {result.status === 'error' && <XCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                     {result.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-muted-foreground mt-0.5" />}

@@ -165,10 +165,10 @@ export default function Agents() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+        <Card className="bg-gradient-to-br from-trust-violet/10 to-trust-violet/5 border-trust-violet/20">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-blue-500" />
+              <Users className="w-8 h-8 text-trust-violet" />
               <div>
                 <p className="text-2xl font-bold">{agents.length}</p>
                 <p className="text-sm text-muted-foreground">Registered Agents</p>
