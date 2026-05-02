@@ -13,7 +13,10 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
-  Database
+  Database,
+  Sparkles,
+  Trophy,
+  Code
 } from "lucide-react";
 
 export default function DocsPage() {
@@ -287,6 +290,112 @@ export default function DocsPage() {
             "Records are queryable by AI agents and other applications",
             "Enables reputation and staking features for your domain",
             "Creates verifiable on-chain relationships between your domain and its metadata"
+          ]
+        }
+      ]
+    },
+    {
+      id: "referrals",
+      title: "Referrals",
+      icon: Sparkles,
+      content: [
+        {
+          heading: "Earn 100 points per registration",
+          text: "Every connected wallet gets a unique referral code on first visit to the Referrals page. Share your link, and when someone registers a .trust domain through it, you earn 100 points."
+        },
+        {
+          heading: "How it works",
+          items: [
+            "Visit /referrals while connected — your unique 8-character code is generated automatically",
+            "Copy or share your link: https://tns.intuition.box/register?ref=YOUR_CODE",
+            "When a friend lands on any TNS page with ?ref=CODE, the code is saved in their browser",
+            "When they complete a .trust registration, you are credited 100 points",
+            "Your stats, recent referrals, and link are all visible on the Referrals page"
+          ]
+        },
+        {
+          heading: "Rules",
+          items: [
+            "Self-referrals are blocked (you cannot credit your own wallet)",
+            "Each domain registration can only credit one referrer",
+            "Points are tracked off-chain in a PostgreSQL database",
+            "Referral codes persist permanently with your wallet"
+          ]
+        }
+      ]
+    },
+    {
+      id: "leaderboard",
+      title: "Leaderboard",
+      icon: Trophy,
+      content: [
+        {
+          heading: "Track top referrers",
+          text: "The Leaderboard page ranks all referrers by total points earned, so the community can see who's bringing the most new .trust registrations."
+        },
+        {
+          heading: "What you see",
+          items: [
+            "A podium for the top 3 with crown and medal styling",
+            "A full ranking table for the top 50 referrers with wallet, referral count, and points",
+            "Your global rank highlighted at the top (e.g. \"Rank #7 of 142\") when your wallet is connected",
+            "If you are ranked outside the top 50, your row is pinned to the bottom so you always see your position",
+            "Ties share the same best rank"
+          ]
+        },
+        {
+          heading: "API endpoints",
+          items: [
+            "GET /api/referrals/leaderboard?limit=50 — top N referrers (max 100)",
+            "GET /api/referrals/rank/:address — a specific wallet's rank and total participants",
+            "GET /api/referrals/me/:address — your code, points, and recent referrals",
+            "POST /api/referrals/credit — called automatically on successful registration"
+          ]
+        }
+      ]
+    },
+    {
+      id: "sdk",
+      title: "TNS SDK",
+      icon: Code,
+      content: [
+        {
+          heading: "@samoris/tns-sdk",
+          text: "A standalone npm package that lets any app integrate .trust name resolution. Isomorphic — works in Node.js servers, browsers, edge functions, and React Native. Install with: npm install @samoris/tns-sdk ethers"
+        },
+        {
+          heading: "Two entry points",
+          items: [
+            "@samoris/tns-sdk — framework-agnostic core (TNSClient, TNSProvider, withTNS, tnsBrowserProvider)",
+            "@samoris/tns-sdk/react — React 18 hooks and the <TNSNamePicker /> component"
+          ]
+        },
+        {
+          heading: "Core API",
+          items: [
+            "TNSClient — resolveName, displayName, identify, resolve, lookupAddress, isAvailable, getPrice, getTextRecord, getDomainInfo",
+            "TNSProvider — a true ethers JsonRpcProvider subclass: provider.resolveName(\"alice.trust\") works just like ENS",
+            "withTNS(provider) — patches any existing ethers provider to add .trust resolution",
+            "tnsBrowserProvider() — browser helper that wraps window.ethereum (MetaMask)"
+          ]
+        },
+        {
+          heading: "React hooks",
+          items: [
+            "useTNSResolveName — resolve a .trust name to an address",
+            "useTNSDisplayName — get the primary .trust name for an address (with shortAddr fallback)",
+            "useTNSResolve, useTNSLookup — lower-level resolution hooks",
+            "useTNSAvailability — check if a name is available to register",
+            "useTNSDomainInfo — full domain metadata (owner, expiry, records)"
+          ]
+        },
+        {
+          heading: "Server vs client",
+          items: [
+            "Server / Node — import from @samoris/tns-sdk and pass an RPC URL",
+            "Browser — same core import, plus tnsBrowserProvider() for MetaMask",
+            "React apps — add the /react entry for hooks and components",
+            "TNS's own server (server/blockchain.ts) uses the SDK internally for all name resolution"
           ]
         }
       ]
