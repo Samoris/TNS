@@ -4,76 +4,71 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(240 20% 98%);
-  --foreground: hsl(232 27% 12%);
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(222.2 84% 4.9%);
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(232 27% 12%);
+  --card-foreground: hsl(222.2 84% 4.9%);
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(232 27% 12%);
-  --primary: hsl(258 90% 66%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(258 30% 96%);
-  --secondary-foreground: hsl(232 27% 12%);
-  --muted: hsl(258 20% 95%);
-  --muted-foreground: hsl(232 10% 45%);
-  --accent: hsl(292 84% 96%);
-  --accent-foreground: hsl(232 27% 12%);
+  --popover-foreground: hsl(222.2 84% 4.9%);
+  --primary: hsl(221.2 83.2% 53.3%);
+  --primary-foreground: hsl(210 40% 98%);
+  --secondary: hsl(210 40% 96%);
+  --secondary-foreground: hsl(222.2 84% 4.9%);
+  --muted: hsl(210 40% 96%);
+  --muted-foreground: hsl(215.4 16.3% 46.9%);
+  --accent: hsl(210 40% 96%);
+  --accent-foreground: hsl(222.2 84% 4.9%);
   --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(258 20% 90%);
-  --input: hsl(258 20% 90%);
-  --ring: hsl(258 90% 66%);
-  --chart-1: hsl(258 90% 66%);
-  --chart-2: hsl(292 84% 61%);
-  --chart-3: hsl(311 100% 50%);
-  --chart-4: hsl(263 70% 50%);
-  --chart-5: hsl(220 70% 60%);
+  --destructive-foreground: hsl(210 40% 98%);
+  --border: hsl(214.3 31.8% 91.4%);
+  --input: hsl(214.3 31.8% 91.4%);
+  --ring: hsl(221.2 83.2% 53.3%);
+  --chart-1: hsl(12 76% 61%);
+  --chart-2: hsl(173 58% 39%);
+  --chart-3: hsl(197 37% 24%);
+  --chart-4: hsl(43 74% 66%);
+  --chart-5: hsl(27 87% 67%);
   --radius: 0.75rem;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   
-  /* TNS Custom Colors — purple → pink palette */
-  --trust-violet: hsl(258 90% 66%);   /* primary purple #8b5cf6 */
-  --trust-blue: hsl(292 84% 61%);     /* fuchsia/pink #d946ef (gradient companion) */
+  /* TNS Custom Colors */
+  --trust-blue: hsl(221.2 83.2% 53.3%);
+  --trust-violet: hsl(262.1 83.3% 57.8%);
   --trust-emerald: hsl(158.1 64.4% 51.6%);
-  --trust-dark: hsl(225 14% 5%);      /* deep dark #0a0b0e */
+  --trust-dark: hsl(217.2 32.6% 17.5%);
   
-  /* Custom gradients — violet → pink */
-  --trust-gradient: linear-gradient(135deg, hsl(263 70% 50%) 0%, hsl(258 90% 66%) 50%, hsl(311 100% 50%) 100%);
-  --hero-gradient: radial-gradient(circle at 30% 20%, hsl(258 90% 66% / 0.12) 0%, transparent 50%),
-                   radial-gradient(circle at 80% 80%, hsl(311 100% 50% / 0.08) 0%, transparent 50%);
+  /* Custom gradients */
+  --trust-gradient: linear-gradient(135deg, var(--trust-blue), var(--trust-violet));
+  --hero-gradient: linear-gradient(135deg, hsl(221.2 83.2% 53.3% / 0.05), hsl(262.1 83.3% 57.8% / 0.05), hsl(158.1 64.4% 51.6% / 0.05));
 }
 
 .dark {
-  --background: hsl(225 14% 5%);             /* #0a0b0e */
-  --foreground: hsl(0 0% 94%);               /* #f0f0f0 */
-  --card: hsl(234 27% 11%);                  /* #141524 */
-  --card-foreground: hsl(0 0% 94%);
-  --popover: hsl(234 27% 11%);
-  --popover-foreground: hsl(0 0% 94%);
-  --primary: hsl(258 90% 66%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(232 27% 14%);             /* #1a1b2e */
-  --secondary-foreground: hsl(0 0% 94%);
-  --muted: hsl(232 27% 14%);
-  --muted-foreground: hsl(232 10% 65%);
-  --accent: hsl(263 50% 18%);
-  --accent-foreground: hsl(0 0% 94%);
-  --destructive: hsl(0 62.8% 50%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(232 27% 18%);
-  --input: hsl(232 27% 16%);
-  --ring: hsl(258 90% 66%);
-  --chart-1: hsl(258 90% 66%);
-  --chart-2: hsl(292 84% 61%);
-  --chart-3: hsl(311 100% 60%);
-  --chart-4: hsl(263 70% 55%);
-  --chart-5: hsl(220 70% 60%);
-
-  /* Brighter gradient companion in dark mode */
-  --trust-blue: hsl(311 100% 60%);
-  --trust-dark: hsl(225 14% 5%);
+  --background: hsl(217.2 32.6% 17.5%);
+  --foreground: hsl(210 40% 98%);
+  --card: hsl(222.2 84% 4.9%);
+  --card-foreground: hsl(210 40% 98%);
+  --popover: hsl(222.2 84% 4.9%);
+  --popover-foreground: hsl(210 40% 98%);
+  --primary: hsl(217.2 91.2% 59.8%);
+  --primary-foreground: hsl(222.2 84% 4.9%);
+  --secondary: hsl(217.2 32.6% 17.5%);
+  --secondary-foreground: hsl(210 40% 98%);
+  --muted: hsl(217.2 32.6% 17.5%);
+  --muted-foreground: hsl(215 20.2% 65.1%);
+  --accent: hsl(217.2 32.6% 17.5%);
+  --accent-foreground: hsl(210 40% 98%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(210 40% 98%);
+  --border: hsl(217.2 32.6% 17.5%);
+  --input: hsl(217.2 32.6% 17.5%);
+  --ring: hsl(224.3 76.3% 94.1%);
+  --chart-1: hsl(220 70% 50%);
+  --chart-2: hsl(160 60% 45%);
+  --chart-3: hsl(30 80% 55%);
+  --chart-4: hsl(280 65% 60%);
+  --chart-5: hsl(340 75% 55%);
 }
 
 @layer base {
@@ -125,17 +120,11 @@
   }
   
   .trust-button {
-    @apply text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center;
-    background: linear-gradient(90deg, hsl(263 70% 50%) 0%, hsl(258 90% 66%) 100%);
-    box-shadow: 0 4px 20px hsl(263 70% 50% / 0.35);
-  }
-  .trust-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 24px hsl(263 70% 50% / 0.5);
+    @apply bg-trust-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center;
   }
   
   .trust-input {
-    @apply px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-trust-violet focus:border-trust-violet transition-all duration-200;
+    @apply px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-trust-blue focus:border-trust-blue transition-all duration-200;
   }
 }
 

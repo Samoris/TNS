@@ -130,10 +130,10 @@ export default function SendPayment() {
   };
 
   return (
-    <div className="min-h-screen bg-background py-8 sm:py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 py-8 sm:py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-trust-violet to-trust-blue bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Send Payment
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 px-4">
@@ -265,7 +265,7 @@ export default function SendPayment() {
                 resolvedAddress === ethers.ZeroAddress ||
                 sendPaymentMutation.isPending
               }
-              className="w-full min-h-[56px] py-4 text-base sm:text-lg bg-gradient-to-r from-trust-violet to-trust-blue hover:opacity-90 transition-opacity"
+              className="w-full min-h-[56px] py-4 text-base sm:text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               data-testid="button-send-payment"
             >
               {sendPaymentMutation.isPending ? (
@@ -290,25 +290,25 @@ export default function SendPayment() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-trust-violet/10 text-trust-violet flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold">
                 1
               </div>
               <p>Enter the recipient's .trust domain name</p>
             </div>
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-trust-violet/10 text-trust-violet flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold">
                 2
               </div>
               <p>Click "Resolve" to verify the domain and get the payment address</p>
             </div>
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-trust-violet/10 text-trust-violet flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold">
                 3
               </div>
               <p>Enter the amount of TRUST tokens you want to send</p>
             </div>
             <div className="flex gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-trust-violet/10 text-trust-violet flex items-center justify-center font-bold">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center font-bold">
                 4
               </div>
               <p>Confirm the transaction in MetaMask to complete the payment</p>
