@@ -2645,16 +2645,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Top referrers
-  app.get("/api/referrals/leaderboard", async (_req, res) => {
+  // Top referrers (limit configurable, max 100)
+  app.get("/api/referrals/leaderboard", async (req, res) => {
     try {
-      const top = await storage.getReferralLeaderboard(10);
+      const requested = parseInt(String(req.query.limit ?? "10"), 10);
+      const limit = Math.min(Math.max(isNaN(requested) ? 10 : requested, 1), 100);
+      const top = await storage.getReferralLeaderboard(limit);
       res.json(top.map((r) => ({
         walletAddress: r.walletAddress,
         code: r.code,
         totalPoints: r.totalPoints,
         totalReferrals: r.totalReferrals,
       })));
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // A specific user's rank
+  app.get("/api/referrals/rank/:address", async (req, res) => {
+    try {
+      const address = req.params.address;
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        return res.status(400).json({ message: "Invalid wallet address" });
+      }
+      const rank = await storage.getReferralRank(address);
+      if (!rank) return res.status(404).json({ message: "User not on leaderboard yet" });
+      res.json(rank);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

@@ -91,6 +91,7 @@ export interface IStorage {
   getReferralByDomain(domainName: string): Promise<Referral | undefined>;
   recordReferral(input: { referrerCode: string; referrerAddress: string; refereeAddress: string; domainName: string }): Promise<Referral>;
   getReferralLeaderboard(limit?: number): Promise<ReferralCode[]>;
+  getReferralRank(walletAddress: string): Promise<{ rank: number; totalParticipants: number } | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -704,6 +705,22 @@ DatabaseStorage.prototype.recordReferral = async function (input: { referrerCode
 
 DatabaseStorage.prototype.getReferralLeaderboard = async function (limit: number = 10): Promise<ReferralCode[]> {
   return db.select().from(referralCodes).orderBy(desc(referralCodes.totalPoints)).limit(limit);
+};
+
+DatabaseStorage.prototype.getReferralRank = async function (walletAddress: string): Promise<{ rank: number; totalParticipants: number } | null> {
+  const lower = walletAddress.toLowerCase();
+  const me = await this.getReferralCodeByWallet(lower);
+  if (!me) return null;
+  // Rank = 1 + (number of users with strictly more points), giving ties the same best rank
+  const higher = await db
+    .select({ c: sql<number>`count(*)::int` })
+    .from(referralCodes)
+    .where(sql`${referralCodes.totalPoints} > ${me.totalPoints}`);
+  const total = await db.select({ c: sql<number>`count(*)::int` }).from(referralCodes);
+  return {
+    rank: (higher[0]?.c ?? 0) + 1,
+    totalParticipants: total[0]?.c ?? 0,
+  };
 };
 
 export const storage = new DatabaseStorage();

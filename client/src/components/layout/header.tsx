@@ -79,6 +79,7 @@ export function Header() {
     { name: "Agents", href: "/agents", active: location === "/agents" || location === "/agent-register" || location === "/agent-test" },
     { name: "Sync", href: "/sync", active: location === "/sync" },
     { name: "Referrals", href: "/referrals", active: location === "/referrals" },
+    { name: "Leaderboard", href: "/leaderboard", active: location === "/leaderboard" },
     { name: "Docs", href: "/docs", active: location === "/docs" },
   ];
 

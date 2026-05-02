@@ -1,0 +1,260 @@
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Trophy, Medal, Crown, Sparkles, Wallet } from "lucide-react";
+import { Link } from "wouter";
+import { useWallet } from "@/hooks/use-wallet";
+import { useQuery as useTanstackQuery } from "@tanstack/react-query";
+
+interface LeaderboardEntry {
+  walletAddress: string;
+  code: string;
+  totalPoints: number;
+  totalReferrals: number;
+}
+
+interface RankInfo {
+  rank: number;
+  totalParticipants: number;
+}
+
+function shortAddr(addr: string): string {
+  if (!addr) return "";
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
+
+function rankIcon(rank: number) {
+  if (rank === 1) return <Crown className="h-5 w-5 text-yellow-500" />;
+  if (rank === 2) return <Medal className="h-5 w-5 text-gray-400" />;
+  if (rank === 3) return <Medal className="h-5 w-5 text-orange-500" />;
+  return null;
+}
+
+function rankBadgeStyle(rank: number): string {
+  if (rank === 1) return "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-md";
+  if (rank === 2) return "bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md";
+  if (rank === 3) return "bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md";
+  return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300";
+}
+
+export default function LeaderboardPage() {
+  const { address, isConnected } = useWallet();
+
+  const { data: leaderboard, isLoading } = useQuery<LeaderboardEntry[]>({
+    queryKey: ["/api/referrals/leaderboard", { limit: 50 }],
+    queryFn: async () => {
+      const res = await fetch("/api/referrals/leaderboard?limit=50");
+      if (!res.ok) throw new Error("Failed to load leaderboard");
+      return res.json();
+    },
+  });
+
+  const { data: myRank } = useTanstackQuery<RankInfo | null>({
+    queryKey: ["/api/referrals/rank", address],
+    queryFn: async () => {
+      const res = await fetch(`/api/referrals/rank/${address}`);
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error("Failed to load rank");
+      return res.json();
+    },
+    enabled: isConnected && !!address,
+  });
+
+  const myAddress = address?.toLowerCase();
+  const inTop50 = leaderboard?.some((e) => e.walletAddress.toLowerCase() === myAddress);
+  const top3 = leaderboard?.slice(0, 3) ?? [];
+  const rest = leaderboard?.slice(3) ?? [];
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-2 mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
+          <Trophy className="h-4 w-4" /> Leaderboard
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-bold">Top referrers</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          The community members bringing the most new .trust registrations.
+        </p>
+      </div>
+
+      {/* Your rank */}
+      {isConnected && (
+        <Card className="border-trust-violet/20 bg-gradient-to-r from-trust-violet/5 to-trust-blue/5">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-trust-violet/15 flex items-center justify-center">
+                  <Sparkles className="h-6 w-6 text-trust-violet" />
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Your standing</div>
+                  {myRank ? (
+                    <div className="text-xl font-bold" data-testid="text-my-rank">
+                      Rank #{myRank.rank} of {myRank.totalParticipants}
+                    </div>
+                  ) : (
+                    <div className="text-xl font-bold text-gray-500">
+                      Not ranked yet
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Link href="/referrals">
+                <Button className="trust-button" data-testid="link-get-referral-link">
+                  Get your referral link
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isConnected && (
+        <Card>
+          <CardContent className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Wallet className="h-6 w-6 text-gray-400" />
+              <div className="text-sm">
+                Connect your wallet to see your rank and get your own referral link.
+              </div>
+            </div>
+            <Link href="/referrals">
+              <Button variant="outline">Go to referrals</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Podium (top 3) */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      ) : top3.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {top3.map((entry, idx) => {
+            const rank = idx + 1;
+            const isMe = address && entry.walletAddress.toLowerCase() === myAddress;
+            return (
+              <Card
+                key={entry.walletAddress}
+                className={`overflow-hidden ${rank === 1 ? "sm:order-2 ring-2 ring-yellow-400/40" : rank === 2 ? "sm:order-1" : "sm:order-3"} ${isMe ? "border-trust-violet" : ""}`}
+                data-testid={`podium-${rank}`}
+              >
+                <div className={`h-1.5 ${rank === 1 ? "bg-yellow-500" : rank === 2 ? "bg-gray-400" : "bg-orange-500"}`} />
+                <CardContent className="pt-6 text-center space-y-3">
+                  <div className="flex justify-center">{rankIcon(rank)}</div>
+                  <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${rankBadgeStyle(rank)}`}>
+                    {rank}
+                  </div>
+                  <div>
+                    <div className="font-mono text-sm">
+                      {shortAddr(entry.walletAddress)}
+                      {isMe && <Badge variant="secondary" className="ml-2 text-xs">You</Badge>}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{entry.totalReferrals} referrals</div>
+                  </div>
+                  <div className="text-2xl font-bold text-trust-violet">{entry.totalPoints}</div>
+                  <div className="text-xs text-gray-500">points</div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* Full ranking */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" /> Full ranking
+            </span>
+            {leaderboard && (
+              <span className="text-sm font-normal text-gray-500">
+                Top {leaderboard.length}
+              </span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-6 space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : !leaderboard?.length ? (
+            <p className="text-sm text-gray-500 text-center py-12">
+              No referrals yet — be the first to make the leaderboard!
+            </p>
+          ) : (
+            <>
+              <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                <div className="col-span-1">Rank</div>
+                <div className="col-span-6">Wallet</div>
+                <div className="col-span-3 text-right">Referrals</div>
+                <div className="col-span-2 text-right">Points</div>
+              </div>
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {rest.map((entry, idx) => {
+                  const rank = idx + 4;
+                  const isMe = address && entry.walletAddress.toLowerCase() === myAddress;
+                  return (
+                    <div
+                      key={entry.walletAddress}
+                      className={`grid grid-cols-12 gap-4 px-6 py-3 items-center ${isMe ? "bg-trust-violet/5" : ""}`}
+                      data-testid={`ranking-row-${rank}`}
+                    >
+                      <div className="col-span-2 sm:col-span-1">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${rankBadgeStyle(rank)}`}>
+                          {rank}
+                        </div>
+                      </div>
+                      <div className="col-span-7 sm:col-span-6">
+                        <div className="font-mono text-sm">
+                          {shortAddr(entry.walletAddress)}
+                          {isMe && <Badge variant="secondary" className="ml-2 text-xs">You</Badge>}
+                        </div>
+                      </div>
+                      <div className="col-span-3 text-right text-sm text-gray-600 dark:text-gray-400">
+                        <span className="sm:hidden text-xs">refs: </span>
+                        {entry.totalReferrals}
+                      </div>
+                      <div className="col-span-12 sm:col-span-2 text-right font-bold text-trust-violet">
+                        {entry.totalPoints} pts
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Show user row at bottom if they're ranked outside top 50 */}
+          {isConnected && myRank && !inTop50 && leaderboard && leaderboard.length > 0 && (
+            <div className="border-t-2 border-dashed border-gray-200 dark:border-gray-700 px-6 py-3 bg-trust-violet/5">
+              <div className="text-xs text-gray-500 mb-2">Your position</div>
+              <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="col-span-2 sm:col-span-1">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${rankBadgeStyle(myRank.rank)}`}>
+                    {myRank.rank}
+                  </div>
+                </div>
+                <div className="col-span-7 sm:col-span-6 font-mono text-sm">
+                  {shortAddr(address!)}
+                  <Badge variant="secondary" className="ml-2 text-xs">You</Badge>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

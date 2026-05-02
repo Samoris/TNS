@@ -15,7 +15,9 @@ import {
   Sparkles,
   Wallet,
   ExternalLink,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "wouter";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 
@@ -238,11 +240,16 @@ export default function ReferralsPage() {
         </>
       )}
 
-      {/* Leaderboard (always visible) */}
+      {/* Leaderboard preview (always visible) */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-yellow-500" /> Top referrers
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" /> Top referrers
+            </span>
+            <Link href="/leaderboard" className="text-sm font-normal text-trust-blue hover:underline flex items-center gap-1" data-testid="link-full-leaderboard">
+              View full leaderboard <ArrowRight className="h-3 w-3" />
+            </Link>
           </CardTitle>
         </CardHeader>
         <CardContent>
