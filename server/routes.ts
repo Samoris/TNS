@@ -2621,11 +2621,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const code = await storage.getOrCreateReferralCode(address);
       const recent = await storage.getReferralsByReferrer(address);
+      const holder = await storage.getHolderStats(address);
       res.json({
         code: code.code,
         walletAddress: code.walletAddress,
-        totalPoints: code.totalPoints,
+        referralPoints: code.totalPoints,
+        holderPoints: holder.holderPoints,
+        totalPoints: code.totalPoints + holder.holderPoints,
         totalReferrals: code.totalReferrals,
+        nftCount: holder.nftCount,
         recentReferrals: recent.slice(0, 25),
       });
     } catch (error: any) {
@@ -2650,13 +2654,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const requested = parseInt(String(req.query.limit ?? "10"), 10);
       const limit = Math.min(Math.max(isNaN(requested) ? 10 : requested, 1), 100);
-      const top = await storage.getReferralLeaderboard(limit);
-      res.json(top.map((r) => ({
-        walletAddress: r.walletAddress,
-        code: r.code,
-        totalPoints: r.totalPoints,
-        totalReferrals: r.totalReferrals,
-      })));
+      const top = await storage.getCombinedLeaderboard(limit);
+      res.json(top);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -2669,7 +2668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
         return res.status(400).json({ message: "Invalid wallet address" });
       }
-      const rank = await storage.getReferralRank(address);
+      const rank = await storage.getCombinedRank(address);
       if (!rank) return res.status(404).json({ message: "User not on leaderboard yet" });
       res.json(rank);
     } catch (error: any) {

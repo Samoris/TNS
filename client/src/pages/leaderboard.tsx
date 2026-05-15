@@ -10,14 +10,18 @@ import { useQuery as useTanstackQuery } from "@tanstack/react-query";
 
 interface LeaderboardEntry {
   walletAddress: string;
-  code: string;
+  code: string | null;
   totalPoints: number;
+  referralPoints: number;
+  holderPoints: number;
   totalReferrals: number;
+  nftCount: number;
 }
 
 interface RankInfo {
   rank: number;
   totalParticipants: number;
+  totalPoints: number;
 }
 
 function shortAddr(addr: string): string {
@@ -74,9 +78,9 @@ export default function LeaderboardPage() {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
           <Trophy className="h-4 w-4" /> Leaderboard
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold">Top referrers</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold">Top earners</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          The community members bringing the most new .trust registrations.
+          1,000 points per .trust domain held + 100 points per successful referral.
         </p>
       </div>
 
@@ -157,9 +161,9 @@ export default function LeaderboardPage() {
                       {shortAddr(entry.walletAddress)}
                       {isMe && <Badge variant="secondary" className="ml-2 text-xs">You</Badge>}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">{entry.totalReferrals} referrals</div>
+                    <div className="text-xs text-gray-500 mt-1">{entry.nftCount} held · {entry.totalReferrals} refs</div>
                   </div>
-                  <div className="text-2xl font-bold text-trust-violet">{entry.totalPoints}</div>
+                  <div className="text-2xl font-bold text-trust-violet">{entry.totalPoints.toLocaleString()}</div>
                   <div className="text-xs text-gray-500">points</div>
                 </CardContent>
               </Card>
@@ -197,8 +201,9 @@ export default function LeaderboardPage() {
             <>
               <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                 <div className="col-span-1">Rank</div>
-                <div className="col-span-6">Wallet</div>
-                <div className="col-span-3 text-right">Referrals</div>
+                <div className="col-span-5">Wallet</div>
+                <div className="col-span-2 text-right">Held</div>
+                <div className="col-span-2 text-right">Referrals</div>
                 <div className="col-span-2 text-right">Points</div>
               </div>
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -216,18 +221,22 @@ export default function LeaderboardPage() {
                           {rank}
                         </div>
                       </div>
-                      <div className="col-span-7 sm:col-span-6">
+                      <div className="col-span-7 sm:col-span-5">
                         <div className="font-mono text-sm">
                           {shortAddr(entry.walletAddress)}
                           {isMe && <Badge variant="secondary" className="ml-2 text-xs">You</Badge>}
                         </div>
                       </div>
-                      <div className="col-span-3 text-right text-sm text-gray-600 dark:text-gray-400">
+                      <div className="col-span-3 sm:col-span-2 text-right text-sm text-gray-600 dark:text-gray-400">
+                        <span className="sm:hidden text-xs">held: </span>
+                        {entry.nftCount}
+                      </div>
+                      <div className="col-span-3 sm:col-span-2 text-right text-sm text-gray-600 dark:text-gray-400">
                         <span className="sm:hidden text-xs">refs: </span>
                         {entry.totalReferrals}
                       </div>
                       <div className="col-span-12 sm:col-span-2 text-right font-bold text-trust-violet">
-                        {entry.totalPoints} pts
+                        {entry.totalPoints.toLocaleString()} pts
                       </div>
                     </div>
                   );

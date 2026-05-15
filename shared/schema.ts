@@ -167,6 +167,7 @@ export type ReferralCode = typeof referralCodes.$inferSelect;
 export type Referral = typeof referrals.$inferSelect;
 
 export const POINTS_PER_REFERRAL = 100;
+export const POINTS_PER_NFT = 1000;
 
 export type DomainSearch = z.infer<typeof domainSearchSchema>;
 export type DomainRegistration = z.infer<typeof domainRegistrationSchema>;

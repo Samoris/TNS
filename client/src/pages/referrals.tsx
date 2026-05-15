@@ -25,7 +25,10 @@ interface MyReferralData {
   code: string;
   walletAddress: string;
   totalPoints: number;
+  referralPoints: number;
+  holderPoints: number;
   totalReferrals: number;
+  nftCount: number;
   recentReferrals: Array<{
     id: string;
     refereeAddress: string;
@@ -37,12 +40,16 @@ interface MyReferralData {
 
 interface LeaderboardEntry {
   walletAddress: string;
-  code: string;
+  code: string | null;
   totalPoints: number;
+  referralPoints: number;
+  holderPoints: number;
   totalReferrals: number;
+  nftCount: number;
 }
 
 const POINTS_PER_REFERRAL = 100;
+const POINTS_PER_NFT = 1000;
 
 function shortAddr(addr: string): string {
   if (!addr) return "";
@@ -103,9 +110,9 @@ export default function ReferralsPage() {
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-trust-violet/10 text-trust-violet text-sm font-medium">
           <Sparkles className="h-4 w-4" /> Earn points
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold">Refer friends, earn points</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold">Earn points with .trust</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Share your link. Get <strong>{POINTS_PER_REFERRAL} points</strong> each time someone registers a .trust domain through it.
+          <strong>{POINTS_PER_NFT.toLocaleString()} points</strong> for every .trust domain you hold, plus <strong>{POINTS_PER_REFERRAL} points</strong> for each friend you refer.
         </p>
       </div>
 
@@ -125,35 +132,54 @@ export default function ReferralsPage() {
       ) : (
         <>
           {/* Stats grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card className="col-span-2 sm:col-span-1 border-trust-violet/30 bg-gradient-to-br from-trust-violet/5 to-trust-blue/5">
               <CardContent className="pt-6">
                 <div className="text-sm text-gray-500">Total Points</div>
                 {meLoading ? (
                   <Skeleton className="h-8 w-20 mt-1" />
                 ) : (
                   <div className="text-3xl font-bold text-trust-violet" data-testid="text-total-points">
-                    {me?.totalPoints ?? 0}
+                    {(me?.totalPoints ?? 0).toLocaleString()}
                   </div>
                 )}
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-sm text-gray-500">Successful Referrals</div>
+                <div className="text-sm text-gray-500">Holder Bonus</div>
                 {meLoading ? (
                   <Skeleton className="h-8 w-20 mt-1" />
                 ) : (
-                  <div className="text-3xl font-bold" data-testid="text-total-referrals">
-                    {me?.totalReferrals ?? 0}
-                  </div>
+                  <>
+                    <div className="text-3xl font-bold text-trust-emerald" data-testid="text-holder-points">
+                      {(me?.holderPoints ?? 0).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{me?.nftCount ?? 0} domain{(me?.nftCount ?? 0) === 1 ? "" : "s"} × {POINTS_PER_NFT.toLocaleString()}</div>
+                  </>
                 )}
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-sm text-gray-500">Per Referral</div>
-                <div className="text-3xl font-bold text-trust-emerald">+{POINTS_PER_REFERRAL}</div>
+                <div className="text-sm text-gray-500">Referral Points</div>
+                {meLoading ? (
+                  <Skeleton className="h-8 w-20 mt-1" />
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold" data-testid="text-referral-points">
+                      {(me?.referralPoints ?? 0).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{me?.totalReferrals ?? 0} referral{(me?.totalReferrals ?? 0) === 1 ? "" : "s"} × {POINTS_PER_REFERRAL}</div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-sm text-gray-500">Earn More</div>
+                <div className="text-xs text-trust-emerald font-medium mt-1">+{POINTS_PER_NFT.toLocaleString()} / domain held</div>
+                <div className="text-xs text-trust-blue font-medium">+{POINTS_PER_REFERRAL} / referral</div>
               </CardContent>
             </Card>
           </div>
@@ -287,10 +313,10 @@ export default function ReferralsPage() {
                           {shortAddr(entry.walletAddress)}
                           {isMe && <Badge variant="secondary" className="ml-2 text-xs">You</Badge>}
                         </div>
-                        <div className="text-xs text-gray-500">{entry.totalReferrals} referrals</div>
+                        <div className="text-xs text-gray-500">{entry.nftCount} held · {entry.totalReferrals} refs</div>
                       </div>
                     </div>
-                    <div className="font-bold text-trust-violet">{entry.totalPoints} pts</div>
+                    <div className="font-bold text-trust-violet">{entry.totalPoints.toLocaleString()} pts</div>
                   </div>
                 );
               })}
