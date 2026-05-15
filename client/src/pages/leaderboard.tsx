@@ -65,9 +65,9 @@ export default function LeaderboardPage() {
   const { address, isConnected } = useWallet();
 
   const { data: lbData, isLoading } = useQuery<LeaderboardResponse>({
-    queryKey: ["/api/referrals/leaderboard", { limit: 50 }],
+    queryKey: ["/api/referrals/leaderboard", { limit: "all" }],
     queryFn: async () => {
-      const res = await fetch("/api/referrals/leaderboard?limit=50");
+      const res = await fetch("/api/referrals/leaderboard?limit=10000");
       if (!res.ok) throw new Error("Failed to load leaderboard");
       return res.json();
     },
@@ -108,7 +108,7 @@ export default function LeaderboardPage() {
   });
 
   const myAddress = address?.toLowerCase();
-  const inTop50 = leaderboard?.some((e) => e.walletAddress.toLowerCase() === myAddress);
+  const inLeaderboard = leaderboard?.some((e) => e.walletAddress.toLowerCase() === myAddress);
   const top3 = leaderboard?.slice(0, 3) ?? [];
   const rest = leaderboard?.slice(3) ?? [];
 
@@ -306,8 +306,8 @@ export default function LeaderboardPage() {
             </>
           )}
 
-          {/* Show user row at bottom if they're ranked outside top 50 */}
-          {isConnected && myRank && !inTop50 && leaderboard && leaderboard.length > 0 && (
+          {/* Safety net: show user row at bottom if somehow not in the visible list */}
+          {isConnected && myRank && !inLeaderboard && leaderboard && leaderboard.length > 0 && (
             <div className="border-t-2 border-dashed border-gray-200 dark:border-gray-700 px-6 py-3 bg-trust-violet/5">
               <div className="text-xs text-gray-500 mb-2">Your position</div>
               <div className="grid grid-cols-12 gap-4 items-center">

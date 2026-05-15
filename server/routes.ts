@@ -2674,11 +2674,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Top referrers (limit configurable, max 100)
+  // Combined leaderboard (holders + referrers). Limit configurable, max 10000.
   app.get("/api/referrals/leaderboard", async (req, res) => {
     try {
-      const requested = parseInt(String(req.query.limit ?? "10"), 10);
-      const limit = Math.min(Math.max(isNaN(requested) ? 10 : requested, 1), 100);
+      const requested = parseInt(String(req.query.limit ?? "10000"), 10);
+      const limit = Math.min(Math.max(isNaN(requested) ? 10000 : requested, 1), 10000);
       const top = await storage.getCombinedLeaderboard(limit);
       res.json({
         entries: top,
