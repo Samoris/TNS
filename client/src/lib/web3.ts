@@ -2472,6 +2472,57 @@ export class Web3Service {
   }
 
   /**
+   * Delegate registry controllership to another address (without transferring the NFT).
+   * Calls TNSRegistry.setOwner(namehash(name), newController).
+   * The NFT owner can always call reclaim() to revoke this delegation.
+   */
+  public async delegateControllerENS(registryAddress: string, domainName: string, newController: string): Promise<string> {
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    if (!ethers.isAddress(newController)) {
+      throw new Error("Invalid controller address");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
+      const signer = await provider.getSigner();
+      const fullDomain = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+      const node = this.namehash(fullDomain);
+
+      const abi = ["function setOwner(bytes32 node, address owner)"];
+      const contract = new ethers.Contract(registryAddress, abi, signer);
+
+      const tx = await contract.setOwner(node, newController, { gasLimit: 150000 });
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error("Delegate transaction receipt not received");
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Delegate controller error:", error);
+      throw new Error(error.shortMessage || error.message || "Failed to delegate controller");
+    }
+  }
+
+  /**
+   * Read the current registry controller for a domain.
+   * Returns the address that controls resolver records & subdomains.
+   */
+  public async getRegistryController(registryAddress: string, domainName: string): Promise<string> {
+    const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
+    const fullDomain = domainName.endsWith('.trust') ? domainName : `${domainName}.trust`;
+    const node = this.namehash(fullDomain);
+    const abi = ["function owner(bytes32 node) view returns (address)"];
+    const registry = new ethers.Contract(registryAddress, abi, provider);
+    return await registry.owner(node);
+  }
+
+  /**
    * Set primary name via reverse registrar (ENS-forked)
    */
   public async setPrimaryNameENS(reverseRegistrarAddress: string, domainName: string): Promise<string> {

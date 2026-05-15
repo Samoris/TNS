@@ -39,7 +39,8 @@ import {
   TNS_RESOLVER_ABI,
   TNS_REVERSE_REGISTRAR_ADDRESS,
   TNS_CONTROLLER_ADDRESS,
-  TNS_BASE_REGISTRAR_ADDRESS
+  TNS_BASE_REGISTRAR_ADDRESS,
+  TNS_REGISTRY_ADDRESS
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -85,6 +86,12 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferAddress, setTransferAddress] = useState("");
   const [transferConfirmed, setTransferConfirmed] = useState(false);
+
+  // Advanced (controller delegation) states
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [registryController, setRegistryController] = useState<string | null>(null);
+  const [isDelegating, setIsDelegating] = useState(false);
+  const [delegateAddress, setDelegateAddress] = useState("");
   
   // Avatar states
   const [isAddingAvatar, setIsAddingAvatar] = useState(false);
@@ -290,6 +297,55 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     onError: (error: any) => {
       toast({
         title: "Failed to set primary domain",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const delegateControllerMutation = useMutation({
+    mutationFn: async (newController: string) => {
+      const txHash = await web3Service.delegateControllerENS(
+        TNS_REGISTRY_ADDRESS,
+        domain.name,
+        newController
+      );
+      return { txHash, newController };
+    },
+    onSuccess: async ({ txHash, newController }) => {
+      setIsDelegating(false);
+      setDelegateAddress("");
+      setRegistryController(newController);
+      toast({
+        title: "Controller delegated!",
+        description: `Registry control transferred. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delegate controller",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reclaimControllerMutation = useMutation({
+    mutationFn: async () => {
+      if (!domain.tokenId) throw new Error("Token ID not available for this domain");
+      const txHash = await web3Service.reclaimDomainENS(TNS_BASE_REGISTRAR_ADDRESS, domain.tokenId);
+      return txHash;
+    },
+    onSuccess: async (txHash) => {
+      setRegistryController(walletAddress);
+      toast({
+        title: "Registry control reclaimed!",
+        description: `You now control resolver records again. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to reclaim control",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -572,6 +628,16 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
       loadResolverData();
     }
   }, [isManageOpen]);
+
+  // Load registry controller when Advanced is opened
+  useEffect(() => {
+    if (isAdvancedOpen && !registryController) {
+      web3Service
+        .getRegistryController(TNS_REGISTRY_ADDRESS, domain.name)
+        .then(setRegistryController)
+        .catch((err) => console.error("Failed to load registry controller:", err));
+    }
+  }, [isAdvancedOpen, registryController, domain.name]);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -959,6 +1025,136 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                           </div>
                         </div>
                       </Card>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Advanced — Controller Delegation */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
+                      className="flex items-center justify-between w-full text-left"
+                      data-testid="advanced-toggle"
+                    >
+                      <h3 className="text-lg font-semibold">Advanced</h3>
+                      <span className="text-xs text-gray-500">{isAdvancedOpen ? "Hide" : "Show"}</span>
+                    </button>
+
+                    {isAdvancedOpen && (
+                      <div className="mt-4 space-y-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/40 rounded-md p-3 text-xs text-blue-900 dark:text-blue-200">
+                          <p className="font-semibold mb-1">Controller delegation</p>
+                          <p>
+                            Your domain has two ownerships: the <strong>NFT</strong> (the asset — you can sell or transfer it) and the <strong>registry controller</strong> (who can edit resolver records and subdomains). They are normally the same address, but you can delegate just the controller without giving up the NFT. You can reclaim control at any time.
+                          </p>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs">Current registry controller</Label>
+                          <div className="mt-1">
+                            {registryController === null ? (
+                              <p className="text-xs text-gray-500">Loading...</p>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded flex-1 truncate">
+                                  {registryController}
+                                </code>
+                                {registryController.toLowerCase() === walletAddress.toLowerCase() ? (
+                                  <Badge className="bg-green-500/15 text-green-700 dark:text-green-400 text-xs">You</Badge>
+                                ) : registryController === ethers.ZeroAddress ? (
+                                  <Badge variant="outline" className="text-xs">Not set</Badge>
+                                ) : (
+                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs">Delegated</Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {registryController && registryController.toLowerCase() !== walletAddress.toLowerCase() && registryController !== ethers.ZeroAddress && (
+                          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 rounded-md p-3">
+                            <div className="flex items-start gap-2 mb-3">
+                              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-amber-900 dark:text-amber-200">
+                                Registry control is currently delegated. The delegated address can edit resolver records and create subdomains. Reclaim to take control back.
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => reclaimControllerMutation.mutate()}
+                              disabled={reclaimControllerMutation.isPending || !domain.tokenId}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              data-testid="reclaim-controller-button"
+                            >
+                              {reclaimControllerMutation.isPending ? "Reclaiming..." : "Reclaim registry control"}
+                            </Button>
+                          </div>
+                        )}
+
+                        {!isDelegating ? (
+                          <Button
+                            onClick={() => setIsDelegating(true)}
+                            variant="outline"
+                            className="w-full"
+                            disabled={isExpired}
+                            data-testid="delegate-controller-button"
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Delegate controller to another address
+                          </Button>
+                        ) : (
+                          <Card className="p-4 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="delegateAddress" className="text-xs">New controller address</Label>
+                                <Input
+                                  id="delegateAddress"
+                                  type="text"
+                                  placeholder="0x..."
+                                  value={delegateAddress}
+                                  onChange={(e) => setDelegateAddress(e.target.value)}
+                                  className="mt-1 font-mono text-xs"
+                                  data-testid="delegate-address-input"
+                                />
+                                {delegateAddress && !ethers.isAddress(delegateAddress) && (
+                                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">Not a valid Ethereum address</p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-2">
+                                  This wallet will be able to edit resolver records and create subdomains. You will keep the NFT and can reclaim at any time.
+                                </p>
+                              </div>
+
+                              <div className="flex space-x-2">
+                                <Button
+                                  onClick={() => delegateControllerMutation.mutate(delegateAddress)}
+                                  disabled={
+                                    delegateControllerMutation.isPending ||
+                                    !ethers.isAddress(delegateAddress)
+                                  }
+                                  className="trust-button flex-1"
+                                  data-testid="confirm-delegate-button"
+                                >
+                                  {delegateControllerMutation.isPending ? "Delegating..." : "Delegate"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setIsDelegating(false);
+                                    setDelegateAddress("");
+                                  }}
+                                  disabled={delegateControllerMutation.isPending}
+                                  data-testid="cancel-delegate-button"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        )}
+                      </div>
                     )}
                   </div>
 
