@@ -138,9 +138,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const BATCH_SIZE = 20;
       const cache: any[] = [];
-      
-      for (let i = 0; i < allDomainNames.length; i += BATCH_SIZE) {
-        const batch = allDomainNames.slice(i, i + BATCH_SIZE);
+
+      // Union migrated domain names with any domains registered post-migration
+      // (stored in the DB). Without this, the on-chain cache misses newly
+      // registered names and under-counts holder points.
+      const dbDomains = await storage.getAllDomains().catch(() => [] as any[]);
+      const dbNames = dbDomains
+        .map((d: any) => (d.name || "").replace(/\.trust$/i, "").toLowerCase())
+        .filter((n: string) => n.length >= 3);
+      const namesToScan = Array.from(new Set([...allDomainNames, ...dbNames]));
+
+      for (let i = 0; i < namesToScan.length; i += BATCH_SIZE) {
+        const batch = namesToScan.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
           batch.map(async (name) => {
             const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
