@@ -15,6 +15,7 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ethers } from "ethers";
+import { updateHoldings, getHoldersCount, getLastHoldersRefresh } from "./holder-cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -171,7 +172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       domainOwnershipCache = cache;
-      console.log(`Domain ownership cache built: ${cache.length} domains with owners`);
+      // Update on-chain holder map used by /api/referrals leaderboard (real-time points)
+      updateHoldings(cache.map((d: any) => ({
+        owner: d.owner,
+        expirationDate: d.expirationDate,
+      })));
+      console.log(`Domain ownership cache built: ${cache.length} domains with owners (${getHoldersCount()} unique holders)`);
     } catch (e) {
       console.error("Failed to build domain ownership cache:", e);
     }
@@ -179,8 +185,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Build cache on startup (non-blocking)
   refreshDomainOwnershipCache();
-  // Refresh cache every 5 minutes
-  setInterval(refreshDomainOwnershipCache, 5 * 60 * 1000);
+  // Refresh every 30s so the leaderboard reflects on-chain transfers/expiries in near real time
+  setInterval(refreshDomainOwnershipCache, 30 * 1000);
+
+  // Manual on-demand refresh of the on-chain holder cache (used by the leaderboard "Refresh" button)
+  app.post("/api/referrals/leaderboard/refresh", async (_req, res) => {
+    try {
+      await refreshDomainOwnershipCache();
+      res.json({ ok: true, lastUpdated: getLastHoldersRefresh(), totalHolders: getHoldersCount() });
+    } catch (e: any) {
+      res.status(500).json({ ok: false, message: e?.message });
+    }
+  });
 
   app.get("/api/domains/token/:tokenId", async (req, res) => {
     try {
@@ -2655,7 +2671,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requested = parseInt(String(req.query.limit ?? "10"), 10);
       const limit = Math.min(Math.max(isNaN(requested) ? 10 : requested, 1), 100);
       const top = await storage.getCombinedLeaderboard(limit);
-      res.json(top);
+      res.json({
+        entries: top,
+        lastUpdated: getLastHoldersRefresh(),
+        totalHolders: getHoldersCount(),
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Medal, Crown, Sparkles, Wallet } from "lucide-react";
+import { Trophy, Medal, Crown, Sparkles, Wallet, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useWallet } from "@/hooks/use-wallet";
 import { useQuery as useTanstackQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useEffect, useState } from "react";
 
 interface LeaderboardEntry {
   walletAddress: string;
@@ -18,10 +20,26 @@ interface LeaderboardEntry {
   nftCount: number;
 }
 
+interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  lastUpdated: number;
+  totalHolders: number;
+}
+
 interface RankInfo {
   rank: number;
   totalParticipants: number;
   totalPoints: number;
+}
+
+function timeAgo(ts: number): string {
+  if (!ts) return "—";
+  const seconds = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  const m = Math.floor(seconds / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  return `${h}h ago`;
 }
 
 function shortAddr(addr: string): string {
@@ -46,12 +64,35 @@ function rankBadgeStyle(rank: number): string {
 export default function LeaderboardPage() {
   const { address, isConnected } = useWallet();
 
-  const { data: leaderboard, isLoading } = useQuery<LeaderboardEntry[]>({
+  const { data: lbData, isLoading } = useQuery<LeaderboardResponse>({
     queryKey: ["/api/referrals/leaderboard", { limit: 50 }],
     queryFn: async () => {
       const res = await fetch("/api/referrals/leaderboard?limit=50");
       if (!res.ok) throw new Error("Failed to load leaderboard");
       return res.json();
+    },
+    refetchInterval: 30_000,
+  });
+  const leaderboard = lbData?.entries;
+  const lastUpdated = lbData?.lastUpdated ?? 0;
+  const totalHolders = lbData?.totalHolders ?? 0;
+
+  // Tick once a second so "X seconds ago" updates without re-fetching
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/referrals/leaderboard/refresh");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals/leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals/rank"] });
     },
   });
 
@@ -82,6 +123,26 @@ export default function LeaderboardPage() {
         <p className="text-gray-600 dark:text-gray-400">
           1,000 points per .trust domain held + 100 points per successful referral.
         </p>
+        <div className="flex items-center justify-center gap-3 text-xs text-gray-500 pt-1">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-trust-emerald opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-trust-emerald"></span>
+            </span>
+            Live on-chain · {totalHolders} holders · updated {timeAgo(lastUpdated)}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2"
+            onClick={() => refreshMutation.mutate()}
+            disabled={refreshMutation.isPending}
+            data-testid="button-refresh-leaderboard"
+          >
+            <RefreshCw className={`h-3 w-3 mr-1 ${refreshMutation.isPending ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Your rank */}

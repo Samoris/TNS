@@ -29,6 +29,7 @@ import {
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, like, gte, desc, sql } from "drizzle-orm";
+import { getHolderCount, getAllHolders } from "./holder-cache";
 
 export interface IStorage {
   // Users
@@ -738,14 +739,36 @@ DatabaseStorage.prototype.getReferralRank = async function (walletAddress: strin
 // ============= HOLDER POINTS (1000 per active .trust NFT held) =============
 
 DatabaseStorage.prototype.getHolderStats = async function (walletAddress: string): Promise<{ nftCount: number; holderPoints: number }> {
-  const lower = walletAddress.toLowerCase();
-  const [row] = await db
-    .select({ c: sql<number>`count(*)::int` })
-    .from(domains)
-    .where(sql`lower(${domains.owner}) = ${lower} and ${domains.isActive} = true and ${domains.expirationDate} > now()`);
-  const nftCount = row?.c ?? 0;
+  // Chain-truth: count from the on-chain ownership cache (refreshed every 30s)
+  const nftCount = getHolderCount(walletAddress);
   return { nftCount, holderPoints: nftCount * POINTS_PER_NFT };
 };
+
+async function buildCombinedScores(): Promise<Map<string, { referralPoints: number; totalReferrals: number; code: string | null; nftCount: number }>> {
+  // Referrers from DB
+  const refs = await db.select().from(referralCodes);
+  const map = new Map<string, { referralPoints: number; totalReferrals: number; code: string | null; nftCount: number }>();
+  for (const r of refs) {
+    const key = r.walletAddress.toLowerCase();
+    map.set(key, {
+      referralPoints: r.totalPoints,
+      totalReferrals: r.totalReferrals,
+      code: r.code,
+      nftCount: 0,
+    });
+  }
+  // Holders from on-chain cache (chain-truth)
+  const holders = getAllHolders();
+  holders.forEach((nftCount, addr) => {
+    const existing = map.get(addr);
+    if (existing) {
+      existing.nftCount = nftCount;
+    } else {
+      map.set(addr, { referralPoints: 0, totalReferrals: 0, code: null, nftCount });
+    }
+  });
+  return map;
+}
 
 DatabaseStorage.prototype.getCombinedLeaderboard = async function (limit: number = 50): Promise<Array<{
   walletAddress: string;
@@ -756,101 +779,44 @@ DatabaseStorage.prototype.getCombinedLeaderboard = async function (limit: number
   totalReferrals: number;
   nftCount: number;
 }>> {
-  const rows = await db.execute<{
-    wallet_address: string;
-    code: string | null;
-    referral_points: number;
-    total_referrals: number;
-    nft_count: number;
-  }>(sql`
-    with holders as (
-      select lower(${domains.owner}) as wallet_address, count(*)::int as nft_count
-      from ${domains}
-      where ${domains.isActive} = true and ${domains.expirationDate} > now()
-      group by lower(${domains.owner})
-    ),
-    referrers as (
-      select lower(${referralCodes.walletAddress}) as wallet_address,
-             ${referralCodes.code} as code,
-             ${referralCodes.totalPoints}::int as referral_points,
-             ${referralCodes.totalReferrals}::int as total_referrals
-      from ${referralCodes}
-    ),
-    combined as (
-      select coalesce(h.wallet_address, r.wallet_address) as wallet_address,
-             r.code,
-             coalesce(r.referral_points, 0) as referral_points,
-             coalesce(r.total_referrals, 0) as total_referrals,
-             coalesce(h.nft_count, 0) as nft_count
-      from holders h
-      full outer join referrers r on h.wallet_address = r.wallet_address
-    )
-    select wallet_address, code, referral_points, total_referrals, nft_count
-    from combined
-    where (referral_points + nft_count * ${POINTS_PER_NFT}) > 0
-    order by (referral_points + nft_count * ${POINTS_PER_NFT}) desc
-    limit ${limit}
-  `);
-
-  return (rows.rows ?? rows as any).map((r: any) => {
-    const holderPoints = (r.nft_count ?? 0) * POINTS_PER_NFT;
-    return {
-      walletAddress: r.wallet_address,
-      code: r.code ?? null,
-      referralPoints: r.referral_points ?? 0,
+  const scores = await buildCombinedScores();
+  const rows: Array<any> = [];
+  scores.forEach((v, walletAddress) => {
+    const holderPoints = v.nftCount * POINTS_PER_NFT;
+    const totalPoints = v.referralPoints + holderPoints;
+    if (totalPoints <= 0) return;
+    rows.push({
+      walletAddress,
+      code: v.code,
+      referralPoints: v.referralPoints,
       holderPoints,
-      totalPoints: (r.referral_points ?? 0) + holderPoints,
-      totalReferrals: r.total_referrals ?? 0,
-      nftCount: r.nft_count ?? 0,
-    };
+      totalPoints,
+      totalReferrals: v.totalReferrals,
+      nftCount: v.nftCount,
+    });
   });
+  rows.sort((a, b) => b.totalPoints - a.totalPoints || b.nftCount - a.nftCount);
+  return rows.slice(0, limit);
 };
 
 DatabaseStorage.prototype.getCombinedRank = async function (walletAddress: string): Promise<{ rank: number; totalParticipants: number; totalPoints: number } | null> {
   const lower = walletAddress.toLowerCase();
-  const result = await db.execute<{
-    wallet_address: string;
-    total_points: number;
-    higher_count: number;
-    total_participants: number;
-  }>(sql`
-    with holders as (
-      select lower(${domains.owner}) as wallet_address, count(*)::int as nft_count
-      from ${domains}
-      where ${domains.isActive} = true and ${domains.expirationDate} > now()
-      group by lower(${domains.owner})
-    ),
-    referrers as (
-      select lower(${referralCodes.walletAddress}) as wallet_address,
-             ${referralCodes.totalPoints}::int as referral_points
-      from ${referralCodes}
-    ),
-    combined as (
-      select coalesce(h.wallet_address, r.wallet_address) as wallet_address,
-             coalesce(r.referral_points, 0) + coalesce(h.nft_count, 0) * ${POINTS_PER_NFT} as total_points
-      from holders h
-      full outer join referrers r on h.wallet_address = r.wallet_address
-    ),
-    scored as (
-      select wallet_address, total_points from combined where total_points > 0
-    ),
-    me as (
-      select total_points from scored where wallet_address = ${lower}
-    )
-    select
-      ${lower} as wallet_address,
-      (select total_points from me) as total_points,
-      (select count(*)::int from scored where total_points > (select total_points from me)) as higher_count,
-      (select count(*)::int from scored) as total_participants
-  `);
-
-  const row = (result.rows ?? result as any)[0];
-  if (!row || row.total_points == null) return null;
-  return {
-    rank: (row.higher_count ?? 0) + 1,
-    totalParticipants: row.total_participants ?? 0,
-    totalPoints: row.total_points ?? 0,
-  };
+  const scores = await buildCombinedScores();
+  let totalParticipants = 0;
+  let myPoints: number | null = null;
+  let higher = 0;
+  scores.forEach((v, addr) => {
+    const total = v.referralPoints + v.nftCount * POINTS_PER_NFT;
+    if (total <= 0) return;
+    totalParticipants++;
+    if (addr === lower) myPoints = total;
+  });
+  if (myPoints === null) return null;
+  scores.forEach((v) => {
+    const total = v.referralPoints + v.nftCount * POINTS_PER_NFT;
+    if (total > (myPoints as number)) higher++;
+  });
+  return { rank: higher + 1, totalParticipants, totalPoints: myPoints };
 };
 
 export const storage = new DatabaseStorage();

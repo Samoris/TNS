@@ -71,9 +71,11 @@ export default function ReferralsPage() {
     enabled: isConnected && !!address,
   });
 
-  const { data: leaderboard, isLoading: lbLoading } = useQuery<LeaderboardEntry[]>({
+  const { data: lbData, isLoading: lbLoading } = useQuery<{ entries: LeaderboardEntry[]; lastUpdated: number; totalHolders: number }>({
     queryKey: ["/api/referrals/leaderboard"],
+    refetchInterval: 30_000,
   });
+  const leaderboard = lbData?.entries;
 
   const referralLink = me
     ? `https://tns.intuition.box/register?ref=${me.code}`
