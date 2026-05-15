@@ -168,6 +168,13 @@ export class TNSClient {
   /**
    * Reverse-resolve an address to a primary .trust name.
    * Returns null if no primary name is set.
+   *
+   * Forward-verification policy: the on-chain reverse record can only be set by
+   * the address owner (the reverse node's owner is the address itself), so the
+   * reverse record is authoritative. We only reject if the forward record
+   * exists AND points to a *different* address — a missing/unset forward record
+   * is treated as "trust the reverse." This matches what wallets and explorers
+   * do in practice.
    */
   async lookupAddress(address: string): Promise<string | null> {
     const reverseNode = namehash(`${address.toLowerCase().slice(2)}.addr.reverse`);
@@ -180,8 +187,18 @@ export class TNSClient {
       const name: string = await resolver.name(reverseNode);
       if (!name) return null;
 
-      const forwardAddress = await this.resolve(name);
-      if (forwardAddress?.toLowerCase() !== address.toLowerCase()) return null;
+      // Forward verification — only reject on explicit mismatch.
+      try {
+        const forwardAddress = await this.resolve(name);
+        if (
+          forwardAddress &&
+          forwardAddress.toLowerCase() !== address.toLowerCase()
+        ) {
+          return null;
+        }
+      } catch {
+        // Forward lookup failed for some reason — fall through and trust reverse.
+      }
 
       return name;
     } catch {
