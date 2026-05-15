@@ -2403,6 +2403,75 @@ export class Web3Service {
   }
 
   /**
+   * Transfer a .trust domain NFT to another address.
+   * Calls BaseRegistrar.safeTransferFrom(from, to, tokenId).
+   * NOTE: The recipient should call reclaim() after to sync registry controllership.
+   */
+  public async transferDomainENS(baseRegistrarAddress: string, tokenId: string, toAddress: string): Promise<string> {
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
+    }
+
+    const state = await this.getWalletState();
+    if (!state.isConnected || !state.isCorrectNetwork) {
+      throw new Error("Wallet not connected or wrong network");
+    }
+
+    if (!ethers.isAddress(toAddress)) {
+      throw new Error("Invalid recipient address");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
+      const signer = await provider.getSigner();
+      const fromAddress = await signer.getAddress();
+
+      if (toAddress.toLowerCase() === fromAddress.toLowerCase()) {
+        throw new Error("Cannot transfer to yourself");
+      }
+
+      const abi = ["function safeTransferFrom(address from, address to, uint256 tokenId)"];
+      const contract = new ethers.Contract(baseRegistrarAddress, abi, signer);
+
+      const tx = await contract.safeTransferFrom(fromAddress, toAddress, tokenId, { gasLimit: 250000 });
+      console.log("Transfer transaction sent:", tx.hash);
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error("Transfer transaction receipt not received");
+      console.log("Domain transfer confirmed:", receipt.hash);
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Domain transfer error:", error);
+      throw new Error(error.shortMessage || error.message || "Failed to transfer domain");
+    }
+  }
+
+  /**
+   * Reclaim registry controllership for a domain you own as NFT.
+   * Useful after buying a domain on a secondary marketplace.
+   */
+  public async reclaimDomainENS(baseRegistrarAddress: string, tokenId: string): Promise<string> {
+    if (!this.getProvider()) {
+      throw new Error("No wallet connected");
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(this.getProvider()! as any);
+      const signer = await provider.getSigner();
+
+      const abi = ["function reclaim(uint256 id)"];
+      const contract = new ethers.Contract(baseRegistrarAddress, abi, signer);
+
+      const tx = await contract.reclaim(tokenId, { gasLimit: 150000 });
+      const receipt = await tx.wait();
+      if (!receipt) throw new Error("Reclaim transaction receipt not received");
+      return receipt.hash;
+    } catch (error: any) {
+      console.error("Reclaim error:", error);
+      throw new Error(error.shortMessage || error.message || "Failed to reclaim domain");
+    }
+  }
+
+  /**
    * Set primary name via reverse registrar (ENS-forked)
    */
   public async setPrimaryNameENS(reverseRegistrarAddress: string, domainName: string): Promise<string> {

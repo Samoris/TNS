@@ -26,6 +26,8 @@ import {
   Check,
   ImageIcon,
   Upload,
+  ArrowRightLeft,
+  AlertTriangle,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,7 +38,8 @@ import {
   TNS_RESOLVER_ADDRESS, 
   TNS_RESOLVER_ABI,
   TNS_REVERSE_REGISTRAR_ADDRESS,
-  TNS_CONTROLLER_ADDRESS
+  TNS_CONTROLLER_ADDRESS,
+  TNS_BASE_REGISTRAR_ADDRESS
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -77,6 +80,11 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
   // Extend domain states
   const [isExtending, setIsExtending] = useState(false);
   const [extendDuration, setExtendDuration] = useState(1);
+
+  // Transfer domain states
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferAddress, setTransferAddress] = useState("");
+  const [transferConfirmed, setTransferConfirmed] = useState(false);
   
   // Avatar states
   const [isAddingAvatar, setIsAddingAvatar] = useState(false);
@@ -282,6 +290,37 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
     onError: (error: any) => {
       toast({
         title: "Failed to set primary domain",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const transferDomainMutation = useMutation({
+    mutationFn: async (toAddress: string) => {
+      if (!domain.tokenId) throw new Error("Token ID not available for this domain");
+      const txHash = await web3Service.transferDomainENS(
+        TNS_BASE_REGISTRAR_ADDRESS,
+        domain.tokenId,
+        toAddress
+      );
+      return txHash;
+    },
+    onSuccess: (txHash) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/domains/owner", walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ["blockchain-domains", walletAddress] });
+      setIsTransferring(false);
+      setTransferAddress("");
+      setTransferConfirmed(false);
+      setIsManageOpen(false);
+      toast({
+        title: "Domain transferred!",
+        description: `${domain.name} has been transferred. Transaction: ${txHash.substring(0, 10)}...`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to transfer domain",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -824,6 +863,103 @@ export function DomainCard({ domain, walletAddress }: DomainCardProps) {
                         </Card>
                       )}
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Transfer Domain */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Transfer Domain</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Send this domain NFT to another wallet. The recipient becomes the new owner and can renew, sell, or reconfigure it. They may need to reclaim registry control to update resolver records.
+                    </p>
+
+                    {!isTransferring ? (
+                      <Button
+                        onClick={() => setIsTransferring(true)}
+                        variant="outline"
+                        className="w-full"
+                        disabled={!domain.tokenId || isExpired}
+                        data-testid="transfer-domain-button"
+                      >
+                        <ArrowRightLeft className="h-4 w-4 mr-2" />
+                        Transfer to another wallet
+                      </Button>
+                    ) : (
+                      <Card className="p-4 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/40">
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                            <div className="text-xs text-red-800 dark:text-red-300">
+                              <p className="font-semibold mb-1">This action is irreversible.</p>
+                              <p>Once transferred, you will no longer own <strong>{domain.name}</strong> and cannot recover it without the recipient's cooperation. Double-check the address below.</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="transferAddress" className="text-xs">Recipient address</Label>
+                            <Input
+                              id="transferAddress"
+                              type="text"
+                              placeholder="0x..."
+                              value={transferAddress}
+                              onChange={(e) => {
+                                setTransferAddress(e.target.value);
+                                setTransferConfirmed(false);
+                              }}
+                              className="mt-1 font-mono text-xs"
+                              data-testid="transfer-address-input"
+                            />
+                            {transferAddress && !ethers.isAddress(transferAddress) && (
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">Not a valid Ethereum address</p>
+                            )}
+                            {transferAddress && ethers.isAddress(transferAddress) && transferAddress.toLowerCase() === walletAddress.toLowerCase() && (
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-1">You cannot transfer to your own wallet</p>
+                            )}
+                          </div>
+
+                          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={transferConfirmed}
+                              onChange={(e) => setTransferConfirmed(e.target.checked)}
+                              className="mt-0.5"
+                              data-testid="transfer-confirm-checkbox"
+                            />
+                            <span>I understand this transfer is permanent and I am sending to the correct address.</span>
+                          </label>
+
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => transferDomainMutation.mutate(transferAddress)}
+                              disabled={
+                                transferDomainMutation.isPending ||
+                                !transferConfirmed ||
+                                !ethers.isAddress(transferAddress) ||
+                                transferAddress.toLowerCase() === walletAddress.toLowerCase()
+                              }
+                              variant="destructive"
+                              className="flex-1"
+                              data-testid="confirm-transfer-button"
+                            >
+                              {transferDomainMutation.isPending ? "Transferring..." : "Confirm transfer"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setIsTransferring(false);
+                                setTransferAddress("");
+                                setTransferConfirmed(false);
+                              }}
+                              disabled={transferDomainMutation.isPending}
+                              data-testid="cancel-transfer-button"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
                   </div>
 
                   <Separator />

@@ -184,10 +184,7 @@ export const TNS_BASE_REGISTRAR_ABI = [
     type: "function"
   },
   {
-    inputs: [
-      { name: "id", type: "uint256" },
-      { name: "owner", type: "address" }
-    ],
+    inputs: [{ name: "id", type: "uint256" }],
     name: "reclaim",
     outputs: [],
     stateMutability: "nonpayable",
