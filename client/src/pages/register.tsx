@@ -28,7 +28,7 @@ import { DomainSearch } from "@/components/domain-search";
 import { WalletConnection } from "@/components/wallet-connection";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatPrice, calculateDomainPrice } from "@/lib/pricing";
 import { TNS_CONTROLLER_ADDRESS, TNS_BASE_REGISTRAR_ADDRESS, TNS_RESOLVER_ADDRESS } from "@/lib/contracts";
 import { web3Service } from "@/lib/web3";
@@ -325,6 +325,16 @@ export default function RegisterPage() {
       } catch (err) {
         console.warn("Referral credit skipped:", err);
       }
+
+      // Refresh on-chain holder/NFT stats so the leaderboard and landing-page
+      // counters reflect this new registration right away (instead of waiting
+      // for the periodic background scan).
+      try {
+        await apiRequest("POST", "/api/referrals/leaderboard/refresh", {});
+      } catch (err) {
+        console.warn("Stats refresh skipped:", err);
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals/leaderboard"] });
 
       // Automatically trigger Knowledge Graph sync
       const domainName = data.domain?.name || selectedDomain?.replace('.trust', '');
