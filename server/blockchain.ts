@@ -540,6 +540,126 @@ export class BlockchainService {
   }
 
   /**
+   * Full chain-truth holder scan based on ERC-721 Transfer events.
+   *
+   * Unlike scanAllDomains (which drops any token whose name we can't resolve),
+   * this discovers EVERY token ever minted on the BaseRegistrar across the full
+   * block history, then reads its current owner + expiry. Names are best-effort
+   * (from migration data when available). This is what the holder/points
+   * leaderboard relies on so newly-registered domains are always counted.
+   *
+   * The Transfer-event scan is incremental: the discovered tokenId set and the
+   * last scanned block are cached across calls, so only new blocks are scanned
+   * on each refresh while current ownership is always re-read live.
+   */
+  private holderTokenIds: Set<string> = new Set();
+  private holderLastScannedBlock = 0;
+  // Persistent last-known ownership state per token. Surviving across refreshes
+  // means a transient RPC failure serves stale-but-correct data instead of
+  // zeroing the leaderboard.
+  private holderState: Map<string, { owner: string; expires: bigint }> = new Map();
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  async scanAllHolderTokens(): Promise<Array<{
+    name: string | null;
+    owner: string;
+    expirationTime: Date;
+    tokenId: string;
+  }>> {
+    // Defensive: if the RPC is momentarily bandwidth-limited, skip discovery
+    // this round and serve whatever state we already have. State accumulates
+    // across the periodic refreshes, so the cache fills in over time instead of
+    // collapsing to empty on a single failed call.
+    let currentBlock = 0;
+    try {
+      currentBlock = await this.provider.getBlockNumber();
+    } catch {
+      currentBlock = -1; // signal: skip discovery this round
+    }
+
+    // Incremental Transfer-event scan to discover token IDs.
+    // Large block ranges keep the number of RPC calls low (this chain has
+    // millions of blocks but only a few hundred Transfer events). The checkpoint
+    // only advances through the highest CONTIGUOUS successfully scanned block, so
+    // a failed range (e.g. RPC bandwidth limit) is retried next refresh and no
+    // token is ever permanently lost.
+    const STEP = 1_000_000;
+    const fromStart = this.holderLastScannedBlock > 0
+      ? this.holderLastScannedBlock + 1
+      : 0;
+    let contiguousScannedTo = this.holderLastScannedBlock;
+    let stopAdvancing = false;
+    for (let from = fromStart; currentBlock >= 0 && from <= currentBlock; from += STEP) {
+      const to = Math.min(from + STEP - 1, currentBlock);
+      try {
+        const events = await this.baseRegistrar.queryFilter(
+          this.baseRegistrar.filters.Transfer(),
+          from,
+          to
+        );
+        for (const e of events) {
+          const tid = (e as any).args?.tokenId;
+          if (tid !== undefined) this.holderTokenIds.add(tid.toString());
+        }
+        if (!stopAdvancing) contiguousScannedTo = to;
+      } catch (err) {
+        stopAdvancing = true;
+      }
+      await this.sleep(150); // gentle pacing to respect RPC bandwidth limits
+    }
+    if (currentBlock >= 0) this.holderLastScannedBlock = contiguousScannedTo;
+
+    // Refresh current owner + expiry for every known token, in small throttled
+    // batches. On a per-token failure we keep the previously known state.
+    const ids = Array.from(this.holderTokenIds);
+    const BATCH = 10;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const batch = ids.slice(i, i + BATCH);
+      const results = await Promise.allSettled(
+        batch.map(async (tokenId) => {
+          const [owner, expires] = await Promise.all([
+            this.baseRegistrar.ownerOf(tokenId),
+            this.baseRegistrar.nameExpires(tokenId),
+          ]);
+          return { tokenId, owner: owner as string, expires: expires as bigint };
+        })
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          this.holderState.set(r.value.tokenId, {
+            owner: r.value.owner,
+            expires: r.value.expires,
+          });
+        }
+        // On rejection: retain the existing holderState entry (stale but valid).
+      }
+      await this.sleep(120);
+    }
+
+    // Build result from last-known state, excluding burned/unowned tokens.
+    let migrationData: Map<string, string> = new Map();
+    try {
+      migrationData = await this.loadMigrationData();
+    } catch {
+      migrationData = new Map();
+    }
+    const out: Array<{ name: string | null; owner: string; expirationTime: Date; tokenId: string }> = [];
+    for (const [tokenId, state] of this.holderState) {
+      if (!state.owner || state.owner === ethers.ZeroAddress) continue;
+      out.push({
+        name: migrationData.get(tokenId) ?? null,
+        owner: state.owner,
+        expirationTime: new Date(Number(state.expires) * 1000),
+        tokenId,
+      });
+    }
+    return out;
+  }
+
+  /**
    * Get the cost to create an atom in Intuition (in wei)
    * Uses the getAtomCost() view function which returns the total cost including all fees
    */

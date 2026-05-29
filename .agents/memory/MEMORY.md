@@ -1,0 +1,1 @@
+- [TNS holder leaderboard chain-truth](tns-holder-leaderboard.md) — discover domains via BaseRegistrar Transfer events (no NameRegistered, no totalSupply); public RPC has a bandwidth limit so scans must be paced, defensive, and stateful.

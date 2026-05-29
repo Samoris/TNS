@@ -129,57 +129,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   let domainOwnershipCache: any[] = [];
   async function refreshDomainOwnershipCache() {
     try {
-      const provider = new ethers.JsonRpcProvider("https://intuition.calderachain.xyz");
-      const baseRegistrarAddress = "0x1dfeB53EE1bF59d8828e44844e4Dc4a22420E629";
-      const registrarContract = new ethers.Contract(baseRegistrarAddress, [
-        "function ownerOf(uint256 tokenId) view returns (address)",
-        "function nameExpires(uint256 id) view returns (uint256)"
-      ], provider);
-      
-      const BATCH_SIZE = 20;
       const cache: any[] = [];
 
-      // Union migrated domain names with any domains registered post-migration
-      // (stored in the DB). Without this, the on-chain cache misses newly
-      // registered names and under-counts holder points.
-      const dbDomains = await storage.getAllDomains().catch(() => [] as any[]);
-      const dbNames = dbDomains
-        .map((d: any) => (d.name || "").replace(/\.trust$/i, "").toLowerCase())
-        .filter((n: string) => n.length >= 3);
-      const namesToScan = Array.from(new Set([...allDomainNames, ...dbNames]));
-
-      for (let i = 0; i < namesToScan.length; i += BATCH_SIZE) {
-        const batch = namesToScan.slice(i, i + BATCH_SIZE);
-        const results = await Promise.allSettled(
-          batch.map(async (name) => {
-            const labelhash = ethers.keccak256(ethers.toUtf8Bytes(name));
-            const tokenId = ethers.getBigInt(labelhash);
-            const [owner, expires] = await Promise.all([
-              registrarContract.ownerOf(tokenId),
-              registrarContract.nameExpires(tokenId)
-            ]);
-            const expirationDate = new Date(Number(expires) * 1000);
-            const pricePerYear = name.length === 3 ? "100" : name.length === 4 ? "70" : "30";
-            return {
-              id: tokenId.toString(),
-              name: `${name}.trust`,
-              tokenId: tokenId.toString(),
-              owner,
-              expirationDate: expirationDate.toISOString(),
-              exists: true,
-              pricePerYear,
-              records: [],
-              subdomains: [],
-              isMigrated: true,
-            };
-          })
-        );
-        
-        for (const r of results) {
-          if (r.status === 'fulfilled') cache.push(r.value);
-        }
+      // True chain-truth holder discovery: scan EVERY ERC-721 token ever minted
+      // on the BaseRegistrar (via full-history Transfer events), then read its
+      // live owner + expiry. This counts new registrations regardless of whether
+      // their name is known, so holder points are never under-counted.
+      const tokens = await blockchainService.scanAllHolderTokens();
+      // Map known tokenId -> name from the migrated/static list for display.
+      const tokenIdToName = new Map<string, string>();
+      for (const name of allDomainNames) {
+        const tid = ethers.getBigInt(ethers.keccak256(ethers.toUtf8Bytes(name))).toString();
+        tokenIdToName.set(tid, name);
       }
-      
+      for (const t of tokens) {
+        const label = (t.name || tokenIdToName.get(t.tokenId) || "").replace(/\.trust$/i, "");
+        const displayName = label ? `${label}.trust` : `${t.tokenId.slice(0, 10)}….trust`;
+        const pricePerYear = label.length === 3 ? "100" : label.length === 4 ? "70" : "30";
+        cache.push({
+          id: t.tokenId,
+          name: displayName,
+          tokenId: t.tokenId,
+          owner: t.owner,
+          expirationDate: t.expirationTime.toISOString(),
+          exists: true,
+          pricePerYear,
+          records: [],
+          subdomains: [],
+          isMigrated: true,
+          hasName: !!label,
+        });
+      }
+
       domainOwnershipCache = cache;
       // Update on-chain holder map used by /api/referrals leaderboard (real-time points)
       updateHoldings(cache.map((d: any) => ({
@@ -192,15 +173,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
   
+  // Guard against overlapping refreshes — a full throttled scan can take longer
+  // than the interval, and concurrent runs would multiply RPC load.
+  let refreshInFlight: Promise<void> | null = null;
+  function refreshDomainOwnershipCacheGuarded(): Promise<void> {
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = refreshDomainOwnershipCache().finally(() => {
+      refreshInFlight = null;
+    });
+    return refreshInFlight;
+  }
+
   // Build cache on startup (non-blocking)
-  refreshDomainOwnershipCache();
-  // Refresh every 30s so the leaderboard reflects on-chain transfers/expiries in near real time
-  setInterval(refreshDomainOwnershipCache, 30 * 1000);
+  refreshDomainOwnershipCacheGuarded();
+  // Refresh periodically so the leaderboard reflects on-chain transfers/expiries.
+  // Kept gentle (90s) to respect the public RPC's bandwidth limits.
+  setInterval(refreshDomainOwnershipCacheGuarded, 90 * 1000);
 
   // Manual on-demand refresh of the on-chain holder cache (used by the leaderboard "Refresh" button)
   app.post("/api/referrals/leaderboard/refresh", async (_req, res) => {
     try {
-      await refreshDomainOwnershipCache();
+      await refreshDomainOwnershipCacheGuarded();
       res.json({ ok: true, lastUpdated: getLastHoldersRefresh(), totalHolders: getHoldersCount() });
     } catch (e: any) {
       res.status(500).json({ ok: false, message: e?.message });
