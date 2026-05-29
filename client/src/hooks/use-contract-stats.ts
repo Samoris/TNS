@@ -1,6 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { web3Service } from "@/lib/web3";
-import { TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI } from "@/lib/contracts";
 
 export interface ContractStats {
   totalDomains: number;
@@ -8,14 +6,26 @@ export interface ContractStats {
   activeUsers: number;
 }
 
+interface LeaderboardResponse {
+  totalHolders: number;
+  totalNfts: number;
+}
+
 export function useContractStats() {
   return useQuery<ContractStats>({
-    queryKey: ["contract-stats", TNS_REGISTRY_ADDRESS],
+    queryKey: ["/api/referrals/leaderboard", "stats"],
     queryFn: async () => {
-      return await web3Service.getContractStats(TNS_REGISTRY_ADDRESS, TNS_REGISTRY_ABI);
+      const res = await fetch("/api/referrals/leaderboard?limit=1");
+      if (!res.ok) throw new Error("Failed to load network stats");
+      const data: LeaderboardResponse = await res.json();
+      return {
+        totalDomains: data.totalNfts ?? 0,
+        totalValueLocked: "0",
+        activeUsers: data.totalHolders ?? 0,
+      };
     },
-    refetchInterval: 60000, // Refresh every 60 seconds (comprehensive queries are expensive)
-    staleTime: 45000, // Consider data stale after 45 seconds
+    refetchInterval: 60000,
+    staleTime: 45000,
     refetchOnWindowFocus: true,
   });
 }

@@ -32,3 +32,9 @@ export function getLastHoldersRefresh(): number {
 export function getHoldersCount(): number {
   return holdingsByAddress.size;
 }
+
+export function getTotalNftCount(): number {
+  let total = 0;
+  for (const count of holdingsByAddress.values()) total += count;
+  return total;
+}

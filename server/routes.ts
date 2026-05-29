@@ -15,7 +15,7 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ethers } from "ethers";
-import { updateHoldings, getHoldersCount, getLastHoldersRefresh } from "./holder-cache";
+import { updateHoldings, getHoldersCount, getLastHoldersRefresh, getTotalNftCount } from "./holder-cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -2677,6 +2677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         entries: top,
         lastUpdated: getLastHoldersRefresh(),
         totalHolders: getHoldersCount(),
+        totalNfts: getTotalNftCount(),
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
