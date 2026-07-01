@@ -409,6 +409,10 @@ export class MemStorage implements IStorage {
       reputationTier: insertAgent.reputationTier ?? null,
       totalStaked: insertAgent.totalStaked ?? null,
       stakeholders: insertAgent.stakeholders ?? null,
+      verified: false,
+      verifiedAt: null,
+      healthStatus: "unknown",
+      lastHealthCheckAt: null,
     };
     this.agents.set(fullDomain, agent);
     return agent;

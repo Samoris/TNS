@@ -74,6 +74,12 @@ export const agents = pgTable("agents", {
   reputationTier: text("reputation_tier"),
   totalStaked: text("total_staked"),
   stakeholders: integer("stakeholders"),
+  // Endpoint verification: proven control of declared endpoint via well-known token
+  verified: boolean("verified").notNull().default(false),
+  verifiedAt: timestamp("verified_at"),
+  // Live health status: 'online' | 'offline' | 'unknown'
+  healthStatus: text("health_status").notNull().default("unknown"),
+  lastHealthCheckAt: timestamp("last_health_check_at"),
 });
 
 // Agent-to-agent messages (durable inbox + history)
@@ -147,6 +153,10 @@ export const insertAgentSchema = createInsertSchema(agents).omit({
   id: true,
   registeredAt: true,
   lastSeen: true,
+  verified: true,
+  verifiedAt: true,
+  healthStatus: true,
+  lastHealthCheckAt: true,
 });
 
 // Domain search and availability schema

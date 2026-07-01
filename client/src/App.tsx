@@ -18,6 +18,8 @@ import Support from "@/pages/support";
 import AgentTest from "@/pages/AgentTest";
 import AgentRegister from "@/pages/AgentRegister";
 import Agents from "@/pages/Agents";
+import AgentInbox from "@/pages/AgentInbox";
+import AgentProfile from "@/pages/AgentProfile";
 import Referrals from "@/pages/referrals";
 import Leaderboard from "@/pages/leaderboard";
 import NotFound from "@/pages/not-found";
@@ -40,8 +42,10 @@ function Router() {
           <Route path="/terms" component={Terms} />
           <Route path="/support" component={Support} />
           <Route path="/agents" component={Agents} />
+          <Route path="/agent-inbox" component={AgentInbox} />
           <Route path="/agent-test" component={AgentTest} />
           <Route path="/agent-register" component={AgentRegister} />
+          <Route path="/agents/:domain" component={AgentProfile} />
           <Route path="/referrals" component={Referrals} />
           <Route path="/leaderboard" component={Leaderboard} />
           <Route component={NotFound} />

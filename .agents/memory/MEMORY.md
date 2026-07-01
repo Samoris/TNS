@@ -1,1 +1,1 @@
-- [TNS holder leaderboard chain-truth](tns-holder-leaderboard.md) — discover domains via BaseRegistrar Transfer events (no NameRegistered, no totalSupply); public RPC has a bandwidth limit so scans must be paced, defensive, and stateful.
+- [Agent endpoint security](agent-endpoint-security.md) — guard every server-side fetch of agent URLs (SSRF), bind owner-signed mutations to their payload, reject NaN timestamps.

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { blockchainService, INTUITION_MULTIVAULT_ADDRESS, INTUITION_MULTIVAULT_ABI } from "./blockchain";
 import { intuitionService } from "./intuition";
-import { agentService } from "./agent-service";
+import { agentService, AgentService } from "./agent-service";
 import { 
   domainSearchSchema, 
   domainRegistrationSchema, 
@@ -1150,6 +1150,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastSeen: agent.lastSeen?.getTime(),
         reputationScore: agent.reputationScore,
         reputationTier: agent.reputationTier,
+        verified: agent.verified,
+        healthStatus: agent.healthStatus,
+        lastHealthCheckAt: agent.lastHealthCheckAt?.getTime(),
         reputation: agentService.buildProfileReputation(agent),
       }));
       
@@ -1220,12 +1223,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const domainInfo = await blockchainService.getDomainInfoENS(domainName);
       const resolvedAddress = domainInfo?.owner || storedDomain.owner;
-      
+
+      // Enrich with verification/health/reputation from the agents table if present.
+      const agentRow = await storage.getAgent(`${domainName}.trust`);
+
       res.json({
         domain: `${domainName}.trust`,
         address: resolvedAddress,
         atomUri: intuitionService.generateAgentAtomUri(domainName),
-        ...metadata
+        ...metadata,
+        verified: agentRow?.verified ?? false,
+        healthStatus: agentRow?.healthStatus ?? 'unknown',
+        lastHealthCheckAt: agentRow?.lastHealthCheckAt?.getTime(),
+        reputation: agentRow ? agentService.buildProfileReputation(agentRow) : undefined,
       });
     } catch (error) {
       console.error("Agent resolve error:", error);
@@ -1265,6 +1275,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Agent records update error:", error);
       res.status(500).json({ error: "Failed to update agent records" });
+    }
+  });
+
+  // Live health check: ping the agent's endpoint(s) and return online/offline.
+  // Cached in the DB; pass ?force=true to bypass the cache.
+  app.get("/api/agents/:domain/health", async (req, res) => {
+    try {
+      const cleanDomain = req.params.domain.replace(/\.trust$/, '') + '.trust';
+      const force = req.query.force === 'true';
+      const result = await agentService.checkAgentHealth(cleanDomain, force);
+      res.json({ domain: cleanDomain, ...result });
+    } catch (error) {
+      console.error("Agent health check error:", error);
+      res.status(500).json({ error: "Failed to check agent health" });
+    }
+  });
+
+  // Step 1 of endpoint verification: issue a token to serve at the well-known path.
+  app.post("/api/agents/:domain/verify/challenge", async (req, res) => {
+    try {
+      const cleanDomain = req.params.domain.replace(/\.trust$/, '') + '.trust';
+      const agent = await storage.getAgent(cleanDomain);
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+      if (!agent.endpoint) {
+        return res.status(400).json({ error: "Agent has no endpoint to verify. Add an endpoint first." });
+      }
+      const challenge = agentService.createVerificationToken(cleanDomain);
+      res.json({
+        domain: cleanDomain,
+        ...challenge,
+        instructions: `Serve a JSON file at ${agent.endpoint.replace(/\/+$/, '')}/.well-known/tns-agent.json containing {"domain":"${cleanDomain}","token":"<token>"}, then call the confirm endpoint.`,
+      });
+    } catch (error) {
+      console.error("Agent verify challenge error:", error);
+      res.status(500).json({ error: "Failed to create verification challenge" });
+    }
+  });
+
+  // Step 2 of endpoint verification: fetch the well-known file and confirm.
+  app.post("/api/agents/:domain/verify/confirm", async (req, res) => {
+    try {
+      const cleanDomain = req.params.domain.replace(/\.trust$/, '') + '.trust';
+      const result = await agentService.confirmVerification(cleanDomain);
+      if (result.verified) {
+        res.json({ verified: true, domain: cleanDomain });
+      } else {
+        res.status(400).json({ verified: false, error: result.error });
+      }
+    } catch (error) {
+      console.error("Agent verify confirm error:", error);
+      res.status(500).json({ error: "Failed to confirm verification" });
+    }
+  });
+
+  // Update an agent's profile (owner-authenticated via signed message).
+  // The owner signs: "Update agent {domain} at {timestamp}".
+  app.post("/api/agents/:domain/update", async (req, res) => {
+    try {
+      const cleanDomain = req.params.domain.replace(/\.trust$/, '') + '.trust';
+      const { signature, timestamp, updates } = req.body;
+
+      if (!signature || !timestamp || !updates) {
+        return res.status(400).json({ error: "Required fields: signature, timestamp, updates" });
+      }
+
+      const agent = await storage.getAgent(cleanDomain);
+      if (!agent) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+
+      // Resolve the current owner (storage first, then blockchain for migrated domains).
+      let owner: string | null = null;
+      const storedDomain = await storage.getDomainByName(cleanDomain);
+      if (storedDomain) {
+        owner = storedDomain.owner;
+      } else {
+        const info = await blockchainService.getDomainInfoENS(cleanDomain.replace(/\.trust$/, ''));
+        if (info?.exists) owner = info.owner;
+      }
+      if (!owner) {
+        return res.status(404).json({ error: "Domain not found" });
+      }
+
+      // Verify timestamp freshness. Reject non-numeric timestamps so NaN
+      // comparisons can't silently bypass the freshness window.
+      const ts = parseInt(String(timestamp), 10);
+      const now = Date.now();
+      if (!Number.isFinite(ts)) {
+        return res.status(401).json({ error: "Invalid timestamp." });
+      }
+      if (ts > now + 30 * 1000) {
+        return res.status(401).json({ error: "Timestamp is in the future. Check your system clock." });
+      }
+      if (now - ts > 5 * 60 * 1000) {
+        return res.status(401).json({ error: "Timestamp expired. Must be within 5 minutes." });
+      }
+
+      // Bind the signed message to the exact updates payload so a captured
+      // signature can't be replayed with different field changes.
+      const message = `Update agent ${cleanDomain} at ${timestamp}: ${JSON.stringify(updates)}`;
+      const isValid = await agentService.verifyAgentSignature(cleanDomain, message, signature, owner);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      // Whitelist mutable fields.
+      const allowed: Record<string, any> = {};
+      if (Array.isArray(updates.capabilities)) allowed.capabilities = updates.capabilities;
+      if (typeof updates.agentType === 'string') allowed.agentType = updates.agentType;
+      if (typeof updates.version === 'string') allowed.version = updates.version;
+      if (typeof updates.publicKey === 'string') allowed.publicKey = updates.publicKey;
+      if ('endpoint' in updates) allowed.endpoint = updates.endpoint || null;
+      if ('mcpEndpoint' in updates) allowed.mcpEndpoint = updates.mcpEndpoint || null;
+
+      // Reject endpoints that point at internal/private infrastructure (SSRF).
+      for (const field of ['endpoint', 'mcpEndpoint'] as const) {
+        if (allowed[field]) {
+          const unsafe = AgentService.validateOutboundUrl(allowed[field]);
+          if (unsafe) {
+            return res.status(400).json({ error: `Invalid ${field}: ${unsafe}` });
+          }
+        }
+      }
+
+      // Changing the endpoint invalidates any prior endpoint verification.
+      if ('endpoint' in allowed && allowed.endpoint !== agent.endpoint) {
+        allowed.verified = false;
+        allowed.verifiedAt = null;
+        allowed.healthStatus = 'unknown';
+        allowed.lastHealthCheckAt = null;
+      }
+
+      const updated = await agentService.updateAgentProfile(cleanDomain, allowed);
+      res.json({ success: true, agent: updated });
+    } catch (error) {
+      console.error("Agent update error:", error);
+      res.status(500).json({ error: "Failed to update agent" });
     }
   });
 
@@ -1424,7 +1573,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.success) {
         res.json({ success: true, messageId: message.id });
       } else {
-        res.status(400).json({ error: result.error });
+        // Surface rate-limit rejections with the proper 429 status.
+        const status = result.error?.includes('Rate limit') ? 429 : 400;
+        res.status(status).json({ error: result.error });
       }
     } catch (error) {
       console.error("Message send error:", error);
@@ -1469,6 +1620,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = Date.now();
       const maxSkew = 30 * 1000; // 30 second clock skew allowance
       
+      if (!Number.isFinite(ts)) {
+        return res.status(401).json({ error: "Invalid timestamp." });
+      }
       if (ts > now + maxSkew) {
         return res.status(401).json({ error: "Timestamp is in the future. Check your system clock." });
       }
@@ -1537,7 +1691,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ts = parseInt(timestamp as string, 10);
       const now = Date.now();
       const maxSkew = 30 * 1000;
-      
+
+      if (!Number.isFinite(ts)) {
+        return res.status(401).json({ error: "Invalid timestamp." });
+      }
       if (ts > now + maxSkew) {
         return res.status(401).json({ error: "Timestamp is in the future." });
       }

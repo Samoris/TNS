@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, Search, Users, MessageSquare, Shield, Star, ExternalLink, Zap, BookOpen, Code } from 'lucide-react';
+import { Bot, Search, Users, MessageSquare, Shield, Star, ExternalLink, Zap, BookOpen, Code, BadgeCheck, Inbox } from 'lucide-react';
 
 interface AgentInfo {
   domain: string;
@@ -19,6 +19,8 @@ interface AgentInfo {
   version?: string;
   registeredAt?: number;
   lastSeen?: number;
+  verified?: boolean;
+  healthStatus?: 'online' | 'offline' | 'unknown';
   reputation?: {
     score: number;
     tier: string;
@@ -26,6 +28,12 @@ interface AgentInfo {
     stakeholders?: number;
   };
 }
+
+const HEALTH_STYLES: Record<string, { dot: string; label: string }> = {
+  online: { dot: 'bg-green-500', label: 'Online' },
+  offline: { dot: 'bg-red-500', label: 'Offline' },
+  unknown: { dot: 'bg-gray-400', label: 'Unknown' },
+};
 
 interface SchemaInfo {
   agentTypes: string[];
@@ -216,7 +224,7 @@ export default function Agents() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Link href="/agent-register">
           <Card className="cursor-pointer hover:border-primary transition-colors h-full">
             <CardContent className="pt-6">
@@ -227,6 +235,22 @@ export default function Agents() {
                 <div>
                   <h3 className="font-semibold">Register Agent</h3>
                   <p className="text-sm text-muted-foreground">Claim a .trust identity for your AI agent</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/agent-inbox">
+          <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-lg bg-blue-500/10">
+                  <Inbox className="w-6 h-6 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Agent Inbox</h3>
+                  <p className="text-sm text-muted-foreground">Read and send agent messages</p>
                 </div>
               </div>
             </CardContent>
@@ -350,8 +374,13 @@ export default function Agents() {
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className="font-semibold text-lg">{agent.domain}</h3>
+                              {agent.verified && (
+                                <Badge className="bg-blue-500 text-white flex items-center gap-1">
+                                  <BadgeCheck className="w-3 h-3" /> Verified
+                                </Badge>
+                              )}
                               {agent.reputation && (
                                 <Badge className={TIER_COLORS[agent.reputation.tier] || 'bg-gray-500'}>
                                   {agent.reputation.tier}
@@ -361,6 +390,12 @@ export default function Agents() {
                                 <Badge variant="outline" className="text-purple-500 border-purple-500">
                                   MCP
                                 </Badge>
+                              )}
+                              {agent.endpoint && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <span className={`w-2 h-2 rounded-full ${HEALTH_STYLES[agent.healthStatus || 'unknown'].dot}`} />
+                                  {HEALTH_STYLES[agent.healthStatus || 'unknown'].label}
+                                </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2 mb-3">
@@ -440,7 +475,12 @@ export default function Agents() {
                                 </div>
                               )}
                             </div>
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex gap-2 flex-wrap">
+                              <Link href={`/agents/${agent.domain.replace('.trust', '')}`}>
+                                <Button size="sm" onClick={(e) => e.stopPropagation()}>
+                                  View Profile
+                                </Button>
+                              </Link>
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -451,7 +491,7 @@ export default function Agents() {
                               >
                                 View Manifest
                               </Button>
-                              <Link href={`/agent-test?domain=${agent.domain}`}>
+                              <Link href={`/agent-inbox?to=${agent.domain}`}>
                                 <Button size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
                                   Send Message
                                 </Button>

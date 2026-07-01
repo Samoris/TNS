@@ -83,6 +83,16 @@ const VALID_CAPABILITIES = [
 
 const challenges = new Map<string, AgentChallenge>();
 
+// Per-sender message rate limiting (in-memory, sliding 60s window).
+const messageRateWindow = new Map<string, number[]>();
+const MESSAGE_RATE_LIMIT = 20; // messages per minute per sender
+
+// Pending endpoint-verification tokens: domain -> { token, expiresAt }.
+const verificationTokens = new Map<string, { token: string; expiresAt: number }>();
+
+// Health-check cache TTL: don't re-ping an endpoint more than once per 2 minutes.
+const HEALTH_CACHE_MS = 2 * 60 * 1000;
+
 export class AgentService {
   private provider: ethers.JsonRpcProvider;
   private multivault: ethers.Contract;
@@ -90,6 +100,193 @@ export class AgentService {
   constructor() {
     this.provider = new ethers.JsonRpcProvider(INTUITION_RPC);
     this.multivault = new ethers.Contract(MULTIVAULT_ADDRESS, MULTIVAULT_ABI, this.provider);
+  }
+
+  // Returns true if the sender is under the per-minute message cap (and records
+  // this send). Returns false when the limit is exceeded.
+  private checkRateLimit(sender: string): boolean {
+    const now = Date.now();
+    const windowStart = now - 60 * 1000;
+    const recent = (messageRateWindow.get(sender) || []).filter(t => t > windowStart);
+    if (recent.length >= MESSAGE_RATE_LIMIT) {
+      messageRateWindow.set(sender, recent);
+      return false;
+    }
+    recent.push(now);
+    messageRateWindow.set(sender, recent);
+    return true;
+  }
+
+  // Reject URLs that point at internal/private infrastructure to prevent SSRF
+  // when the server fetches an agent-controlled endpoint. Only http/https to
+  // public hosts are allowed. Returns null if safe, or an error string.
+  static validateOutboundUrl(raw: string | null | undefined): string | null {
+    if (!raw) return 'URL is empty';
+    let parsed: URL;
+    try {
+      parsed = new URL(raw);
+    } catch {
+      return 'URL is malformed';
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return 'Only http and https URLs are allowed';
+    }
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (
+      host === 'localhost' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host === '::' ||
+      host.endsWith('.localhost') ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal')
+    ) {
+      return 'Internal hostnames are not allowed';
+    }
+    // IPv4 literal checks for private / loopback / link-local / reserved ranges.
+    const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (m) {
+      const [a, b] = [parseInt(m[1], 10), parseInt(m[2], 10)];
+      if (
+        a === 10 ||
+        a === 127 ||
+        a === 0 ||
+        (a === 192 && b === 168) ||
+        (a === 169 && b === 254) ||
+        (a === 172 && b >= 16 && b <= 31) ||
+        a >= 224
+      ) {
+        return 'Private or reserved IP addresses are not allowed';
+      }
+    }
+    // IPv6 private / loopback / unique-local / link-local literals.
+    if (host.includes(':')) {
+      if (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80') || host === '::1') {
+        return 'Private or reserved IPv6 addresses are not allowed';
+      }
+    }
+    return null;
+  }
+
+  // Fetch a URL with a hard timeout so a hung agent endpoint can't block us.
+  // Enforces SSRF guardrails before making the request.
+  private async fetchWithTimeout(url: string, ms: number, init?: RequestInit): Promise<Response> {
+    const unsafe = AgentService.validateOutboundUrl(url);
+    if (unsafe) {
+      throw new Error(`Blocked unsafe URL: ${unsafe}`);
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { ...init, redirect: 'manual', signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Ping an agent's declared endpoint (and MCP endpoint) to determine live
+  // status. Results are cached in the DB; re-checks only run when stale unless
+  // force=true. Returns the resulting status.
+  async checkAgentHealth(domain: string, force = false): Promise<{
+    status: 'online' | 'offline' | 'unknown';
+    lastCheckedAt: number | null;
+    endpoint?: string | null;
+    mcpEndpoint?: string | null;
+  }> {
+    const agent = await storage.getAgent(domain);
+    if (!agent) {
+      return { status: 'unknown', lastCheckedAt: null };
+    }
+
+    // Serve cached status if it's still fresh.
+    if (!force && agent.lastHealthCheckAt) {
+      const age = Date.now() - agent.lastHealthCheckAt.getTime();
+      if (age < HEALTH_CACHE_MS) {
+        return {
+          status: (agent.healthStatus as 'online' | 'offline' | 'unknown') || 'unknown',
+          lastCheckedAt: agent.lastHealthCheckAt.getTime(),
+          endpoint: agent.endpoint,
+          mcpEndpoint: agent.mcpEndpoint,
+        };
+      }
+    }
+
+    // No endpoint to probe -> status is unknowable.
+    if (!agent.endpoint && !agent.mcpEndpoint) {
+      await storage.updateAgent(domain, { healthStatus: 'unknown', lastHealthCheckAt: new Date() });
+      return { status: 'unknown', lastCheckedAt: Date.now(), endpoint: null, mcpEndpoint: null };
+    }
+
+    const targets = [agent.endpoint, agent.mcpEndpoint].filter(Boolean) as string[];
+    let online = false;
+    for (const url of targets) {
+      try {
+        const res = await this.fetchWithTimeout(url, 5000, { method: 'GET' });
+        // Any HTTP response (even 4xx) means the host is reachable and serving.
+        if (res.status < 500) {
+          online = true;
+          break;
+        }
+      } catch {
+        // network error / timeout -> treat as unreachable for this target
+      }
+    }
+
+    const status: 'online' | 'offline' = online ? 'online' : 'offline';
+    await storage.updateAgent(domain, { healthStatus: status, lastHealthCheckAt: new Date() });
+    return {
+      status,
+      lastCheckedAt: Date.now(),
+      endpoint: agent.endpoint,
+      mcpEndpoint: agent.mcpEndpoint,
+    };
+  }
+
+  // Issue a one-time verification token the agent owner must expose at
+  // {endpoint}/.well-known/tns-agent.json to prove control of the endpoint.
+  createVerificationToken(domain: string): { token: string; expiresAt: number; wellKnownPath: string } | null {
+    const token = 'tns-verify-' + ethers.hexlify(ethers.randomBytes(16)).slice(2);
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+    verificationTokens.set(domain, { token, expiresAt });
+    return { token, expiresAt, wellKnownPath: '/.well-known/tns-agent.json' };
+  }
+
+  // Confirm endpoint verification by fetching the well-known file and matching
+  // the token. On success, marks the agent verified in storage.
+  async confirmVerification(domain: string): Promise<{ verified: boolean; error?: string }> {
+    const pending = verificationTokens.get(domain);
+    if (!pending) {
+      return { verified: false, error: 'No pending verification. Request a token first.' };
+    }
+    if (Date.now() > pending.expiresAt) {
+      verificationTokens.delete(domain);
+      return { verified: false, error: 'Verification token expired. Request a new one.' };
+    }
+
+    const agent = await storage.getAgent(domain);
+    if (!agent || !agent.endpoint) {
+      return { verified: false, error: 'Agent has no endpoint to verify.' };
+    }
+
+    const base = agent.endpoint.replace(/\/+$/, '');
+    const url = `${base}/.well-known/tns-agent.json`;
+    try {
+      const res = await this.fetchWithTimeout(url, 5000, { method: 'GET' });
+      if (!res.ok) {
+        return { verified: false, error: `Could not fetch ${url} (status ${res.status})` };
+      }
+      const body = await res.json();
+      const served = body?.token || body?.verificationToken;
+      const domainOk = !body?.domain || body.domain.replace(/\.trust$/, '') === domain.replace(/\.trust$/, '');
+      if (served === pending.token && domainOk) {
+        verificationTokens.delete(domain);
+        await storage.updateAgent(domain, { verified: true, verifiedAt: new Date() });
+        return { verified: true };
+      }
+      return { verified: false, error: 'Token in well-known file did not match.' };
+    } catch (error) {
+      return { verified: false, error: `Failed to reach endpoint: ${String(error)}` };
+    }
   }
 
   validateAgentRegistration(data: {
@@ -262,6 +459,12 @@ export class AgentService {
       return { success: false, error: 'Message timestamp too old' };
     }
 
+    // Anti-spam: cap how many messages a single sender can push per minute so
+    // the durable inbox can't be flooded.
+    if (!this.checkRateLimit(message.from)) {
+      return { success: false, error: 'Rate limit exceeded — max 20 messages per minute per sender' };
+    }
+
     // Durably persist the message; it acts as both the recipient's inbox
     // (delivered=false) and permanent history for both parties. The unique
     // (from_domain, nonce) constraint rejects replays of a captured signed
@@ -410,6 +613,12 @@ export class AgentService {
     await storage.updateAgent(domain, { lastSeen: new Date() });
   }
 
+  // Apply an owner-authorized partial profile update (fields already whitelisted
+  // by the caller).
+  async updateAgentProfile(domain: string, updates: Record<string, any>) {
+    return storage.updateAgent(domain, updates);
+  }
+
   private tierForScore(score: number): 'bronze' | 'silver' | 'gold' | 'platinum' {
     if (score >= 100) return 'platinum';
     if (score >= 50) return 'gold';
@@ -426,12 +635,16 @@ export class AgentService {
     mcpEndpoint?: string | null;
     publicKey?: string | null;
     lastSeen?: Date | null;
+    verified?: boolean | null;
+    healthStatus?: string | null;
   }): number {
     let score = 5; // base for being registered
     score += Math.min(agent.capabilities?.length || 0, 6) * 2; // up to +12
     if (agent.endpoint) score += 5;
     if (agent.mcpEndpoint) score += 8; // MCP-enabled agents are more useful
     if (agent.publicKey) score += 3;
+    if (agent.verified) score += 12; // proven control of endpoint is a strong trust signal
+    if (agent.healthStatus === 'online') score += 6; // reachable right now
     // Recency: active within 7 days boosts score, decaying to 0 over 30 days.
     if (agent.lastSeen) {
       const days = (Date.now() - agent.lastSeen.getTime()) / (24 * 60 * 60 * 1000);
@@ -449,6 +662,8 @@ export class AgentService {
     mcpEndpoint?: string | null;
     publicKey?: string | null;
     lastSeen?: Date | null;
+    verified?: boolean | null;
+    healthStatus?: string | null;
     totalStaked?: string | null;
     stakeholders?: number | null;
   }): AgentReputation {
