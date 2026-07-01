@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, boolean, integer, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -75,6 +75,23 @@ export const agents = pgTable("agents", {
   totalStaked: text("total_staked"),
   stakeholders: integer("stakeholders"),
 });
+
+// Agent-to-agent messages (durable inbox + history)
+export const agentMessages = pgTable("agent_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromDomain: text("from_domain").notNull(),
+  toDomain: text("to_domain").notNull(),
+  type: text("type").notNull(),
+  method: text("method"),
+  payload: text("payload").notNull(),
+  signature: text("signature").notNull(),
+  nonce: text("nonce").notNull(),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+  delivered: boolean("delivered").notNull().default(false),
+}, (table) => ({
+  // Replay protection: a given sender can only ever use a nonce once.
+  uniqueSenderNonce: unique("agent_messages_from_nonce_unique").on(table.fromDomain, table.nonce),
+}));
 
 // Referral codes - one per wallet
 export const referralCodes = pgTable("referral_codes", {
@@ -162,6 +179,14 @@ export type DomainSyncStatus = typeof domainSyncStatus.$inferSelect;
 
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type Agent = typeof agents.$inferSelect;
+
+export const insertAgentMessageSchema = createInsertSchema(agentMessages).omit({
+  id: true,
+  sentAt: true,
+  delivered: true,
+});
+export type InsertAgentMessage = z.infer<typeof insertAgentMessageSchema>;
+export type AgentMessageRow = typeof agentMessages.$inferSelect;
 
 export type ReferralCode = typeof referralCodes.$inferSelect;
 export type Referral = typeof referrals.$inferSelect;

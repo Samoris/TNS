@@ -1150,6 +1150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastSeen: agent.lastSeen?.getTime(),
         reputationScore: agent.reputationScore,
         reputationTier: agent.reputationTier,
+        reputation: agentService.buildProfileReputation(agent),
       }));
       
       const start = (pageNum - 1) * limitNum;
@@ -1487,7 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid signature" });
       }
       
-      const messages = agentService.getMessages(cleanDomain, parseInt(limit as string, 10));
+      const messages = await agentService.getMessages(cleanDomain, parseInt(limit as string, 10));
       
       res.json({ 
         domain: cleanDomain,
@@ -1556,7 +1557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid signature" });
       }
       
-      const messages = agentService.getMessageHistory(cleanDomain, parseInt(limit as string, 10));
+      const messages = await agentService.getMessageHistory(cleanDomain, parseInt(limit as string, 10));
       
       res.json({ 
         domain: cleanDomain,

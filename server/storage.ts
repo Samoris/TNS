@@ -12,6 +12,8 @@ import {
   type DomainWithRecords,
   type Agent,
   type InsertAgent,
+  type AgentMessageRow,
+  type InsertAgentMessage,
   type ReferralCode,
   type Referral,
   users,
@@ -20,6 +22,7 @@ import {
   domainCommits,
   domainSyncStatus,
   agents,
+  agentMessages,
   referralCodes,
   referrals,
   PRICING_TIERS,
@@ -28,7 +31,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, like, gte, desc, sql } from "drizzle-orm";
+import { eq, and, or, like, gte, desc, sql, inArray } from "drizzle-orm";
 import { getHolderCount, getAllHolders } from "./holder-cache";
 
 export interface IStorage {
@@ -82,6 +85,12 @@ export interface IStorage {
   getAgentsByOwner(address: string): Promise<Agent[]>;
   createAgent(agent: InsertAgent): Promise<Agent>;
   updateAgent(domain: string, updates: Partial<Agent>): Promise<Agent | undefined>;
+
+  // Agent messages (durable inbox + history)
+  createAgentMessage(message: InsertAgentMessage): Promise<AgentMessageRow>;
+  getUndeliveredMessages(toDomain: string, limit: number): Promise<AgentMessageRow[]>;
+  markMessagesDelivered(ids: string[]): Promise<void>;
+  getAgentMessageHistory(domain: string, limit: number): Promise<AgentMessageRow[]>;
   deleteAgent(domain: string): Promise<boolean>;
   discoverAgents(filters: { capability?: string; type?: string; minReputation?: number }): Promise<Agent[]>;
 
@@ -640,6 +649,31 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
+  async createAgentMessage(message: InsertAgentMessage): Promise<AgentMessageRow> {
+    const [result] = await db.insert(agentMessages).values(message).returning();
+    return result;
+  }
+
+  async getUndeliveredMessages(toDomain: string, limit: number): Promise<AgentMessageRow[]> {
+    return db.select().from(agentMessages)
+      .where(and(eq(agentMessages.toDomain, toDomain), eq(agentMessages.delivered, false)))
+      .orderBy(agentMessages.sentAt)
+      .limit(limit);
+  }
+
+  async markMessagesDelivered(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await db.update(agentMessages).set({ delivered: true }).where(inArray(agentMessages.id, ids));
+  }
+
+  async getAgentMessageHistory(domain: string, limit: number): Promise<AgentMessageRow[]> {
+    const rows = await db.select().from(agentMessages)
+      .where(or(eq(agentMessages.fromDomain, domain), eq(agentMessages.toDomain, domain)))
+      .orderBy(desc(agentMessages.sentAt))
+      .limit(limit);
+    return rows.reverse();
+  }
+
 }
 
 function generateReferralCode(): string {
@@ -654,6 +688,10 @@ MemStorage.prototype.getReferralsByReferrer = async function () { return []; } a
 MemStorage.prototype.getReferralByDomain = async function () { return undefined; } as any;
 MemStorage.prototype.recordReferral = async function () { throw new Error("MemStorage: referrals not implemented"); } as any;
 MemStorage.prototype.getReferralLeaderboard = async function () { return []; } as any;
+MemStorage.prototype.createAgentMessage = async function () { throw new Error("MemStorage: agent messages not implemented"); } as any;
+MemStorage.prototype.getUndeliveredMessages = async function () { return []; } as any;
+MemStorage.prototype.markMessagesDelivered = async function () {} as any;
+MemStorage.prototype.getAgentMessageHistory = async function () { return []; } as any;
 
 // Referral methods on DatabaseStorage
 DatabaseStorage.prototype.getReferralCodeByCode = async function (code: string): Promise<ReferralCode | undefined> {

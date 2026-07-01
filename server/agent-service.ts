@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { intuitionService } from './intuition';
 import { storage } from './storage';
+import type { AgentMessageRow } from '@shared/schema';
 
 const INTUITION_RPC = 'https://intuition.calderachain.xyz';
 const MULTIVAULT_ADDRESS = '0x6E35cF57A41fA15eA0EaE9C33e751b01A784Fe7e';
@@ -81,8 +82,6 @@ const VALID_CAPABILITIES = [
 ];
 
 const challenges = new Map<string, AgentChallenge>();
-const messageQueue = new Map<string, AgentMessage[]>();
-const messageHistory = new Map<string, AgentMessage[]>(); // Persistent history
 
 export class AgentService {
   private provider: ethers.JsonRpcProvider;
@@ -234,6 +233,26 @@ export class AgentService {
     });
   }
 
+  private rowToMessage(row: AgentMessageRow): AgentMessage {
+    let payload: unknown = row.payload;
+    try {
+      payload = JSON.parse(row.payload);
+    } catch {
+      // leave as raw string if it isn't JSON
+    }
+    return {
+      id: row.id,
+      from: row.fromDomain,
+      to: row.toDomain,
+      type: row.type as AgentMessage['type'],
+      method: row.method || undefined,
+      payload,
+      timestamp: row.sentAt.getTime(),
+      signature: row.signature,
+      nonce: row.nonce,
+    };
+  }
+
   async sendMessage(message: AgentMessage): Promise<{ success: boolean; error?: string }> {
     if (!message.from || !message.to) {
       return { success: false, error: 'From and to domains are required' };
@@ -243,33 +262,44 @@ export class AgentService {
       return { success: false, error: 'Message timestamp too old' };
     }
 
-    // Add to queue for recipient
-    const queue = messageQueue.get(message.to) || [];
-    queue.push(message);
-    messageQueue.set(message.to, queue);
-
-    // Add to persistent history for both sender and recipient
-    const senderHistory = messageHistory.get(message.from) || [];
-    senderHistory.push(message);
-    messageHistory.set(message.from, senderHistory);
-
-    const recipientHistory = messageHistory.get(message.to) || [];
-    recipientHistory.push(message);
-    messageHistory.set(message.to, recipientHistory);
+    // Durably persist the message; it acts as both the recipient's inbox
+    // (delivered=false) and permanent history for both parties. The unique
+    // (from_domain, nonce) constraint rejects replays of a captured signed
+    // payload.
+    try {
+      await storage.createAgentMessage({
+        fromDomain: message.from,
+        toDomain: message.to,
+        type: message.type,
+        method: message.method || null,
+        payload: typeof message.payload === 'string' ? message.payload : JSON.stringify(message.payload),
+        signature: message.signature,
+        nonce: message.nonce,
+      });
+    } catch (error: any) {
+      // Postgres unique-violation code = 23505
+      if (error?.code === '23505') {
+        return { success: false, error: 'Duplicate message (nonce already used) — possible replay' };
+      }
+      throw error;
+    }
 
     return { success: true };
   }
 
-  getMessages(domain: string, limit: number = 50): AgentMessage[] {
-    const queue = messageQueue.get(domain) || [];
-    const messages = queue.slice(0, limit);
-    messageQueue.set(domain, queue.slice(limit));
-    return messages;
+  async getMessages(domain: string, limit: number = 50): Promise<AgentMessage[]> {
+    // Inbox semantics: return undelivered messages, then mark them delivered so
+    // they aren't returned again (history endpoint still retains them).
+    const rows = await storage.getUndeliveredMessages(domain, limit);
+    if (rows.length > 0) {
+      await storage.markMessagesDelivered(rows.map(r => r.id));
+    }
+    return rows.map(r => this.rowToMessage(r));
   }
 
-  getMessageHistory(domain: string, limit: number = 100): AgentMessage[] {
-    const history = messageHistory.get(domain) || [];
-    return history.slice(-limit); // Return most recent messages
+  async getMessageHistory(domain: string, limit: number = 100): Promise<AgentMessage[]> {
+    const rows = await storage.getAgentMessageHistory(domain, limit);
+    return rows.map(r => this.rowToMessage(r));
   }
 
   async discoverAgents(filters: {
@@ -380,29 +410,93 @@ export class AgentService {
     await storage.updateAgent(domain, { lastSeen: new Date() });
   }
 
+  private tierForScore(score: number): 'bronze' | 'silver' | 'gold' | 'platinum' {
+    if (score >= 100) return 'platinum';
+    if (score >= 50) return 'gold';
+    if (score >= 20) return 'silver';
+    return 'bronze';
+  }
+
+  // Deterministic baseline score derived from an agent's own profile, so newly
+  // registered agents (with no on-chain stake yet) still get a meaningful,
+  // comparable reputation instead of showing nothing.
+  private computeProfileScore(agent: {
+    capabilities: string[];
+    endpoint?: string | null;
+    mcpEndpoint?: string | null;
+    publicKey?: string | null;
+    lastSeen?: Date | null;
+  }): number {
+    let score = 5; // base for being registered
+    score += Math.min(agent.capabilities?.length || 0, 6) * 2; // up to +12
+    if (agent.endpoint) score += 5;
+    if (agent.mcpEndpoint) score += 8; // MCP-enabled agents are more useful
+    if (agent.publicKey) score += 3;
+    // Recency: active within 7 days boosts score, decaying to 0 over 30 days.
+    if (agent.lastSeen) {
+      const days = (Date.now() - agent.lastSeen.getTime()) / (24 * 60 * 60 * 1000);
+      if (days <= 7) score += 6;
+      else if (days <= 30) score += 3;
+    }
+    return score;
+  }
+
+  // Fast, RPC-free reputation for list views: derives a score purely from the
+  // stored agent profile plus any cached stake figures.
+  buildProfileReputation(agent: {
+    capabilities: string[];
+    endpoint?: string | null;
+    mcpEndpoint?: string | null;
+    publicKey?: string | null;
+    lastSeen?: Date | null;
+    totalStaked?: string | null;
+    stakeholders?: number | null;
+  }): AgentReputation {
+    const score = this.computeProfileScore(agent);
+    return {
+      totalStaked: agent.totalStaked || '0',
+      stakeholders: agent.stakeholders || 0,
+      score,
+      tier: this.tierForScore(score),
+    };
+  }
+
   async getAgentReputation(domain: string): Promise<AgentReputation | null> {
+    let onChainStaked = '0';
+    let stakeholders = 0;
+    let onChainScore = 0;
+
     try {
       const reputation = await intuitionService.getDomainReputation(domain);
-      if (!reputation) {
-        return null;
+      if (reputation) {
+        onChainStaked = reputation.totalStaked;
+        stakeholders = reputation.stakeholders;
+        onChainScore = reputation.reputationScore;
       }
-
-      const score = reputation.reputationScore;
-      let tier: 'bronze' | 'silver' | 'gold' | 'platinum' = 'bronze';
-      if (score >= 100) tier = 'platinum';
-      else if (score >= 50) tier = 'gold';
-      else if (score >= 20) tier = 'silver';
-
-      return {
-        totalStaked: reputation.totalStaked,
-        stakeholders: reputation.stakeholders,
-        score,
-        tier,
-      };
     } catch (error) {
-      console.error('Error getting agent reputation:', error);
-      return null;
+      console.error('Error getting on-chain agent reputation:', error);
     }
+
+    // Blend the on-chain reputation (if any) with a profile-derived baseline so
+    // the value is always present and meaningful.
+    let profileScore = 5;
+    try {
+      const agent = await storage.getAgent(domain);
+      if (agent) {
+        profileScore = this.computeProfileScore(agent);
+      }
+    } catch {
+      // fall back to base profile score
+    }
+
+    const score = Math.round(onChainScore + profileScore);
+
+    return {
+      totalStaked: onChainStaked,
+      stakeholders,
+      score,
+      tier: this.tierForScore(score),
+    };
   }
 
   async prepareStakeTransaction(
